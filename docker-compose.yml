@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: dabia-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-dabia}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-dabia_local_password}
+      - POSTGRES_DB=${POSTGRES_DB:-dabia}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./.pgdata:/var/lib/postgresql/data
