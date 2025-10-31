@@ -2,12 +2,17 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 
 from dabia.database import get_db
+from dabia.api.v1 import session as session_router
 
 app = FastAPI(
     title="Dabia API",
     description="API for the Dabia language learning platform.",
     version="0.1.0",
 )
+
+# Include routers
+app.include_router(session_router.router, prefix="/api/v1/session", tags=["Session"])
+
 
 @app.get("/")
 async def root():
