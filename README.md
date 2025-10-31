@@ -9,3 +9,22 @@ This project aims to build a smart vocabulary learning tool, starting with Japan
 - **Backend**: Python (FastAPI)
 - **Frontend**: React (TypeScript)
 - **Database**: PostgreSQL
+
+## How to Run
+
+1.  **Clone the repository**:
+    ```bash
+    git clone <repository-url>
+    cd dabia
+    ```
+2.  **Install Python dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **Start the FastAPI server**:
+    ```bash
+    uvicorn dabia.main:app --reload
+    ```
+
+    The API will be accessible at `http://127.0.0.1:8000`.
+    You can view the interactive API documentation (Swagger UI) at `http://127.0.0.1:8000/docs`.
