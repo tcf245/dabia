@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import uuid
 from typing import Optional
 
@@ -37,9 +38,9 @@ def get_next_card(
         db.commit()
 
     # 2. Fetch the next card
-    # MVP Logic: Just grab the very first card from the DB.
+    # MVP Logic: Just grab a random card from the DB.
     # A real implementation would have sophisticated logic to pick the next card.
-    next_card_db = db.query(models.Card).first()
+    next_card_db = db.query(models.Card).order_by(func.random()).first()
 
     if not next_card_db:
         # No cards in the database yet

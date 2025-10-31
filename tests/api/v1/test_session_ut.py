@@ -19,7 +19,7 @@ def test_get_next_card_no_answer_ut():
         hint="A greeting",
         audio_url="/audio.mp3"
     )
-    mock_db.query.return_value.first.return_value = mock_card_db_obj
+    mock_db.query.return_value.order_by.return_value.first.return_value = mock_card_db_obj
 
     # Act
     response = get_next_card(answer=None, db=mock_db, current_user_id=user_id)
@@ -34,7 +34,8 @@ def test_get_next_card_with_answer_ut():
     # Arrange
     mock_db = MagicMock()
     user_id = uuid.uuid4()
-    mock_db.query.return_value.first.return_value = None  # No next card
+    # Adjust mock for the .order_by() call
+    mock_db.query.return_value.order_by.return_value.first.return_value = None  # No next card
 
     answer = PreviousAnswer(
         card_id=uuid.uuid4(),
