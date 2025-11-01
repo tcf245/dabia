@@ -2,9 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from urllib.parse import urlparse
 
-from dabia.core.config import settings
 from dabia.database import get_db
 from dabia.api.v1 import session as session_router
 
@@ -48,14 +46,3 @@ def health_check(db: Session = Depends(get_db)):
     # If it returns successfully, it means the database connection is working.
     db.execute(text("SELECT 1"))
     return {"status": "ok"}
-
-@app.get("/debug/db-url")
-def debug_db_url():
-    db_url = settings.DATABASE_URL
-    parsed_url = urlparse(db_url)
-    return {
-        "message": "This is the database URL the application is currently using.",
-        "hostname": parsed_url.hostname,
-        "port": parsed_url.port,
-        "user": parsed_url.username
-    }
