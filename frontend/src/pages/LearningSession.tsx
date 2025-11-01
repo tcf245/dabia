@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Box, CircularProgress, Typography, Container } from '@mui/material';
 import Flashcard from '../components/Flashcard';
 import SessionProgress from '../components/SessionProgress';
-import { getNextCard, PreviousAnswer } from '../services/api';
-import type { Card, SessionProgress as SessionProgressType } from '../services/api';
+import { getNextCard } from '../services/api';
+import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
 
 const LearningSession: React.FC = () => {
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
