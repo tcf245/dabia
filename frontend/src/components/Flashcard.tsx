@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, TextField, Button, Box } from '@mui/material';
-import { Card as CardType } from '../services/api';
+import type { Card } from '../services/api';
 
 interface FlashcardProps {
   card: CardType;
