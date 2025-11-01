@@ -45,4 +45,4 @@ jobs:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
         run: |
           cd backend
-          alembic revision --autogenerate --check
+          alembic check
