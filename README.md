@@ -1,4 +1,4 @@
-# Dabia (哒比呀)
+# Dabia (ダビア)
 
 An intelligent language learning application inspired by a three-year-old's lovely made-up word, "dabiya".
 

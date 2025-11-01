@@ -17,7 +17,7 @@ app.include_router(session_router.router, prefix="/api/v1/session", tags=["Sessi
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Dabia! (哒比呀)"}
+    return {"message": "Welcome to Dabia! (ダビア)"}
 
 
 @app.get("/api/v1/health-check")
