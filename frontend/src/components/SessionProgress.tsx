@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, LinearProgress, Typography } from '@mui/material';
-import { SessionProgress as SessionProgressType } from '../services/api';
+import type { SessionProgress as SessionProgressType } from '../services/api';
 
 interface SessionProgressProps {
   progress: SessionProgressType;
