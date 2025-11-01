@@ -32,6 +32,8 @@ jobs:
           PYTHONPATH=backend/ pytest backend/tests/
 
       - name: Check for DB Model Changes
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
         run: |
           cd backend
           alembic revision --autogenerate --check
