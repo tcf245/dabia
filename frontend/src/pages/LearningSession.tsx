@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, CircularProgress, Typography, Container, Button } from '@mui/material';
+import { CircularProgress, Typography, Container, Button } from '@mui/material';
 import Flashcard from '../components/Flashcard';
 import SessionProgress from '../components/SessionProgress';
 import { getNextCard } from '../services/api';
@@ -33,7 +33,7 @@ const LearningSession: React.FC = () => {
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
     const previousAnswer: PreviousAnswer = {
       card_id: cardId,
-      isCorrect,
+      is_correct: isCorrect, // Changed from isCorrect to is_correct
       response_time_ms: responseTime,
     };
     fetchNextCard(previousAnswer);
