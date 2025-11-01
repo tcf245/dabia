@@ -1,11 +1,9 @@
 {
+  "buildCommand": "pip install -r requirements.txt && alembic upgrade head",
   "builds": [
     {
       "src": "dabia/main.py",
-      "use": "@vercel/python",
-      "config": {
-        "installCommand": "pip install -r requirements.txt && alembic upgrade head"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
