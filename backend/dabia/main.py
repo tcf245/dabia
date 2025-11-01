@@ -15,10 +15,16 @@ app = FastAPI(
 # Set up CORS
 # In a production app, you should be more restrictive than this.
 # For this MVP, we'll allow the Vercel preview URLs and the main frontend URL.
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000", # Common port for React dev servers
+    "https://dabia-frontend.vercel.app", # Your main frontend URL
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] # TEMPORARY - ALLOW ALL FOR DEBUGGING
+    allow_origins=origins,
+    allow_origin_regex=r"https://dabia-frontend-.*-erics-projects-a59ebbfd.vercel.app", # Regex for Vercel preview URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
