@@ -3,6 +3,8 @@ from typing import Optional
 import uuid
 
 class PreviousAnswer(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     card_id: uuid.UUID
     is_correct: bool
     response_time_ms: int = Field(..., gt=0)
