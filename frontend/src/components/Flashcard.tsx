@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, TextField, Button, Box } from '@mui/material';
-import type { Card } from '../services/api';
+import type { Card as FlashcardDataType } from '../services/api';
 
 interface FlashcardProps {
-  card: CardType;
+  card: FlashcardDataType;
   onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
 }
 
