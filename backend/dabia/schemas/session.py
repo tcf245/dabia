@@ -3,11 +3,12 @@ from typing import Optional
 import uuid
 
 class PreviousAnswer(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    card_id: uuid.UUID = Field(..., alias='cardId')
+    is_correct: bool = Field(..., alias='isCorrect')
+    response_time_ms: int = Field(..., gt=0, alias='responseTimeMs')
 
-    card_id: uuid.UUID
-    is_correct: bool
-    response_time_ms: int = Field(..., gt=0)
+    class Config:
+        populate_by_name = True
 
 class CardTarget(BaseModel):
     word: str
