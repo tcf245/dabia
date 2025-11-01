@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -10,6 +11,21 @@ app = FastAPI(
     description="API for the Dabia language learning platform.",
     version="0.1.0",
 )
+
+# Set up CORS
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000", # Common port for React dev servers
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Include routers
 app.include_router(session_router.router, prefix="/api/v1/session", tags=["Session"])
