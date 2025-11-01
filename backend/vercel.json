@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "dabia/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dabia/main.py"
+    }
+  ]
+}
