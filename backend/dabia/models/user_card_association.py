@@ -18,5 +18,3 @@ class UserCardAssociation(Base):
 
     user = relationship("User", back_populates="cards")
     card = relationship("Card", back_populates="users")
-
-    __table_args__ = (UniqueConstraint('user_id', 'card_id', name='_user_card_uc'),)
