@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from dabia.database import get_db
 from dabia.api.v1 import session as session_router
@@ -23,5 +24,5 @@ async def root():
 def health_check(db: Session = Depends(get_db)):
     # This endpoint will try to connect to the database and execute a simple query.
     # If it returns successfully, it means the database connection is working.
-    db.execute("SELECT 1")
+    db.execute(text("SELECT 1"))
     return {"status": "ok"}
