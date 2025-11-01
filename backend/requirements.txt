@@ -9,6 +9,7 @@ psycopg2-binary
 
 # Testing
 pytest
+httpx
 
 
 
