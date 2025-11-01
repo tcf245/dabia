@@ -27,6 +27,13 @@ jobs:
         run: |
           pip install -r backend/requirements.txt
 
+      - name: Run Database Migrations
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          cd backend
+          alembic upgrade head
+
       - name: Run Tests
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}

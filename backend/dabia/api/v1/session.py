@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 import uuid
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, UTC
 
 from dabia import models, schemas
 from dabia.database import get_db
@@ -39,7 +39,7 @@ def get_next_card(
         db.commit()
 
     # 2. Calculate today's progress
-    today_start = datetime.utcnow().date()
+    today_start = datetime.now(UTC).date()
     completed_today_count = (
         db.query(models.ReviewLog)
         .filter(
