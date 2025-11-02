@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 import pytest
 import uuid
 
@@ -16,15 +17,22 @@ def db_session():
     try:
         yield db
     finally:
-        # Clean up all data after each test
-        db.query(models.ReviewLog).delete()
-        db.query(models.UserCardAssociation).delete()
-        db.query(models.Card).delete()
-        db.query(models.Deck).delete()
-        db.query(models.User).delete()
+        db.rollback() # Ensure any pending changes from the test are rolled back
+        # Clean up all data after each test using TRUNCATE CASCADE for robustness
+        db.execute(text("TRUNCATE TABLE review_logs RESTART IDENTITY CASCADE"))
+        db.execute(text("TRUNCATE TABLE user_card_associations RESTART IDENTITY CASCADE"))
+        db.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE"))
+        db.execute(text("TRUNCATE TABLE cards RESTART IDENTITY CASCADE"))
+        db.execute(text("TRUNCATE TABLE decks RESTART IDENTITY CASCADE"))
         db.commit()
 
-def test_get_next_card_with_previous_answer_e2e(db_session: Session):
+@pytest.fixture(scope="function")
+def override_get_db(db_session: Session):
+    app.dependency_overrides[get_db] = lambda: db_session
+    yield
+    app.dependency_overrides.clear()
+
+def test_get_next_card_with_previous_answer_e2e(db_session: Session, override_get_db):
     """End-to-End test for the /next-card endpoint."""
     # 1. Setup: Create a dummy deck, user, and card in the DB
     user_id = uuid.uuid4()
@@ -35,7 +43,6 @@ def test_get_next_card_with_previous_answer_e2e(db_session: Session):
     db_session.add(deck)
     db_session.add(user)
     db_session.add(card)
-
 
     # Override the user ID dependency for this test
     app.dependency_overrides[get_current_user_id] = lambda: user_id
@@ -62,4 +69,6 @@ def test_get_next_card_with_previous_answer_e2e(db_session: Session):
 
     # Cleanup dependency override
     app.dependency_overrides = {}
+
+
 
