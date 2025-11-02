@@ -22,6 +22,11 @@ depends_on = None
 
 def upgrade() -> None:
     # Define table structure for bulk insert
+    users_table = table('users',
+        column('id', UUID),
+        column('email', String),
+        column('hashed_password', String)
+    )
     decks_table = table('decks',
         column('id', UUID),
         column('name', String),
@@ -35,6 +40,15 @@ def upgrade() -> None:
         column('reading', String),
         column('hint', String)
     )
+
+    # Seed the default user for MVP
+    op.bulk_insert(users_table, [
+        {
+            'id': '00000000-0000-0000-0000-000000000000',
+            'email': 'test@example.com',
+            'hashed_password': 'fake_password_hash'
+        }
+    ])
 
     # Create the Test Deck
     test_deck_id = uuid.uuid4()

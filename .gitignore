@@ -85,6 +85,7 @@ backend/cython_debug/
 backend/.ruff_cache/
 backend/.pypirc
 backend/tmp/
+nohup.out
 
 # Frontend (Node)
 frontend/node_modules/
