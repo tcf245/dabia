@@ -10,36 +10,32 @@ from dabia.api.v1.session import get_current_user_id
 
 client = TestClient(app)
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def db_session():
     db = next(get_db())
     try:
-        # Clean up any previous test data before starting
-        db.query(models.ReviewLog).delete()
-        db.query(models.UserCardAssociation).delete()
-        db.query(models.User).delete()
-        db.query(models.Card).delete()
-        db.commit()
         yield db
     finally:
-        # Clean up created test data
+        # Clean up all data after each test
         db.query(models.ReviewLog).delete()
         db.query(models.UserCardAssociation).delete()
-        db.query(models.User).delete()
         db.query(models.Card).delete()
+        db.query(models.Deck).delete()
+        db.query(models.User).delete()
         db.commit()
 
 def test_get_next_card_with_previous_answer_e2e(db_session: Session):
     """End-to-End test for the /next-card endpoint."""
-    # 1. Setup: Create a dummy user and card in the DB
+    # 1. Setup: Create a dummy deck, user, and card in the DB
     user_id = uuid.uuid4()
     card_id = uuid.uuid4()
-
+    deck = models.Deck(id=uuid.uuid4(), name="Test Deck")
     user = models.User(id=user_id, email="test@example.com", hashed_password="fake_hash")
-    card = models.Card(id=card_id, sentence_template="Test sentence __.", target_word="word")
+    card = models.Card(id=card_id, deck_id=deck.id, sentence_template="Test sentence __.", target_word="word")
+    db_session.add(deck)
     db_session.add(user)
     db_session.add(card)
-    db_session.commit()
+
 
     # Override the user ID dependency for this test
     app.dependency_overrides[get_current_user_id] = lambda: user_id
