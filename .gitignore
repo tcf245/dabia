@@ -1,11 +1,14 @@
 # General
 .DS_Store
+nohup.out
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
 
 # Backend (Python)
-backend/__pycache__/
-backend/*.py[codz]
-backend/*$py.class
-backend/*.so
 backend/.Python
 backend/build/
 backend/develop-eggs/
@@ -85,7 +88,6 @@ backend/cython_debug/
 backend/.ruff_cache/
 backend/.pypirc
 backend/tmp/
-nohup.out
 
 # Frontend (Node)
 frontend/node_modules/
