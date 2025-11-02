@@ -1,8 +1,8 @@
-"""Seed initial test deck data
+"""Seed initial data
 
-Revision ID: 7b5a7b8555d7
-Revises: 8f1df2aa5c9f
-Create Date: 2025-11-01 23:00:00.000000
+Revision ID: f6fb32634736
+Revises: 854d4985d018
+Create Date: 2025-11-02 00:00:00.000000
 
 """
 from alembic import op
@@ -14,8 +14,8 @@ import csv
 import os
 
 # revision identifiers, used by Alembic.
-revision = '7b5a7b8555d7'
-down_revision = '8f1df2aa5c9f'
+revision = 'f6fb32634736'
+down_revision = '854d4985d018'
 branch_labels = None
 depends_on = None
 
@@ -80,7 +80,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # In a real scenario, you might want to be more specific
-    # but for this MVP, deleting all cards and decks is fine.
-    op.execute("DELETE FROM cards")
-    op.execute("DELETE FROM decks")
+    # A simple downgrade for MVP - delete all data from these tables.
+    op.execute("TRUNCATE TABLE review_logs, user_card_associations, users, cards, decks RESTART IDENTITY CASCADE")
