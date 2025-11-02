@@ -13,18 +13,19 @@ client = TestClient(app)
 
 @pytest.fixture(scope="function")
 def db_session():
+    # Create a new session for the test
     db = next(get_db())
-    try:
-        yield db
-    finally:
-        db.rollback() # Ensure any pending changes from the test are rolled back
-        # Clean up all data after each test using TRUNCATE CASCADE for robustness
-        db.execute(text("TRUNCATE TABLE review_logs RESTART IDENTITY CASCADE"))
-        db.execute(text("TRUNCATE TABLE user_card_associations RESTART IDENTITY CASCADE"))
-        db.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE"))
-        db.execute(text("TRUNCATE TABLE cards RESTART IDENTITY CASCADE"))
-        db.execute(text("TRUNCATE TABLE decks RESTART IDENTITY CASCADE"))
-        db.commit()
+    
+    # Clean up all tables before the test runs
+    db.execute(text("TRUNCATE TABLE review_logs, user_card_associations, users, cards, decks RESTART IDENTITY CASCADE"))
+    db.commit()
+
+    yield db
+
+    # Clean up after the test is done
+    db.execute(text("TRUNCATE TABLE review_logs, user_card_associations, users, cards, decks RESTART IDENTITY CASCADE"))
+    db.commit()
+    db.close()
 
 @pytest.fixture(scope="function")
 def override_get_db(db_session: Session):
