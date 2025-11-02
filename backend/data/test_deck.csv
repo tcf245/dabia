@@ -1,0 +1,11 @@
+sentence_template,target_word,reading,hint
+"これは__ですか？","何","なに","What"
+"私__猫が好きです。","は","わ","Topic marker"
+"毎朝、コーヒー__飲みます。","を","お","Object marker"
+"あそこ__銀行があります。","に","に","Location marker"
+"週末__何をしますか？","は","わ","Topic marker"
+"図書館__本を借りました。","で","で","Location of action marker"
+"彼__イギリス人です。","は","わ","Topic marker"
+"友達__会います。","に","に","Object of verb marker"
+"電車__行きます。","で","で","By means of marker"
+"これは私__本です。","の","の","Possessive marker"
