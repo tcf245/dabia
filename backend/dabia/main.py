@@ -2,9 +2,29 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from alembic.config import Config
+from alembic import command
+import os
 
 from dabia.database import get_db
 from dabia.api.v1 import session as session_router
+
+def run_migrations():
+    # Path to your alembic.ini file
+    alembic_ini_path = os.path.join(os.path.dirname(__file__), '..', 'alembic.ini')
+    alembic_cfg = Config(alembic_ini_path)
+    
+    # Get the database URL from environment variables
+    # This ensures that the migration runs on the correct database
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+
+    # Run the 'upgrade head' command
+    command.upgrade(alembic_cfg, "head")
+
+# Run migrations on startup
+run_migrations()
 
 app = FastAPI(
     title="Dabia API",
