@@ -1,6 +1,7 @@
 # General
 .DS_Store
 nohup.out
+tmp/**
 
 # Python
 **/__pycache__/
