@@ -44,7 +44,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://dabia-frontend-.*-erics-projects-a59ebbfd.vercel.app", # Regex for Vercel preview URLs
+    allow_origin_regex=r"https://dabia-frontend-.*-erics-projects-a59ebbfd.vercel.app|http://localhost:.*", # Regex for Vercel preview URLs and all localhost ports
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

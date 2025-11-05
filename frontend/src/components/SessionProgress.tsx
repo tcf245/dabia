@@ -1,5 +1,3 @@
-import React from 'react';
-import { Box, LinearProgress, Typography } from '@mui/material';
 import type { SessionProgress as SessionProgressType } from '../services/api';
 
 interface SessionProgressProps {
@@ -7,13 +5,15 @@ interface SessionProgressProps {
 }
 
 const SessionProgress: React.FC<SessionProgressProps> = ({ progress }) => {
-  const percentage = (progress.completed_today / progress.goal_today) * 100;
+  const percentage = progress.goal_today > 0 ? (progress.completed_today / progress.goal_today) * 100 : 0;
 
   return (
-    <Box sx={{ width: '100%', mt: 2 }}>
-      <Typography variant="body2" color="text.secondary">{`Completed: ${progress.completed_today} / ${progress.goal_today}`}</Typography>
-      <LinearProgress variant="determinate" value={percentage} sx={{ height: 10, borderRadius: 5 }} />
-    </Box>
+    <div className="fixed bottom-0 left-0 w-full h-1.5 bg-gray-200">
+      <div 
+        className="bg-sora-iro h-1.5 transition-all duration-500 ease-in-out"
+        style={{ width: `${percentage}%` }}
+      ></div>
+    </div>
   );
 };
 
