@@ -1,22 +1,15 @@
-import React from 'react';
 import LearningSession from './pages/LearningSession';
-import { CssBaseline, AppBar, Toolbar, Typography, Container } from '@mui/material';
 
 function App() {
   return (
-    <React.Fragment>
-      <CssBaseline />
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Dabia (ダビア) Learning
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Container maxWidth="md">
+    <div className="min-h-screen bg-slate-100 text-gray-800">
+      <main className="max-w-4xl mx-auto p-8">
+        <header className="mb-12">
+          <h1 className="text-4xl font-bold text-gray-900">Dabia (ダビア) Learning</h1>
+        </header>
         <LearningSession />
-      </Container>
-    </React.Fragment>
+      </main>
+    </div>
   );
 }
 

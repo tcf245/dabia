@@ -11,9 +11,9 @@ const api = axios.create({
 
 // Define types for API requests and responses
 export interface PreviousAnswer {
-  card_id: string;
-  is_correct: boolean;
-  response_time_ms: number;
+  cardId: string;
+  isCorrect: boolean;
+  responseTimeMs: number;
 }
 
 export interface CardTarget {
@@ -25,6 +25,7 @@ export interface Card {
   card_id: string;
   sentence_template: string;
   target: CardTarget;
+  reading: string; // Add this line
   audio_url: string | null;
   proficiency_level: number;
 }

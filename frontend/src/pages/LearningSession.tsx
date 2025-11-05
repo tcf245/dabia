@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { CircularProgress, Typography, Container, Button } from '@mui/material';
 import Flashcard from '../components/Flashcard';
 import SessionProgress from '../components/SessionProgress';
 import { getNextCard } from '../services/api';
@@ -32,45 +31,57 @@ const LearningSession: React.FC = () => {
 
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
     const previousAnswer: PreviousAnswer = {
-      card_id: cardId,
-      is_correct: isCorrect, // Changed from isCorrect to is_correct
-      response_time_ms: responseTime,
+      cardId: cardId,
+      isCorrect: isCorrect,
+      responseTimeMs: responseTime,
     };
     fetchNextCard(previousAnswer);
   };
 
+  // Centering wrapper for loading/error/completion states
+  const CenteredMessage: React.FC<{children: React.ReactNode}> = ({ children }) => (
+    <div className="flex flex-col items-center justify-center h-full py-20">
+      {children}
+    </div>
+  );
+
   if (loading) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <CircularProgress />
-        <Typography variant="h6" sx={{ mt: 2 }}>Loading session...</Typography>
-      </Container>
+      <CenteredMessage>
+        <p className="text-lg text-gray-500">Loading session...</p>
+      </CenteredMessage>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography color="error">Error: {error}</Typography>
-        <Button variant="contained" onClick={() => fetchNextCard()}>Retry</Button>
-      </Container>
+      <CenteredMessage>
+        <p className="text-lg text-red-500">Error: {error}</p>
+        <button 
+          onClick={() => fetchNextCard()}
+          className="mt-6 px-6 py-2 bg-sora-iro text-white rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+        >
+          Retry
+        </button>
+      </CenteredMessage>
     );
   }
 
   if (!currentCard) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography variant="h6">Session Completed or No Cards Available!</Typography>
+      <CenteredMessage>
+        <h2 className="text-3xl font-bold text-gray-800 mb-4">Session Completed!</h2>
+        <p className="text-lg text-gray-600">You have completed all available cards for now.</p>
         <SessionProgress progress={sessionProgress} />
-      </Container>
+      </CenteredMessage>
     );
   }
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div className="flex items-center justify-center w-full">
       <SessionProgress progress={sessionProgress} />
       <Flashcard card={currentCard} onSubmit={handleSubmitAnswer} />
-    </Container>
+    </div>
   );
 };
 
