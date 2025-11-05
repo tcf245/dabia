@@ -61,7 +61,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   const isContinueDisabled = answerState === 'incorrect' && userInput.trim().toLowerCase() !== card.target.word.toLowerCase();
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg p-8 md:p-12 w-full`}>
+    <div className={`bg-white rounded-xl shadow-lg p-8 md:p-12 w-full ${borderColorClass()}`}>
       {/* Header with reading */}
       <div className="flex items-center text-gray-500 mb-8">
         <FiMessageSquare className="mr-3 text-lg" />
