@@ -10,6 +10,9 @@ from dabia.database import get_db
 from dabia.api.v1 import session as session_router
 
 def run_migrations():
+    print("Running migrations...")
+    db_url = os.getenv("DATABASE_URL")
+    print(f"DATABASE_URL: {db_url}")
     # Path to your alembic.ini file
     alembic_ini_path = os.path.join(os.path.dirname(__file__), '..', 'alembic.ini')
     alembic_cfg = Config(alembic_ini_path)
@@ -43,7 +46,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://dabia-frontend-.*\.vercel\.app|http://localhost:.*", # Regex for Vercel preview URLs and all localhost ports
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
