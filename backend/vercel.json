@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "dabia/main.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": "data/**"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
