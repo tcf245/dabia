@@ -25,14 +25,14 @@ The script reads data by its column position (index). The following columns are 
 
 | Column Index | Expected Content         | Example                                      | Notes                                                                   |
 |--------------|--------------------------|----------------------------------------------|-------------------------------------------------------------------------|
-| 1 (row[0])   | Raw Deck Name            | `project-name::3-N2::2-中低频`      | The script sanitizes this to `project-name::3-N2`.                 |
-| 2 (row[1])   | Unique ID (GUID)         | `46b97268-a0bb-11ef-9eca-75d1f1bae144`       | **Crucial for preventing duplicates.**                                    |
+| 1 (row[0])   | Raw Deck Name            | `deck-name:N2`                               | The script sanitizes this to `project-name::3-N2`.                      |
+| 2 (row[1])   | Unique ID (GUID)         | `46b95078-a0bb-11ef-9eca-75d1f1bae144`       | **Crucial for preventing duplicates.**                                  |
 | 3 (row[2])   | Target Word              | `丸`                                         |                                                                         |
 | 6 (row[5])   | Reading (Furigana)       | `まる`                                       |                                                                         |
 | 7 (row[6])   | Gloss / Hint             | `圆，圆形；句号`                             |                                                                         |
-| 9 (row[8])   | Word Audio               | `[sound:丸_マル━_0_...mp3]`                 | The script extracts the filename.                                       |
+| 9 (row[8])   | Word Audio               | `[sound:丸_マル━_0_...mp3]`                  | The script extracts the filename.                                       |
 | 12 (row[11]) | Full Example Sentence    | `答えに丸をつける`                           |                                                                         |
-| 13 (row[12]) | Sentence with Furigana   | `答[こた]えに<b> 丸[まる]</b>をつける`      |                                                                         |
+| 13 (row[12]) | Sentence with Furigana   | `答[こた]えに<b> 丸[まる]</b>をつける`       |                                                                         |
 | 14 (row[13]) | Sentence Translation     | `在答案上画圈`                               |                                                                         |
 | 16 (row[15]) | Sentence Audio           | `[sound:voicepeak-ad60...mp3]`               | The script extracts the filename.                                       |
 
