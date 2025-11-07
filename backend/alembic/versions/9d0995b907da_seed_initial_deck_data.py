@@ -55,6 +55,11 @@ def upgrade() -> None:
         sa.column("target_word", sa.String),
         sa.column("reading", sa.String),
         sa.column("hint", sa.String),
+        sa.column("audio_url", sa.String),
+        sa.column("sentence", sa.String),
+        sa.column("sentence_furigana", sa.String),
+        sa.column("sentence_translation", sa.String),
+        sa.column("sentence_audio_url", sa.String),
     )
 
     # Read the CSV and prepare card data for insertion
@@ -71,6 +76,11 @@ def upgrade() -> None:
                     "target_word": row["target_word"],
                     "reading": row["reading"],
                     "hint": row["hint"],
+                    "audio_url": row["audio_url"],
+                    "sentence": row["sentence"],
+                    "sentence_furigana": row["sentence_furigana"],
+                    "sentence_translation": row["sentence_translation"],
+                    "sentence_audio_url": row["sentence_audio_url"],
                 }
             )
 

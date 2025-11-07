@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
+    AUDIO_URL_PREFIX: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

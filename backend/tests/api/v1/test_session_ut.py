@@ -17,7 +17,11 @@ def test_get_next_card_no_answer_ut():
         sentence_template="Hello __",
         target_word="World",
         hint="A greeting",
-        audio_url="/audio.mp3"
+        audio_url="/audio.mp3",
+        sentence=None,
+        sentence_furigana=None,
+        sentence_translation=None,
+        sentence_audio_url=None
     )
     mock_db.query.return_value.order_by.return_value.first.return_value = mock_card_db_obj
 

@@ -17,6 +17,11 @@ class Card(Base):
     hint = Column(String)
     audio_url = Column(String)
 
+    sentence = Column(String)
+    sentence_furigana = Column(String)
+    sentence_translation = Column(String)
+    sentence_audio_url = Column(String)
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

@@ -20,6 +20,10 @@ class Card(BaseModel):
     sentence_template: str
     target: CardTarget
     audio_url: Optional[str] = None
+    sentence: Optional[str] = None
+    sentence_furigana: Optional[str] = None
+    sentence_translation: Optional[str] = None
+    sentence_audio_url: Optional[str] = None
     proficiency_level: int
 
 class SessionProgress(BaseModel):

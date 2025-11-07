@@ -6,6 +6,7 @@ from typing import Optional
 from datetime import datetime, UTC
 
 from dabia import models, schemas
+from dabia.core.config import settings
 from dabia.database import get_db
 
 router = APIRouter()
@@ -17,6 +18,12 @@ async def get_current_user_id() -> uuid.UUID:
     # For now, we return a hardcoded UUID.
     # This allows us to easily override it in tests.
     return uuid.UUID("00000000-0000-0000-0000-000000000000")
+
+def _get_full_audio_url(relative_url: Optional[str]) -> Optional[str]:
+    """Constructs the full audio URL from a relative path."""
+    if not relative_url:
+        return None
+    return f"{settings.AUDIO_URL_PREFIX}{relative_url}"
 
 @router.post("/next-card", response_model=schemas.NextCardResponse)
 def get_next_card(
@@ -69,7 +76,11 @@ def get_next_card(
         card_id=next_card_db.id,
         sentence_template=next_card_db.sentence_template,
         target=schemas.CardTarget(word=next_card_db.target_word, hint=next_card_db.hint),
-        audio_url=next_card_db.audio_url,
+        audio_url=_get_full_audio_url(next_card_db.audio_url),
+        sentence=next_card_db.sentence,
+        sentence_furigana=next_card_db.sentence_furigana,
+        sentence_translation=next_card_db.sentence_translation,
+        sentence_audio_url=_get_full_audio_url(next_card_db.sentence_audio_url),
         proficiency_level=0  # Dummy value for MVP
     )
 
