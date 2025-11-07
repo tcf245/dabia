@@ -10,6 +10,7 @@ class Card(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     deck_id = Column(UUID(as_uuid=True), ForeignKey("decks.id"), nullable=False, index=True)
+    guid = Column(String, unique=True, index=True, nullable=True)
 
     sentence_template = Column(String, nullable=False)
     target_word = Column(String, nullable=False)
