@@ -13,10 +13,16 @@ class CardTarget(BaseModel):
     word: str
     hint: Optional[str] = None
 
+class DeckInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    name: str
+
 class Card(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     card_id: uuid.UUID
+    deck: DeckInfo
     sentence_template: str
     target: CardTarget
     audio_url: Optional[str] = None
