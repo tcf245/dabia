@@ -13,7 +13,7 @@ class GCPStorageProvider(StorageProvider):
     def __init__(self, bucket_name: str, media_path: str = "medias"):
         self.bucket_name = bucket_name
         self.media_path = media_path
-        self.base_url = f"https://storage.googleapis.com/{self.bucket_name}"
+        self.base_url = f"https://storage.cloud.google.com/{self.bucket_name}"
 
     def get_url(self, filename: str) -> str:
         if not filename:
