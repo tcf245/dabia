@@ -19,7 +19,7 @@ const LearningSession: React.FC = () => {
       const response = await getNextCard(previousAnswer);
       setCurrentCard(response.card);
       setSessionProgress(response.session_progress);
-    } catch (err) => {
+    } catch (err) {
       setError('Failed to fetch card. Please try again.');
       console.error(err);
     } finally {
