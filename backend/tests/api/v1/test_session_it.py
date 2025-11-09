@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 import pytest
 import uuid
 
@@ -10,22 +9,6 @@ from dabia.database import get_db
 from dabia.api.v1.session import get_current_user_id
 
 client = TestClient(app)
-
-@pytest.fixture(scope="function")
-def db_session():
-    # Create a new session for the test
-    db = next(get_db())
-    
-    # Clean up all tables before the test runs
-    db.execute(text("TRUNCATE TABLE review_logs, user_card_associations, users, cards, decks RESTART IDENTITY CASCADE"))
-    db.commit()
-
-    yield db
-
-    # Clean up after the test is done
-    db.execute(text("TRUNCATE TABLE review_logs, user_card_associations, users, cards, decks RESTART IDENTITY CASCADE"))
-    db.commit()
-    db.close()
 
 @pytest.fixture(scope="function")
 def override_get_db(db_session: Session):
@@ -44,6 +27,7 @@ def test_get_next_card_with_previous_answer_e2e(db_session: Session, override_ge
     db_session.add(deck)
     db_session.add(user)
     db_session.add(card)
+    db_session.commit()
 
     # Override the user ID dependency for this test
     app.dependency_overrides[get_current_user_id] = lambda: user_id
