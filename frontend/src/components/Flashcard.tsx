@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Card as FlashcardDataType } from '../services/api';
-import { FiStar, FiHelpCircle } from 'react-icons/fi';
+import { FiStar, FiHelpCircle, FiPlayCircle, FiChevronRight } from 'react-icons/fi';
 
 type Feedback = {
   isCorrect: boolean;
@@ -12,18 +12,13 @@ type Feedback = {
 interface FlashcardProps {
   card: FlashcardDataType;
   onCheck: (userInput: string) => void;
+  onContinue: () => void;
+  onPlayAudio: () => void;
   loading: boolean;
   feedback: Feedback;
 }
 
-// Helper to parse furigana
-const getFuriganaReading = (furigana: string, word: string): string | null => {
-  if (!furigana) return null;
-  const match = furigana.match(new RegExp(`${word}\\[([^\\]]+)\\]`));
-  return match ? match[1] : null;
-};
-
-const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback }) => {
+const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlayAudio, loading, feedback }) => {
   const [userInput, setUserInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -35,8 +30,12 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback 
   }, [card, loading]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !loading && !feedback) {
-      onCheck(userInput);
+    if (e.key === 'Enter' && !loading) {
+      if (!feedback) {
+        onCheck(userInput);
+      } else {
+        onContinue();
+      }
     }
   };
 
@@ -68,7 +67,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback 
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={loading || (!!feedback && feedback.isCorrect)}
+            disabled={!!feedback || loading}
             className="bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40"
             style={{ borderColor: feedback && !feedback.isCorrect ? '#EF4444' : feedback && feedback.isCorrect ? '#22C55E' : '#9CA3AF' }}
             autoFocus
@@ -83,25 +82,40 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback 
           <div className="text-red-500 mb-4">
             <div className="font-bold text-lg">Correct Answer:</div>
             <div className="text-2xl">{feedback.reading ? `${feedback.correctAnswer} [${feedback.reading}]` : feedback.correctAnswer}</div>
+            <p className="text-gray-500 font-normal mt-2">{feedback.translation}</p>
           </div>
         )}
-        {feedback && ( // Display translation if feedback exists, regardless of correctness
-          <div className={`text-lg font-semibold ${feedback.isCorrect ? 'text-green-600' : 'text-gray-500'}`}>
-            <p>{feedback.isCorrect ? 'Correct!' : 'Incorrect.'}</p>
-            <p className="font-normal mt-2">{feedback.translation}</p>
+        {feedback && feedback.isCorrect && (
+          <div className="text-green-600 text-lg font-semibold">
+            <p>Correct!</p>
+            <p className="text-gray-500 font-normal mt-2">{feedback.translation}</p>
           </div>
         )}
       </div>
 
-      {/* Action Button */}
-      <div className="flex justify-end mt-4">
-        <button 
-          onClick={() => onCheck(userInput)} 
-          disabled={!userInput.trim() || loading || (!!feedback && feedback.isCorrect)}
-          className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Loading...' : 'Check'}
-        </button>
+      {/* Action Buttons */}
+      <div className="flex justify-end items-center mt-4">
+        {feedback && feedback.isCorrect && card.sentence_audio_url && (
+          <button onClick={onPlayAudio} className="mr-4 p-3 rounded-full hover:bg-gray-100 transition-colors">
+            <FiPlayCircle className="text-2xl text-sora-iro" />
+          </button>
+        )}
+        {!feedback ? (
+          <button 
+            onClick={() => onCheck(userInput)} 
+            disabled={!userInput.trim() || loading}
+            className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Loading...' : 'Check'}
+          </button>
+        ) : (
+          <button 
+            onClick={onContinue}
+            className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 flex items-center"
+          >
+            Continue <FiChevronRight className="ml-2" />
+          </button>
+        )}
       </div>
     </div>
   );
