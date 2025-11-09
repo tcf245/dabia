@@ -19,7 +19,7 @@ const LearningSession: React.FC = () => {
       const response = await getNextCard(previousAnswer);
       setCurrentCard(response.card);
       setSessionProgress(response.session_progress);
-    } catch (err) {
+    } catch (err) => {
       setError('Failed to fetch card. Please try again.');
       console.error(err);
     } finally {
@@ -46,11 +46,20 @@ const LearningSession: React.FC = () => {
     lastAnswer.current = previousAnswer;
 
     if (isCorrect && currentCard?.sentence_audio_url && audioRef.current) {
-      audioRef.current.src = currentCard.sentence_audio_url;
-      audioRef.current.play().catch(e => {
-        console.error("Audio play failed, fetching next card directly.", e);
-        fetchNextCard(previousAnswer); // Fallback if audio fails
-      });
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.src = currentCard.sentence_audio_url;
+          audioRef.current.muted = false;
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(e => {
+              console.error("Audio play failed:", e);
+              // If audio fails, fetch next card immediately
+              fetchNextCard(previousAnswer);
+            });
+          }
+        }
+      }, 500); // 500ms delay to show translation
     } else {
       fetchNextCard(previousAnswer);
     }
@@ -99,7 +108,7 @@ const LearningSession: React.FC = () => {
     <div className="w-full max-w-2xl mx-auto p-4">
       <SessionProgress progress={sessionProgress} />
       <Flashcard card={currentCard} onSubmit={handleSubmitAnswer} loading={loading} />
-      <audio ref={audioRef} onEnded={handleAudioEnded} />
+      <audio ref={audioRef} onEnded={handleAudioEnded} muted={false} />
     </div>
   );
 };
