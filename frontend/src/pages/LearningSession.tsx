@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Flashcard from '../components/Flashcard';
 import SessionProgress from '../components/SessionProgress';
 import { getNextCard } from '../services/api';
@@ -9,6 +9,8 @@ const LearningSession: React.FC = () => {
   const [sessionProgress, setSessionProgress] = useState<SessionProgressType>({ completed_today: 0, goal_today: 50 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const lastAnswer = useRef<PreviousAnswer | null>(null);
 
   const fetchNextCard = async (previousAnswer?: PreviousAnswer) => {
     setLoading(true);
@@ -29,13 +31,29 @@ const LearningSession: React.FC = () => {
     fetchNextCard(); // Fetch the first card when the component mounts
   }, []);
 
+  const handleAudioEnded = () => {
+    if (lastAnswer.current) {
+      fetchNextCard(lastAnswer.current);
+    }
+  };
+
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
     const previousAnswer: PreviousAnswer = {
       cardId: cardId,
       isCorrect: isCorrect,
       responseTimeMs: responseTime,
     };
-    fetchNextCard(previousAnswer);
+    lastAnswer.current = previousAnswer;
+
+    if (isCorrect && currentCard?.sentence_audio_url && audioRef.current) {
+      audioRef.current.src = currentCard.sentence_audio_url;
+      audioRef.current.play().catch(e => {
+        console.error("Audio play failed, fetching next card directly.", e);
+        fetchNextCard(previousAnswer); // Fallback if audio fails
+      });
+    } else {
+      fetchNextCard(previousAnswer);
+    }
   };
 
   // Centering wrapper for loading/error/completion states
@@ -45,7 +63,7 @@ const LearningSession: React.FC = () => {
     </div>
   );
 
-  if (loading) {
+  if (loading && !currentCard) { // Only show initial loading message
     return (
       <CenteredMessage>
         <p className="text-lg text-gray-500">Loading session...</p>
@@ -78,9 +96,10 @@ const LearningSession: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-center w-full">
+    <div className="w-full max-w-2xl mx-auto p-4">
       <SessionProgress progress={sessionProgress} />
-      <Flashcard card={currentCard} onSubmit={handleSubmitAnswer} />
+      <Flashcard card={currentCard} onSubmit={handleSubmitAnswer} loading={loading} />
+      <audio ref={audioRef} onEnded={handleAudioEnded} />
     </div>
   );
 };
