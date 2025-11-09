@@ -14,6 +14,7 @@ def test_get_next_card_no_answer_ut():
     # Mock the DB model object that the query returns
     mock_card_db_obj = SimpleNamespace(
         id=uuid.uuid4(),
+        deck=SimpleNamespace(id=uuid.uuid4(), name="Test Deck"),
         sentence_template="Hello __",
         target_word="World",
         hint="A greeting",
@@ -21,9 +22,10 @@ def test_get_next_card_no_answer_ut():
         sentence=None,
         sentence_furigana=None,
         sentence_translation=None,
-        sentence_audio_url=None
+        sentence_audio_url=None,
+        users=[]
     )
-    mock_db.query.return_value.order_by.return_value.first.return_value = mock_card_db_obj
+    mock_db.query.return_value.options.return_value.order_by.return_value.first.return_value = mock_card_db_obj
 
     # Act
     response = get_next_card(answer=None, db=mock_db, current_user_id=user_id)
@@ -39,7 +41,7 @@ def test_get_next_card_with_answer_ut():
     mock_db = MagicMock()
     user_id = uuid.uuid4()
     # Adjust mock for the .order_by() call
-    mock_db.query.return_value.order_by.return_value.first.return_value = None  # No next card
+    mock_db.query.return_value.options.return_value.order_by.return_value.first.return_value = None  # No next card
 
     answer = PreviousAnswer(
         card_id=uuid.uuid4(),
