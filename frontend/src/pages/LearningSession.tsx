@@ -33,6 +33,11 @@ const LearningSession: React.FC = () => {
   const fetchNextCard = async (previousAnswer?: PreviousAnswer) => {
     setSessionState('loading');
     setFeedback(null);
+    // Clear audio source to prevent AbortError on next card load
+    if (audioRef.current) {
+      audioRef.current.src = '';
+      audioRef.current.load();
+    }
     try {
       const response = await getNextCard(previousAnswer);
       if (response.card) {
@@ -54,18 +59,9 @@ const LearningSession: React.FC = () => {
     fetchNextCard(); // Fetch the first card when the component mounts
   }, []);
 
-  const handleManualPlay = () => {
-    if (currentCard?.sentence_audio_url && audioRef.current) {
-      console.log("Manual play triggered. URL:", currentCard.sentence_audio_url);
-      audioRef.current.src = currentCard.sentence_audio_url;
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => console.log("Audio playback started successfully."))
-          .catch(e => console.error("Audio play failed:", e));
-      }
-    } else {
-      console.log("Could not play audio. Ref or URL missing.", { audioRef: audioRef.current, url: currentCard?.sentence_audio_url });
+  const handleAudioEnded = () => {
+    if (lastAnswer.current) {
+      fetchNextCard(lastAnswer.current);
     }
   };
 
@@ -89,12 +85,29 @@ const LearningSession: React.FC = () => {
     });
     setSessionState('feedback');
 
-    // Temporarily disabled automatic logic
-    // if (isCorrect) {
-    //   // ...
-    // } else {
-    //   // ...
-    // }
+    if (isCorrect) {
+      if (currentCard.sentence_audio_url && audioRef.current) {
+        audioRef.current.src = currentCard.sentence_audio_url;
+        audioRef.current.load(); // Load the audio
+        audioRef.current.oncanplaythrough = () => { // Wait until it can play
+          const playPromise = audioRef.current?.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => console.log("Audio playback started successfully."))
+              .catch(e => {
+                console.error("Audio play failed:", e);
+                handleAudioEnded(); // Fallback if audio fails
+              });
+          }
+        };
+      } else {
+        // No audio, move to next card after a delay
+        setTimeout(handleAudioEnded, 1500);
+      }
+    } else {
+      // Incorrect answer, move to next card after a delay
+      setTimeout(handleAudioEnded, 3000);
+    }
   };
 
   // Centering wrapper for loading/error/completion states
@@ -145,18 +158,7 @@ const LearningSession: React.FC = () => {
         loading={sessionState === 'loading'} 
         feedback={feedback}
       />
-      <audio ref={audioRef} />
-
-      {/* Temporary debug controls */}
-      {sessionState === 'feedback' && (
-        <div className="mt-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
-          <h3 className="font-bold">Debug Panel</h3>
-          <p>State: {sessionState}</p>
-          <p>Feedback: {JSON.stringify(feedback)}</p>
-          <button onClick={handleManualPlay} className="mt-2 px-4 py-2 bg-green-500 text-white rounded">Play Audio</button>
-          <button onClick={() => fetchNextCard(lastAnswer.current || undefined)} className="mt-2 ml-2 px-4 py-2 bg-blue-500 text-white rounded">Next Card</button>
-        </div>
-      )}
+      <audio ref={audioRef} onEnded={handleAudioEnded} />
     </div>
   );
 };

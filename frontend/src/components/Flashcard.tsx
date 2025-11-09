@@ -68,7 +68,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback 
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={!!feedback || loading}
+            disabled={loading || (!!feedback && feedback.isCorrect)}
             className="bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40"
             style={{ borderColor: feedback && !feedback.isCorrect ? '#EF4444' : feedback && feedback.isCorrect ? '#22C55E' : '#9CA3AF' }}
             autoFocus
@@ -85,10 +85,10 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback 
             <div className="text-2xl">{feedback.reading ? `${feedback.correctAnswer} [${feedback.reading}]` : feedback.correctAnswer}</div>
           </div>
         )}
-        {feedback && feedback.isCorrect && (
-          <div className="text-green-600 text-lg font-semibold">
-            <p>Correct!</p>
-            <p className="text-gray-500 font-normal mt-2">{feedback.translation}</p>
+        {feedback && ( // Display translation if feedback exists, regardless of correctness
+          <div className={`text-lg font-semibold ${feedback.isCorrect ? 'text-green-600' : 'text-gray-500'}`}>
+            <p>{feedback.isCorrect ? 'Correct!' : 'Incorrect.'}</p>
+            <p className="font-normal mt-2">{feedback.translation}</p>
           </div>
         )}
       </div>
@@ -97,7 +97,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback 
       <div className="flex justify-end mt-4">
         <button 
           onClick={() => onCheck(userInput)} 
-          disabled={!userInput.trim() || loading || !!feedback}
+          disabled={!userInput.trim() || loading || (!!feedback && feedback.isCorrect)}
           className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? 'Loading...' : 'Check'}
