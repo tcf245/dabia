@@ -2,12 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Card as FlashcardDataType } from '../services/api';
 import { FiStar, FiHelpCircle } from 'react-icons/fi';
 
+type Feedback = {
+  isCorrect: boolean;
+  correctAnswer: string;
+  reading: string | null;
+  translation: string | null;
+} | null;
+
 interface FlashcardProps {
   card: FlashcardDataType;
-  onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
+  onCheck: (userInput: string) => void;
   loading: boolean;
-  showAnswer: boolean;
-  isCorrect: boolean | null;
+  feedback: Feedback;
 }
 
 // Helper to parse furigana
@@ -17,37 +23,26 @@ const getFuriganaReading = (furigana: string, word: string): string | null => {
   return match ? match[1] : null;
 };
 
-const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading, showAnswer, isCorrect }) => {
+const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, loading, feedback }) => {
   const [userInput, setUserInput] = useState('');
-  const [startTime, setStartTime] = useState(Date.now());
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setUserInput('');
-    setStartTime(Date.now());
     if (!loading) {
       inputRef.current?.focus();
     }
   }, [card, loading]);
 
-  const handleCheck = () => {
-    if (!userInput.trim() || loading) return;
-    const correct = userInput.trim() === card.target.word;
-    const responseTime = Date.now() - startTime;
-    onSubmit(card.card_id, correct, responseTime);
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter' || loading) return;
-    if (!showAnswer) {
-      handleCheck();
+    if (e.key === 'Enter' && !loading && !feedback) {
+      onCheck(userInput);
     }
   };
 
   const sentenceParts = card.sentence_template.split('__');
-  const reading = getFuriganaReading(card.sentence_furigana || '', card.target.word);
-
-  const borderColorClass = showAnswer && isCorrect ? 'border-green-500' : showAnswer && !isCorrect ? 'border-red-500' : 'border-gray-200';
+  
+  const borderColorClass = feedback && feedback.isCorrect ? 'border-green-500' : feedback && !feedback.isCorrect ? 'border-red-500' : 'border-gray-200';
 
   return (
     <div className={`bg-white rounded-xl shadow-lg p-8 md:p-12 w-full transition-all duration-300 ${borderColorClass} border-2`}>
@@ -73,9 +68,9 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading, showAnsw
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={showAnswer || loading}
+            disabled={!!feedback || loading}
             className="bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40"
-            style={{ borderColor: showAnswer && !isCorrect ? '#EF4444' : showAnswer && isCorrect ? '#22C55E' : '#9CA3AF' }}
+            style={{ borderColor: feedback && !feedback.isCorrect ? '#EF4444' : feedback && feedback.isCorrect ? '#22C55E' : '#9CA3AF' }}
             autoFocus
           />
         </div>
@@ -84,16 +79,16 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading, showAnsw
 
       {/* Feedback Section */}
       <div className="text-center min-h-[6rem]">
-        {showAnswer && !isCorrect && (
+        {feedback && !feedback.isCorrect && (
           <div className="text-red-500 mb-4">
             <div className="font-bold text-lg">Correct Answer:</div>
-            <div className="text-2xl">{reading ? `${card.target.word} [${reading}]` : card.target.word}</div>
+            <div className="text-2xl">{feedback.reading ? `${feedback.correctAnswer} [${feedback.reading}]` : feedback.correctAnswer}</div>
           </div>
         )}
-        {showAnswer && isCorrect && (
+        {feedback && feedback.isCorrect && (
           <div className="text-green-600 text-lg font-semibold">
             <p>Correct!</p>
-            <p className="text-gray-500 font-normal mt-2">{card.sentence_translation}</p>
+            <p className="text-gray-500 font-normal mt-2">{feedback.translation}</p>
           </div>
         )}
       </div>
@@ -101,8 +96,8 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading, showAnsw
       {/* Action Button */}
       <div className="flex justify-end mt-4">
         <button 
-          onClick={handleCheck} 
-          disabled={!userInput.trim() || loading || showAnswer}
+          onClick={() => onCheck(userInput)} 
+          disabled={!userInput.trim() || loading || !!feedback}
           className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? 'Loading...' : 'Check'}
