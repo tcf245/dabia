@@ -67,7 +67,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlay
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={!!feedback || loading}
+            disabled={loading || (feedback && feedback.isCorrect)}
             className="bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40"
             style={{ borderColor: feedback && !feedback.isCorrect ? '#EF4444' : feedback && feedback.isCorrect ? '#22C55E' : '#9CA3AF' }}
             autoFocus
@@ -82,14 +82,13 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlay
           <div className="text-red-500 mb-4">
             <div className="font-bold text-lg">Correct Answer:</div>
             <div className="text-2xl">{feedback.reading ? `${feedback.correctAnswer} [${feedback.reading}]` : feedback.correctAnswer}</div>
-            <p className="text-gray-500 font-normal mt-2">{feedback.translation}</p>
           </div>
         )}
+        {feedback && (
+          <div className="text-gray-500 font-normal mt-2">{feedback.translation}</div>
+        )}
         {feedback && feedback.isCorrect && (
-          <div className="text-green-600 text-lg font-semibold">
-            <p>Correct!</p>
-            <p className="text-gray-500 font-normal mt-2">{feedback.translation}</p>
-          </div>
+          <p className="text-green-600 text-lg font-semibold">Correct!</p>
         )}
       </div>
 
