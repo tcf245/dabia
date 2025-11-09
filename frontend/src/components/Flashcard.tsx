@@ -12,11 +12,11 @@ type Feedback = {
 interface FlashcardProps {
   card: FlashcardDataType;
   onCheck: (userInput: string) => void;
-  onContinue: () => void;
+  onContinue: (isCorrectOnContinue: boolean) => void; // Modified prop signature
   loading: boolean;
   feedback: Feedback;
-  showReplayAudioButton: boolean; // New prop to control replay audio button visibility
-  onReplayAudio: () => void; // New prop for replaying audio
+  showReplayAudioButton: boolean;
+  onReplayAudio: () => void;
 }
 
 const getFuriganaReading = (furigana: string, word: string): string | null => {
@@ -41,7 +41,8 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, loadin
       if (!feedback) {
         onCheck(userInput);
       } else {
-        onContinue();
+        // Pass whether the user input is correct when continuing
+        onContinue(userInput.trim() === card.target.word);
       }
     }
   };
@@ -118,7 +119,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, loadin
           </button>
         ) : (
           <button 
-            onClick={onContinue}
+            onClick={() => onContinue(userInput.trim() === card.target.word)} // Pass correctness on continue
             className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 flex items-center"
           >
             Continue <FiChevronRight className="ml-2" />

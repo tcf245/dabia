@@ -21,12 +21,21 @@ export interface CardTarget {
   hint: string | null;
 }
 
+export interface DeckInfo {
+  id: string;
+  name: string;
+}
+
 export interface Card {
   card_id: string;
+  deck: DeckInfo;
   sentence_template: string;
   target: CardTarget;
-  reading: string; // Add this line
   audio_url: string | null;
+  sentence: string | null;
+  sentence_furigana: string | null;
+  sentence_translation: string | null;
+  sentence_audio_url: string | null;
   proficiency_level: number;
 }
 

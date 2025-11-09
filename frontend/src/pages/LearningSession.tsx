@@ -91,7 +91,10 @@ const LearningSession: React.FC = () => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = (isCorrectOnContinue: boolean) => { // Modified signature
+    if (isCorrectOnContinue) {
+      handlePlayAudio(); // Play audio if correct on continue
+    }
     if (lastAnswer.current) {
       fetchNextCard(lastAnswer.current);
     }
