@@ -9,12 +9,16 @@ const LearningSession: React.FC = () => {
   const [sessionProgress, setSessionProgress] = useState<SessionProgressType>({ completed_today: 0, goal_today: 50 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastAnswer = useRef<PreviousAnswer | null>(null);
 
   const fetchNextCard = async (previousAnswer?: PreviousAnswer) => {
     setLoading(true);
     setError(null);
+    setShowAnswer(false);
+    setIsCorrect(null);
     try {
       const response = await getNextCard(previousAnswer);
       setCurrentCard(response.card);
@@ -31,6 +35,27 @@ const LearningSession: React.FC = () => {
     fetchNextCard(); // Fetch the first card when the component mounts
   }, []);
 
+  useEffect(() => {
+    if (showAnswer && isCorrect && currentCard?.sentence_audio_url && audioRef.current) {
+      audioRef.current.src = currentCard.sentence_audio_url;
+      audioRef.current.muted = false;
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.error("Audio play failed:", e);
+          handleAudioEnded(); // If audio fails, proceed to next card
+        });
+      }
+    } else if (showAnswer && !isCorrect) {
+      // If incorrect, wait for a moment then allow fetching next card
+      setTimeout(() => {
+        if (lastAnswer.current) {
+          fetchNextCard(lastAnswer.current);
+        }
+      }, 2000); // 2s delay for incorrect answer
+    }
+  }, [showAnswer, isCorrect, currentCard]);
+
   const handleAudioEnded = () => {
     if (lastAnswer.current) {
       fetchNextCard(lastAnswer.current);
@@ -44,25 +69,8 @@ const LearningSession: React.FC = () => {
       responseTimeMs: responseTime,
     };
     lastAnswer.current = previousAnswer;
-
-    if (isCorrect && currentCard?.sentence_audio_url && audioRef.current) {
-      setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.src = currentCard.sentence_audio_url;
-          audioRef.current.muted = false;
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(e => {
-              console.error("Audio play failed:", e);
-              // If audio fails, fetch next card immediately
-              fetchNextCard(previousAnswer);
-            });
-          }
-        }
-      }, 500); // 500ms delay to show translation
-    } else {
-      fetchNextCard(previousAnswer);
-    }
+    setIsCorrect(isCorrect);
+    setShowAnswer(true);
   };
 
   // Centering wrapper for loading/error/completion states
@@ -107,8 +115,14 @@ const LearningSession: React.FC = () => {
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
       <SessionProgress progress={sessionProgress} />
-      <Flashcard card={currentCard} onSubmit={handleSubmitAnswer} loading={loading} />
-      <audio ref={audioRef} onEnded={handleAudioEnded} muted={false} />
+      <Flashcard 
+        card={currentCard} 
+        onSubmit={handleSubmitAnswer} 
+        loading={loading} 
+        showAnswer={showAnswer}
+        isCorrect={isCorrect}
+      />
+      <audio ref={audioRef} onEnded={handleAudioEnded} />
     </div>
   );
 };

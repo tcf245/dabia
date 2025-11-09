@@ -6,6 +6,8 @@ interface FlashcardProps {
   card: FlashcardDataType;
   onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
   loading: boolean;
+  showAnswer: boolean;
+  isCorrect: boolean | null;
 }
 
 // Helper to parse furigana
@@ -15,15 +17,13 @@ const getFuriganaReading = (furigana: string, word: string): string | null => {
   return match ? match[1] : null;
 };
 
-const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading }) => {
+const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading, showAnswer, isCorrect }) => {
   const [userInput, setUserInput] = useState('');
-  const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'incorrect'>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setUserInput('');
-    setAnswerState('unanswered');
     setStartTime(Date.now());
     if (!loading) {
       inputRef.current?.focus();
@@ -32,34 +32,22 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading }) => {
 
   const handleCheck = () => {
     if (!userInput.trim() || loading) return;
-    const isCorrect = userInput.trim() === card.target.word;
-    setAnswerState(isCorrect ? 'correct' : 'incorrect');
-    if (isCorrect) {
-      const responseTime = Date.now() - startTime;
-      onSubmit(card.card_id, true, responseTime);
-    }
-  };
-
-  const handleContinue = () => {
+    const correct = userInput.trim() === card.target.word;
     const responseTime = Date.now() - startTime;
-    onSubmit(card.card_id, false, responseTime);
+    onSubmit(card.card_id, correct, responseTime);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter' || loading) return;
-    if (answerState === 'unanswered') {
+    if (!showAnswer) {
       handleCheck();
-    } else if (answerState === 'incorrect') {
-      if (userInput.trim() === card.target.word) {
-        handleContinue();
-      }
     }
   };
 
   const sentenceParts = card.sentence_template.split('__');
   const reading = getFuriganaReading(card.sentence_furigana || '', card.target.word);
 
-  const borderColorClass = answerState === 'correct' ? 'border-green-500' : answerState === 'incorrect' ? 'border-red-500' : 'border-gray-200';
+  const borderColorClass = showAnswer && isCorrect ? 'border-green-500' : showAnswer && !isCorrect ? 'border-red-500' : 'border-gray-200';
 
   return (
     <div className={`bg-white rounded-xl shadow-lg p-8 md:p-12 w-full transition-all duration-300 ${borderColorClass} border-2`}>
@@ -85,9 +73,9 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading }) => {
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={answerState === 'correct' || loading}
+            disabled={showAnswer || loading}
             className="bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40"
-            style={{ borderColor: answerState === 'incorrect' ? '#EF4444' : answerState === 'correct' ? '#22C55E' : '#9CA3AF' }}
+            style={{ borderColor: showAnswer && !isCorrect ? '#EF4444' : showAnswer && isCorrect ? '#22C55E' : '#9CA3AF' }}
             autoFocus
           />
         </div>
@@ -96,14 +84,13 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading }) => {
 
       {/* Feedback Section */}
       <div className="text-center min-h-[6rem]">
-        {answerState === 'incorrect' && (
+        {showAnswer && !isCorrect && (
           <div className="text-red-500 mb-4">
             <div className="font-bold text-lg">Correct Answer:</div>
             <div className="text-2xl">{reading ? `${card.target.word} [${reading}]` : card.target.word}</div>
-            <div className="text-sm mt-2">Type the correct answer to continue.</div>
           </div>
         )}
-        {answerState === 'correct' && (
+        {showAnswer && isCorrect && (
           <div className="text-green-600 text-lg font-semibold">
             <p>Correct!</p>
             <p className="text-gray-500 font-normal mt-2">{card.sentence_translation}</p>
@@ -113,23 +100,13 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, loading }) => {
 
       {/* Action Button */}
       <div className="flex justify-end mt-4">
-        {answerState === 'unanswered' ? (
-          <button 
-            onClick={handleCheck} 
-            disabled={!userInput.trim() || loading}
-            className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Loading...' : 'Check'}
-          </button>
-        ) : (
-          <button 
-            onClick={handleContinue}
-            disabled={answerState === 'incorrect' && userInput.trim() !== card.target.word}
-            className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            Continue
-          </button>
-        )}
+        <button 
+          onClick={handleCheck} 
+          disabled={!userInput.trim() || loading || showAnswer}
+          className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Loading...' : 'Check'}
+        </button>
       </div>
     </div>
   );
