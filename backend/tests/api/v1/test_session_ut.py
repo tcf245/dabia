@@ -17,6 +17,7 @@ def test_get_next_card_no_answer_ut():
         deck=SimpleNamespace(id=uuid.uuid4(), name="Test Deck"),
         sentence_template="Hello __",
         target_word="World",
+        reading="Sekai",
         hint="A greeting",
         audio_url="/audio.mp3",
         sentence=None,
@@ -33,6 +34,7 @@ def test_get_next_card_no_answer_ut():
     # Assert
     assert response.card.sentence_template == "Hello __"
     assert response.card.target.word == "World"
+    assert response.card.reading == "Sekai"
     mock_db.commit.assert_not_called()
 
 def test_get_next_card_with_answer_ut():

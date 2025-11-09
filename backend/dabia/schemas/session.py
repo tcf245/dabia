@@ -25,6 +25,7 @@ class Card(BaseModel):
     deck: DeckInfo
     sentence_template: str
     target: CardTarget
+    reading: Optional[str] = None
     audio_url: Optional[str] = None
     sentence: Optional[str] = None
     sentence_furigana: Optional[str] = None

@@ -83,6 +83,7 @@ def get_next_card(
         deck=schemas.DeckInfo.model_validate(next_card_db.deck),
         sentence_template=next_card_db.sentence_template,
         target=schemas.CardTarget(word=next_card_db.target_word, hint=next_card_db.hint),
+        reading=next_card_db.reading,
         audio_url=storage_provider.get_url(next_card_db.audio_url),
         sentence=next_card_db.sentence,
         sentence_furigana=next_card_db.sentence_furigana,

@@ -38,12 +38,21 @@ The response contains the next card to be displayed and the user's current progr
 {
   "card": {
     "card_id": "f6e5d4c3-b2a1-4f5e-8d9c-1a2b3c4d5e6f",
+    "deck": {
+      "id": "73d6cb04-617c-433b-9af7-7cf73304f0cd",
+      "name": "eggrolls-JLPT10k-v3::1-N4+N5"
+    },
     "sentence_template": "これは__ですか？",
     "target": {
       "word": "何",
       "hint": "What?"
     },
+    "reading": "なに",
     "audio_url": "https://cdn.dabia.app/audio/002.mp3",
+    "sentence": "これは何ですか？",
+    "sentence_furigana": "これ[これ]は[は]何[なに]ですか[ですか]？",
+    "sentence_translation": "What is this?",
+    "sentence_audio_url": "https://cdn.dabia.app/audio/sentence_002.mp3",
     "proficiency_level": 0
   },
   "session_progress": {
