@@ -26,6 +26,7 @@ const LearningSession: React.FC = () => {
   const [sessionProgress, setSessionProgress] = useState<SessionProgressType>({ completed_today: 0, goal_today: 50 });
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [showReplayAudioButton, setShowReplayAudioButton] = useState(false); // New state for replay button
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastAnswer = useRef<PreviousAnswer | null>(null);
   const startTime = useRef<number>(Date.now());
@@ -33,6 +34,7 @@ const LearningSession: React.FC = () => {
   const fetchNextCard = async (previousAnswer?: PreviousAnswer) => {
     setSessionState('loading');
     setFeedback(null);
+    setShowReplayAudioButton(false); // Reset replay button visibility
     try {
       const response = await getNextCard(previousAnswer);
       if (response.card) {
@@ -57,7 +59,10 @@ const LearningSession: React.FC = () => {
   const handlePlayAudio = () => {
     if (currentCard?.sentence_audio_url && audioRef.current) {
       audioRef.current.src = currentCard.sentence_audio_url;
-      audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      audioRef.current.play().catch(e => {
+        console.error("Audio play failed:", e);
+        setShowReplayAudioButton(true); // Show replay button if auto-play fails
+      });
     }
   };
 
@@ -80,6 +85,10 @@ const LearningSession: React.FC = () => {
       translation: currentCard.sentence_translation,
     });
     setSessionState('feedback');
+
+    if (isCorrect) {
+      handlePlayAudio(); // Attempt to auto-play audio
+    }
   };
 
   const handleContinue = () => {
@@ -126,9 +135,10 @@ const LearningSession: React.FC = () => {
         card={currentCard} 
         onCheck={handleCheckAnswer} 
         onContinue={handleContinue}
-        onPlayAudio={handlePlayAudio}
+        onReplayAudio={handlePlayAudio} // Pass handlePlayAudio as onReplayAudio
         loading={sessionState === 'loading'} 
         feedback={feedback}
+        showReplayAudioButton={showReplayAudioButton}
       />
       <audio ref={audioRef} />
     </div>

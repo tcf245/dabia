@@ -13,12 +13,19 @@ interface FlashcardProps {
   card: FlashcardDataType;
   onCheck: (userInput: string) => void;
   onContinue: () => void;
-  onPlayAudio: () => void;
   loading: boolean;
   feedback: Feedback;
+  showReplayAudioButton: boolean; // New prop to control replay audio button visibility
+  onReplayAudio: () => void; // New prop for replaying audio
 }
 
-const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlayAudio, loading, feedback }) => {
+const getFuriganaReading = (furigana: string, word: string): string | null => {
+  if (!furigana) return null;
+  const match = furigana.match(new RegExp(`${word}\\[([^\\]]+)\\]`));
+  return match ? match[1] : null;
+};
+
+const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, loading, feedback, showReplayAudioButton, onReplayAudio }) => {
   const [userInput, setUserInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +83,11 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlay
         {sentenceParts[1]}
       </div>
 
+      {/* Always display translation */}
+      <div className="text-center text-gray-500 font-normal mt-2 mb-4">
+        {card.sentence_translation}
+      </div>
+
       {/* Feedback Section */}
       <div className="text-center min-h-[6rem]">
         {feedback && !feedback.isCorrect && (
@@ -84,9 +96,6 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlay
             <div className="text-2xl">{feedback.reading ? `${feedback.correctAnswer} [${feedback.reading}]` : feedback.correctAnswer}</div>
           </div>
         )}
-        {feedback && (
-          <div className="text-gray-500 font-normal mt-2">{feedback.translation}</div>
-        )}
         {feedback && feedback.isCorrect && (
           <p className="text-green-600 text-lg font-semibold">Correct!</p>
         )}
@@ -94,8 +103,8 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlay
 
       {/* Action Buttons */}
       <div className="flex justify-end items-center mt-4">
-        {feedback && feedback.isCorrect && card.sentence_audio_url && (
-          <button onClick={onPlayAudio} className="mr-4 p-3 rounded-full hover:bg-gray-100 transition-colors">
+        {showReplayAudioButton && (
+          <button onClick={onReplayAudio} className="mr-4 p-3 rounded-full hover:bg-gray-100 transition-colors">
             <FiPlayCircle className="text-2xl text-sora-iro" />
           </button>
         )}
@@ -103,7 +112,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, onPlay
           <button 
             onClick={() => onCheck(userInput)} 
             disabled={!userInput.trim() || loading}
-            className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-8 py-3 rounded-lg font-semibold transition-colors bg-sora-iro text-white hover:bg-opacity-90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
           >
             {loading ? 'Loading...' : 'Check'}
           </button>
