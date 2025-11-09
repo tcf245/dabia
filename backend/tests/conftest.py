@@ -17,7 +17,9 @@ def db_engine():
         engine = create_engine(postgres.get_connection_url())
 
         # Run Alembic migrations
-        alembic_cfg = Config("alembic.ini")
+        # We need to point to the alembic.ini file in the backend directory
+        alembic_ini_path = os.path.join(os.path.dirname(__file__), "..", "alembic.ini")
+        alembic_cfg = Config(alembic_ini_path)
         command.upgrade(alembic_cfg, "head")
 
         yield engine
