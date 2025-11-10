@@ -23,7 +23,7 @@ def test_get_next_card_with_previous_answer_e2e(db_session: Session, override_ge
     card_id = uuid.uuid4()
     deck = models.Deck(id=uuid.uuid4(), name="Test Deck")
     user = models.User(id=user_id, email="test@example.com", hashed_password="fake_hash")
-    card = models.Card(id=card_id, deck_id=deck.id, sentence_template="Test sentence __.", target_word="word")
+    card = models.Card(id=card_id, deck_id=deck.id, sentence_template="Test sentence __.", target_word="word", reading="wado")
     db_session.add(deck)
     db_session.add(user)
     db_session.add(card)
@@ -46,6 +46,7 @@ def test_get_next_card_with_previous_answer_e2e(db_session: Session, override_ge
     assert response.status_code == 200
     data = response.json()
     assert data["card"] is not None
+    assert data["card"]["reading"] == "wado"
 
     log_entry = db_session.query(models.ReviewLog).first()
     assert log_entry is not None

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 import uuid
 from typing import Optional
 from datetime import datetime, UTC
 
 from dabia import models, schemas
-from dabia.core.config import settings
+from dabia.core.storage import storage_provider
 from dabia.database import get_db
 
 router = APIRouter()
@@ -18,12 +18,6 @@ async def get_current_user_id() -> uuid.UUID:
     # For now, we return a hardcoded UUID.
     # This allows us to easily override it in tests.
     return uuid.UUID("00000000-0000-0000-0000-000000000000")
-
-def _get_full_audio_url(relative_url: Optional[str]) -> Optional[str]:
-    """Constructs the full audio URL from a relative path."""
-    if not relative_url:
-        return None
-    return f"{settings.AUDIO_URL_PREFIX}{relative_url}"
 
 @router.post("/next-card", response_model=schemas.NextCardResponse)
 def get_next_card(
@@ -61,7 +55,16 @@ def get_next_card(
     # 3. Fetch the next card
     # MVP Logic: Just grab a random card from the DB.
     # A real implementation would have sophisticated logic to pick the next card.
-    next_card_db = db.query(models.Card).order_by(func.random()).first()
+    next_card_db = (
+        db.query(models.Card)
+        .options(
+            joinedload(models.Card.deck),
+            joinedload(models.Card.users).subqueryload(models.UserCardAssociation.user)
+        )
+        .order_by(func.random())
+        .first()
+    )
+
 
     if not next_card_db:
         # No cards in the database yet
@@ -71,17 +74,22 @@ def get_next_card(
         )
 
     # 4. Format the response
-    # In a real app, proficiency would come from the user_card_associations table
+    # Find the user-specific card association to get the proficiency level
+    user_assoc = next((assoc for assoc in next_card_db.users if assoc.user_id == current_user_id), None)
+    proficiency_level = user_assoc.proficiency_level if user_assoc else 0
+
     card_response = schemas.Card(
         card_id=next_card_db.id,
+        deck=schemas.DeckInfo.model_validate(next_card_db.deck),
         sentence_template=next_card_db.sentence_template,
         target=schemas.CardTarget(word=next_card_db.target_word, hint=next_card_db.hint),
-        audio_url=_get_full_audio_url(next_card_db.audio_url),
+        reading=next_card_db.reading,
+        audio_url=storage_provider.get_url(next_card_db.audio_url),
         sentence=next_card_db.sentence,
         sentence_furigana=next_card_db.sentence_furigana,
         sentence_translation=next_card_db.sentence_translation,
-        sentence_audio_url=_get_full_audio_url(next_card_db.sentence_audio_url),
-        proficiency_level=0  # Dummy value for MVP
+        sentence_audio_url=storage_provider.get_url(next_card_db.sentence_audio_url),
+        proficiency_level=proficiency_level
     )
 
     return schemas.NextCardResponse(card=card_response, session_progress=progress)

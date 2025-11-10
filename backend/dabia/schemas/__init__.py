@@ -1,6 +1,7 @@
 from .session import (
     PreviousAnswer,
     CardTarget,
+    DeckInfo,
     Card,
     SessionProgress,
     NextCardResponse,
@@ -9,6 +10,7 @@ from .session import (
 __all__ = [
     "PreviousAnswer",
     "CardTarget",
+    "DeckInfo",
     "Card",
     "SessionProgress",
     "NextCardResponse",
