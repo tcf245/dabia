@@ -27,6 +27,10 @@ const getFuriganaReading = (furigana: string, word: string): string | null => {
 };
 
 const Flashcard: React.FC<FlashcardProps> = ({ card, onCheck, onContinue, loading, feedback, showReplayAudioButton, onReplayAudio }) => {
+  if (!card) {
+    return null;
+  }
+
   const [userInput, setUserInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 

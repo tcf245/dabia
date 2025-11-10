@@ -134,7 +134,15 @@ const LearningSession: React.FC = () => {
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
       <SessionProgress progress={sessionProgress} />
-      <Flashcard />
+      <Flashcard 
+        card={currentCard} 
+        onCheck={handleCheckAnswer} 
+        onContinue={handleContinue}
+        onReplayAudio={handlePlayAudio} // Pass handlePlayAudio as onReplayAudio
+        loading={sessionState === 'loading'} 
+        feedback={feedback}
+        showReplayAudioButton={showReplayAudioButton}
+      />
       <audio ref={audioRef} />
     </div>
   );
