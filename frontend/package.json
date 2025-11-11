@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
-    "@heroui/react": "^2.8.5",
+    "@nextui-org/react": "^2.6.11",
     "axios": "^1.13.1",
     "framer-motion": "^12.23.24",
     "react": "^19.1.1",

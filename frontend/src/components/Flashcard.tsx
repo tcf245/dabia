@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardHeader, CardBody, CardFooter, Input, Button } from "@heroui/react";
+import { Card } from "@nextui-org/react";
 import type { Card as FlashcardDataType } from '../services/api';
 import { FiStar, FiHelpCircle, FiPlayCircle, FiChevronRight } from 'react-icons/fi';
 

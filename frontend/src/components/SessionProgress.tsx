@@ -1,4 +1,4 @@
-import { Progress } from "@heroui/react";
+import { Progress } from "@nextui-org/react";
 import type { SessionProgress as SessionProgressType } from '../services/api';
 
 interface SessionProgressProps {
