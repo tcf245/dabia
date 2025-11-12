@@ -14,87 +14,70 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   const [startTime, setStartTime] = useState(Date.now());
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Reset state for new card
-  useEffect(() => {
-    setUserInput('');
-    setAnswerState('unanswered');
-    setStartTime(Date.now());
-    setIsAudioPlaying(false);
-    inputRef.current?.focus();
-    
-    // Stop any previous audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-  }, [card]);
-
-  const handleContinue = () => {
-    const responseTime = Date.now() - startTime;
-    const wasOriginallyCorrect = answerState === 'correct';
-    onSubmit(card.card_id, wasOriginallyCorrect, responseTime);
-  };
-
-  // Effect for audio playback and auto-advancing
-  useEffect(() => {
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+    // Reset state for new card
+    useEffect(() => {
+      setUserInput('');
+      setAnswerState('unanswered');
+      setStartTime(Date.now());
+      setIsAudioPlaying(false);
+      inputRef.current?.focus();
+      
+      // Stop any previous audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    }, [card]);
+  
+    const handleContinue = () => {
+      const responseTime = Date.now() - startTime;
+      const wasOriginallyCorrect = answerState === 'correct';
+      onSubmit(card.card_id, wasOriginallyCorrect, responseTime);
+    };
+  
     const playAudioAndAdvance = async () => {
-      // Guard to prevent re-triggering while audio is already queued or playing
-      if (isAudioPlaying) return;
-
+      if (isAudioPlaying) return; // Prevent double plays
+  
       if (card.audio_url) {
         setIsAudioPlaying(true);
         const audio = new Audio(card.audio_url);
         audioRef.current = audio;
-
-        audio.onended = () => {
-          handleContinue();
-        };
-        
+        audio.onended = handleContinue;
         try {
-          // This might fail on some browsers if there wasn't a recent user interaction.
           await audio.play();
         } catch (err) {
           console.error("Audio play failed:", err);
-          // If play() is blocked or fails, advance immediately so the user isn't stuck.
-          handleContinue();
+          handleContinue(); // If play fails, advance so user is not stuck
         }
       } else {
-        // No audio, advance after a short delay for the user to see the "Correct!" message.
-        setTimeout(handleContinue, 500);
+        setTimeout(handleContinue, 500); // No audio, advance after delay
       }
     };
-
-    const isAnsweredCorrectly = 
-      answerState === 'correct' || 
-      (answerState === 'incorrect' && userInput.trim().toLowerCase() === card.target.word.toLowerCase());
-
-    if (isAnsweredCorrectly) {
-      playAudioAndAdvance();
-    }
-  }, [answerState, userInput, card.audio_url, card.target.word, isAudioPlaying]);
-
-
-  const handleCheck = () => {
-    if (!userInput.trim()) return;
-    const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
-    if (isCorrect) {
-      setAnswerState('correct');
-    } else {
-      setAnswerState('incorrect');
-      setUserInput(''); // Clear input to force re-typing
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    if (answerState === 'unanswered') {
-      handleCheck();
-    }
-    // If incorrect, the user types the word and the useEffect handles continuation.
-    // Pressing Enter after re-typing will trigger the userInput state change and the effect.
-  };
+  
+    const handleCheck = () => {
+      if (!userInput.trim()) return;
+      const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
+      if (isCorrect) {
+        setAnswerState('correct');
+        playAudioAndAdvance();
+      } else {
+        setAnswerState('incorrect');
+        setUserInput(''); // Clear input to force re-typing
+      }
+    };
+  
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== 'Enter') return;
+      if (answerState === 'unanswered') {
+        handleCheck();
+      } else if (answerState === 'incorrect') {
+        if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
+          playAudioAndAdvance();
+        }
+      }
+    };
 
   const sentenceParts = card.sentence_template.split('__');
 
