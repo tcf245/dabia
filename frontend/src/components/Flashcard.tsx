@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageCircle, CornerDownLeft, Check, X, Volume2 } from 'lucide-react';
 import type { Card as FlashcardDataType } from '../services/api';
-import { FiMessageSquare } from 'react-icons/fi'; // Using react-icons for a nice icon
 
 interface FlashcardProps {
   card: FlashcardDataType;
@@ -11,109 +12,184 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'incorrect'>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+        // Reset state for new card
+        useEffect(() => {
+          setUserInput('');
+          setAnswerState('unanswered');
+          setStartTime(Date.now());
+          setIsAudioPlaying(false);
+          inputRef.current?.focus();
+          
+          // Stop any previous audio
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+          }
+        }, [card]);
+      
+  const handleContinue = (isCorrect: boolean) => {
+    const responseTime = Date.now() - startTime;
+    onSubmit(card.card_id, isCorrect, responseTime);
+  };
 
-  // Reset state and focus input when a new card is passed in
-  useEffect(() => {
-    setUserInput('');
-    setAnswerState('unanswered');
-    setStartTime(Date.now());
-    inputRef.current?.focus();
-  }, [card]);
+  const playAudioAndAdvance = async (isCorrect: boolean) => {
+    if (isAudioPlaying) return;
+
+    if (card.sentence_audio_url) {
+      setIsAudioPlaying(true);
+      const audio = new Audio(card.sentence_audio_url);
+      audioRef.current = audio;
+      audio.onended = () => handleContinue(isCorrect);
+      try {
+        await audio.play();
+      } catch (err) {
+        console.error("Audio play failed:", err);
+        handleContinue(isCorrect);
+      }
+    } else {
+      setTimeout(() => handleContinue(isCorrect), 500);
+    }
+  };
 
   const handleCheck = () => {
-    if (!userInput.trim()) return;
-    const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
+    const trimmedInput = userInput.trim();
+    
+    if (!trimmedInput) {
+      setAnswerState('incorrect');
+      setUserInput('');
+      return;
+    }
+    
+    const isCorrect = trimmedInput.toLowerCase() === card.target.word.toLowerCase();
+
     if (isCorrect) {
       setAnswerState('correct');
     } else {
       setAnswerState('incorrect');
-      setUserInput(''); // Clear input on incorrect answer
+      setUserInput('');
     }
   };
 
-  const handleContinue = () => {
-    if (answerState === 'incorrect' && userInput.trim().toLowerCase() !== card.target.word.toLowerCase()) {
-      return;
+  // Effect to handle side-effects of answer state changes
+  useEffect(() => {
+    if (answerState === 'correct') {
+      playAudioAndAdvance(true);
     }
-    const responseTime = Date.now() - startTime;
-    const wasOriginallyCorrect = answerState === 'correct';
-    onSubmit(card.card_id, wasOriginallyCorrect, responseTime);
-  };
+  }, [answerState]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
     if (answerState === 'unanswered') {
       handleCheck();
-    } else {
-      handleContinue();
+    } else if (answerState === 'incorrect') {
+      if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
+        // A corrected answer was originally incorrect
+        playAudioAndAdvance(false);
+      }
     }
-  }
+  };
 
   const sentenceParts = card.sentence_template.split('__');
 
-  const borderColorClass = () => {
-    if (answerState === 'correct') return 'border-green-500';
-    if (answerState === 'incorrect') return 'border-red-500';
-    return 'border-gray-200';
+  const getBorderColor = () => {
+    if (isAudioPlaying) return 'ring-primary';
+    if (answerState === 'correct') return 'ring-success';
+    if (answerState === 'incorrect') return 'ring-destructive';
+    return 'ring-transparent';
   };
 
-  const isContinueDisabled = answerState === 'incorrect' && userInput.trim().toLowerCase() !== card.target.word.toLowerCase();
+  const getInputColor = () => {
+    if (answerState === 'correct') return 'text-success';
+    if (answerState === 'incorrect') return 'text-foreground';
+    return 'text-primary';
+  }
+
+  const ActionButton = () => (
+    <button
+      onClick={handleCheck}
+      disabled={!userInput.trim()}
+      className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+    >
+      Check
+      <CornerDownLeft size={18} />
+    </button>
+  );
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg p-8 md:p-12 w-full ${borderColorClass()}`}>
-      {/* Header with reading */}
-      <div className="flex items-center text-gray-500 mb-8">
-        <FiMessageSquare className="mr-3 text-lg" />
-        <span>{card.reading}</span>
-      </div>
-
-      {/* Sentence with seamless input */}
-      <div className="text-3xl md:text-4xl text-gray-800 mb-10 leading-relaxed flex items-center flex-wrap">
-        {sentenceParts[0]}
-        <div className="inline-block mx-2 relative">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={answerState === 'correct'}
-            className="bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-32"
-            style={{ borderColor: answerState === 'incorrect' ? '#EF4444' : answerState === 'correct' ? '#22C55E' : '#E5E7EB' }}
-            autoFocus
-          />
+    <div className={`bg-card rounded-xl shadow-lg w-full max-w-2xl ring-2 ${getBorderColor()} transition-all duration-300`}>
+      <div className="p-8 md:p-10 relative">
+        <div className="flex items-center text-muted-foreground mb-8">
+          <MessageCircle className="mr-3" size={20} />
+          <span>{card.target.hint || card.reading}</span>
         </div>
-        {sentenceParts[1]}
-      </div>
 
-      {/* Correct answer display */}
-      {answerState === 'incorrect' && (
-        <div className="text-red-500 mb-6 text-center">
-          Correct answer: <span className="font-bold">{card.target.word}</span>
+        <div className="text-3xl md:text-4xl text-foreground mb-10 leading-relaxed flex items-center flex-wrap justify-center text-center">
+          {sentenceParts[0]}
+          <div className="inline-block mx-2 relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={answerState === 'correct' || isAudioPlaying}
+              className={`bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40 transition-colors duration-300 ${getInputColor()} ${answerState === 'unanswered' ? 'border-input focus:border-primary' : 'border-transparent'}`}
+              autoFocus
+            />
+          </div>
+          {sentenceParts[1]}
         </div>
-      )}
+        
+        <AnimatePresence>
+          {answerState === 'incorrect' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col items-center justify-center mb-6"
+            >
+              <div className="flex items-center gap-2 text-destructive font-semibold text-lg">
+                <X size={22} /> 
+                <span>Correct answer: {card.target.word} {card.reading && `(${card.reading})`}</span>
+              </div>
+            </motion.div>
+          )}
+          {answerState === 'correct' && (
+             <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col items-center justify-center mb-6"
+            >
+              <div className="flex items-center gap-2 text-success font-semibold text-lg">
+                <Check size={22} />
+                <span>Correct!</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Action Button */}
-      <div className="flex justify-end mt-8">
-        {answerState === 'unanswered' ? (
-          <button 
-            onClick={handleCheck} 
-            disabled={!userInput.trim()}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
-          >
-            Check
-          </button>
-        ) : (
-          <button 
-            onClick={handleContinue}
-            disabled={isContinueDisabled}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
-          >
-            Continue
-          </button>
+        <div className="flex justify-end mt-8 min-h-[52px]">
+          {answerState === 'unanswered' && <ActionButton />}
+        </div>
+
+        {isAudioPlaying && (
+          <div className="absolute bottom-8 right-10 flex items-center gap-2 text-primary font-semibold">
+            <Volume2 size={20} />
+            <span>Playing...</span>
+          </div>
         )}
       </div>
+
+      {card.sentence_translation && (
+        <div className="bg-muted/50 px-10 py-4 border-t border-border text-center text-muted-foreground rounded-b-xl">
+          {card.sentence_translation}
+        </div>
+      )}
     </div>
   );
 };

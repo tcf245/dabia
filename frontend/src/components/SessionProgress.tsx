@@ -5,14 +5,20 @@ interface SessionProgressProps {
 }
 
 const SessionProgress: React.FC<SessionProgressProps> = ({ progress }) => {
-  const percentage = progress.goal_today > 0 ? (progress.completed_today / progress.goal_today) * 100 : 0;
+  const percentage = progress.goal_today > 0 ? Math.min((progress.completed_today / progress.goal_today) * 100, 100) : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 w-full h-1.5 bg-gray-200">
-      <div 
-        className="bg-sora-iro h-1.5 transition-all duration-500 ease-in-out"
-        style={{ width: `${percentage}%` }}
-      ></div>
+    <div className="w-full max-w-2xl px-4 mb-4">
+      <div className="flex justify-between items-center mb-1 text-sm font-medium text-muted-foreground">
+        <span>Daily Goal</span>
+        <span>{progress.completed_today} / {progress.goal_today}</span>
+      </div>
+      <div className="w-full bg-muted rounded-full h-2.5">
+        <div
+          className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
     </div>
   );
 };
