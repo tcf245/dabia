@@ -5,11 +5,11 @@ import { vi } from 'vitest';
 
 // This function will be overwritten by the mock's onended setter,
 // allowing tests to trigger it.
-global.triggerOnended = () => {};
+globalThis.triggerOnended = () => {};
 
 // Create mock functions that can be asserted in tests
-global.playMock = vi.fn(() => Promise.resolve());
-global.pauseMock = vi.fn();
+globalThis.playMock = vi.fn(() => Promise.resolve());
+globalThis.pauseMock = vi.fn();
 
 // A simple, plain class to mock the Audio constructor
 class MockAudio {
@@ -18,14 +18,14 @@ class MockAudio {
 
   constructor(url: string | URL) {
     // The instance methods are just our global spies
-    this.play = global.playMock;
-    this.pause = global.pauseMock;
+    this.play = globalThis.playMock;
+    this.pause = globalThis.pauseMock;
   }
 
   // When the component code sets audio.onended,
   // we store the provided callback in our global trigger.
   set onended(callback: () => void) {
-    global.triggerOnended = callback;
+    globalThis.triggerOnended = callback;
   }
 }
 
@@ -34,7 +34,7 @@ vi.stubGlobal('Audio', MockAudio);
 
 // Reset mocks before each test run
 beforeEach(() => {
-  global.playMock.mockClear();
-  global.pauseMock.mockClear();
-  global.triggerOnended = () => {};
+  globalThis.playMock.mockClear();
+  globalThis.pauseMock.mockClear();
+  globalThis.triggerOnended = () => {};
 });

@@ -31,59 +31,69 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
           }
         }, [card]);
       
-        const handleContinue = () => {
-          const responseTime = Date.now() - startTime;
-          const wasOriginallyCorrect = answerState === 'correct';
-          onSubmit(card.card_id, wasOriginallyCorrect, responseTime);
-        };
-      
-        const playAudioAndAdvance = async () => {
-          if (isAudioPlaying) return;
-      
-          if (card.sentence_audio_url) {
-            setIsAudioPlaying(true);
-            const audio = new Audio(card.sentence_audio_url);
-            audioRef.current = audio;
-            audio.onended = handleContinue;
-            try {
-              await audio.play();
-            } catch (err) {
-              console.error("Audio play failed:", err);
-              handleContinue();
-            }
-          } else {
-            setTimeout(handleContinue, 500);
-          }
-        };
-      
-  const handleCheck = () => {
-    const trimmedInput = userInput.trim();
-    const isCorrect = trimmedInput.toLowerCase() === card.target.word.toLowerCase();
+  const handleContinue = (isCorrect: boolean) => {
+    const responseTime = Date.now() - startTime;
+    onSubmit(card.card_id, isCorrect, responseTime);
+  };
 
-    if (!trimmedInput) { // If input is empty, treat as incorrect
-      setAnswerState('incorrect');
-      setUserInput(''); // Clear input to force re-typing
-      // No audio playback here, as it's an "I don't know" scenario.
-      // The user will see the correct answer and reading.
-    } else if (isCorrect) {
-      setAnswerState('correct');
-      playAudioAndAdvance();
-    } else { // Incorrect answer with input
-      setAnswerState('incorrect');
-      setUserInput(''); // Clear input to force re-typing
+  const playAudioAndAdvance = async (isCorrect: boolean) => {
+    if (isAudioPlaying) return;
+
+    if (card.sentence_audio_url) {
+      setIsAudioPlaying(true);
+      const audio = new Audio(card.sentence_audio_url);
+      audioRef.current = audio;
+      audio.onended = () => handleContinue(isCorrect);
+      try {
+        await audio.play();
+      } catch (err) {
+        console.error("Audio play failed:", err);
+        handleContinue(isCorrect);
+      }
+    } else {
+      setTimeout(() => handleContinue(isCorrect), 500);
     }
   };
-      
-        const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-          if (e.key !== 'Enter') return;
-          if (answerState === 'unanswered') {
-            handleCheck();
-          } else if (answerState === 'incorrect') {
-            if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
-              playAudioAndAdvance();
-            }
-          }
-        };  const sentenceParts = card.sentence_template.split('__');
+
+  const handleCheck = () => {
+    const trimmedInput = userInput.trim();
+    
+    if (!trimmedInput) {
+      setAnswerState('incorrect');
+      setUserInput('');
+      return;
+    }
+    
+    const isCorrect = trimmedInput.toLowerCase() === card.target.word.toLowerCase();
+
+    if (isCorrect) {
+      setAnswerState('correct');
+    } else {
+      setAnswerState('incorrect');
+      setUserInput('');
+    }
+  };
+
+  // Effect to handle side-effects of answer state changes
+  useEffect(() => {
+    if (answerState === 'correct') {
+      playAudioAndAdvance(true);
+    }
+  }, [answerState]);
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    if (answerState === 'unanswered') {
+      handleCheck();
+    } else if (answerState === 'incorrect') {
+      if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
+        // A corrected answer was originally incorrect
+        playAudioAndAdvance(false);
+      }
+    }
+  };
+
+  const sentenceParts = card.sentence_template.split('__');
 
   const getBorderColor = () => {
     if (isAudioPlaying) return 'ring-primary';
