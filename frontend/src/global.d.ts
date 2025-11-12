@@ -1,11 +1,8 @@
 // src/global.d.ts
-import { vi } from 'vitest';
+import type { vi } from 'vitest';
 
 declare global {
-  var onendedHandler: () => void;
-  var audioInstanceMock: {
-    play: vi.fn;
-    pause: vi.fn;
-    onended: (handler: () => void) => void;
-  };
+  var triggerOnended: () => void;
+  var playMock: vi.Mock;
+  var pauseMock: vi.Mock;
 }

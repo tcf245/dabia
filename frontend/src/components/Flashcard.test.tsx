@@ -28,12 +28,12 @@ describe('Flashcard component', () => {
     sentence_furigana: null,
     sentence_translation: '这是一个测试。',
     proficiency_level: 0,
-    audio_url: null, // Ensure we are using sentence_audio_url
+    audio_url: null,
   };
 
   const mockOnSubmit = vi.fn();
 
-  // Note: `beforeEach` is now in the global setup file (src/test/setup.ts)
+  // Note: `beforeEach` and the Audio mock are now in the global setup file.
 
   test('renders initial card state correctly', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
@@ -54,10 +54,10 @@ describe('Flashcard component', () => {
     fireEvent.click(checkButton);
 
     expect(await screen.findByText('Correct!')).toBeInTheDocument();
-    expect(global.audioInstanceMock.play).toHaveBeenCalled();
+    expect(global.playMock).toHaveBeenCalled();
 
     // Simulate audio finishing
-    global.onendedHandler();
+    global.triggerOnended();
 
     expect(mockOnSubmit).toHaveBeenCalledWith('1', true, expect.any(Number));
   });
@@ -70,9 +70,8 @@ describe('Flashcard component', () => {
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
     expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
-    expect(global.audioInstanceMock.play).not.toHaveBeenCalled();
+    expect(global.playMock).not.toHaveBeenCalled();
     expect(mockOnSubmit).not.toHaveBeenCalled();
-    // Input should be cleared for re-typing
     expect(input).toHaveValue('');
   });
 
@@ -91,18 +90,15 @@ describe('Flashcard component', () => {
     
     const input = screen.getByRole('textbox');
     
-    // First, answer incorrectly
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
 
-    // Now, type the correct answer
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    // Audio should play, and then submit
-    expect(global.audioInstanceMock.play).toHaveBeenCalled();
-    global.onendedHandler();
+    expect(global.playMock).toHaveBeenCalled();
+    global.triggerOnended();
     expect(mockOnSubmit).toHaveBeenCalledWith('1', false, expect.any(Number));
   });
 
@@ -115,9 +111,8 @@ describe('Flashcard component', () => {
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    expect(global.audioInstanceMock.play).not.toHaveBeenCalled();
+    expect(global.playMock).not.toHaveBeenCalled();
     
-    // Fast-forward timers
     vi.runAllTimers();
 
     expect(mockOnSubmit).toHaveBeenCalledWith('1', true, expect.any(Number));

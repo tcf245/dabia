@@ -3,32 +3,38 @@ import { vi } from 'vitest';
 
 // This is a global setup file for tests
 
-// 1. Mock the global Audio object
-// We attach the mock and its controls to the global object
-// so that our test files can access them.
+// This function will be overwritten by the mock's onended setter,
+// allowing tests to trigger it.
+global.triggerOnended = () => {};
 
-// This function will be overwritten by the component's onended assignment
-global.onendedHandler = () => {};
+// Create mock functions that can be asserted in tests
+global.playMock = vi.fn(() => Promise.resolve());
+global.pauseMock = vi.fn();
 
-global.audioInstanceMock = {
-  play: vi.fn(() => Promise.resolve()),
-  pause: vi.fn(),
-  set onended(handler) {
-    global.onendedHandler = handler;
-  },
-  get onended() {
-    return global.onendedHandler;
-  },
-};
+// A simple, plain class to mock the Audio constructor
+class MockAudio {
+  play: () => Promise<void>;
+  pause: () => void;
 
-// This is the mock constructor that Vitest will use for `new Audio()`
-const AudioMock = vi.fn().mockImplementation(() => global.audioInstanceMock);
+  constructor(url: string | URL) {
+    // The instance methods are just our global spies
+    this.play = global.playMock;
+    this.pause = global.pauseMock;
+  }
 
-vi.stubGlobal('Audio', AudioMock);
+  // When the component code sets audio.onended,
+  // we store the provided callback in our global trigger.
+  set onended(callback: () => void) {
+    global.triggerOnended = callback;
+  }
+}
 
+// Stub the global Audio object with our mock class
+vi.stubGlobal('Audio', MockAudio);
 
-// 2. Reset mocks before each test run
+// Reset mocks before each test run
 beforeEach(() => {
-  vi.clearAllMocks();
-  global.onendedHandler = () => {};
+  global.playMock.mockClear();
+  global.pauseMock.mockClear();
+  global.triggerOnended = () => {};
 });
