@@ -147,7 +147,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
             >
               <div className="flex items-center gap-2 text-destructive font-semibold text-lg">
                 <X size={22} /> 
-                <span>Correct answer: {card.target.word}</span>
+                <span>Correct answer: {card.target.word} {card.reading && `(${card.reading})`}</span>
               </div>
             </motion.div>
           )}
