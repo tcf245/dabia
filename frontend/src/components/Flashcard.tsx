@@ -16,69 +16,83 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   const inputRef = useRef<HTMLInputElement>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
   
-    // Reset state for new card
-    useEffect(() => {
-      setUserInput('');
-      setAnswerState('unanswered');
-      setStartTime(Date.now());
-      setIsAudioPlaying(false);
-      inputRef.current?.focus();
-      
-      // Stop any previous audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    }, [card]);
-  
-    const handleContinue = () => {
-      const responseTime = Date.now() - startTime;
-      const wasOriginallyCorrect = answerState === 'correct';
-      onSubmit(card.card_id, wasOriginallyCorrect, responseTime);
-    };
-  
-    const playAudioAndAdvance = async () => {
-      if (isAudioPlaying) return; // Prevent double plays
-  
-      if (card.audio_url) {
-        setIsAudioPlaying(true);
-        const audio = new Audio(card.audio_url);
-        audioRef.current = audio;
-        audio.onended = handleContinue;
-        try {
-          await audio.play();
-        } catch (err) {
-          console.error("Audio play failed:", err);
-          handleContinue(); // If play fails, advance so user is not stuck
+      // Reset state for new card
+      useEffect(() => {
+        console.log('[Flashcard] New card received:', card);
+        setUserInput('');
+        setAnswerState('unanswered');
+        setStartTime(Date.now());
+        setIsAudioPlaying(false);
+        inputRef.current?.focus();
+        
+        // Stop any previous audio
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
         }
-      } else {
-        setTimeout(handleContinue, 500); // No audio, advance after delay
-      }
-    };
-  
-    const handleCheck = () => {
-      if (!userInput.trim()) return;
-      const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
-      if (isCorrect) {
-        setAnswerState('correct');
-        playAudioAndAdvance();
-      } else {
-        setAnswerState('incorrect');
-        setUserInput(''); // Clear input to force re-typing
-      }
-    };
-  
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key !== 'Enter') return;
-      if (answerState === 'unanswered') {
-        handleCheck();
-      } else if (answerState === 'incorrect') {
-        if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
+      }, [card]);
+    
+      const handleContinue = () => {
+        console.log('[Flashcard] handleContinue called. Submitting answer.');
+        const responseTime = Date.now() - startTime;
+        const wasOriginallyCorrect = answerState === 'correct';
+        onSubmit(card.card_id, wasOriginallyCorrect, responseTime);
+      };
+    
+      const playAudioAndAdvance = async () => {
+        console.log('[Flashcard] playAudioAndAdvance called.');
+        if (isAudioPlaying) {
+          console.log('[Flashcard] Audio is already playing, returning.');
+          return;
+        }
+    
+        console.log(`[Flashcard] Checking audio URL: ${card.audio_url}`);
+        if (card.audio_url) {
+          setIsAudioPlaying(true);
+          const audio = new Audio(card.audio_url);
+          audioRef.current = audio;
+          audio.onended = handleContinue;
+          try {
+            console.log('[Flashcard] Attempting to play audio...');
+            await audio.play();
+            console.log('[Flashcard] audio.play() successful.');
+          } catch (err) {
+            console.error("[Flashcard] audio.play() failed:", err);
+            handleContinue(); // If play fails, advance so user is not stuck
+          }
+        } else {
+          console.log('[Flashcard] No audio URL found. Advancing after 500ms.');
+          setTimeout(handleContinue, 500); // No audio, advance after delay
+        }
+      };
+    
+      const handleCheck = () => {
+        console.log('[Flashcard] handleCheck called.');
+        if (!userInput.trim()) return;
+        const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
+        if (isCorrect) {
+          console.log('[Flashcard] Answer is correct.');
+          setAnswerState('correct');
           playAudioAndAdvance();
+        } else {
+          console.log('[Flashcard] Answer is incorrect.');
+          setAnswerState('incorrect');
+          setUserInput(''); // Clear input to force re-typing
         }
-      }
-    };
-
+      };
+    
+      const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key !== 'Enter') return;
+        console.log(`[Flashcard] handleKeyPress called with key: ${e.key}`);
+        if (answerState === 'unanswered') {
+          handleCheck();
+        } else if (answerState === 'incorrect') {
+          if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
+            console.log('[Flashcard] Correct word re-typed. Playing audio.');
+            playAudioAndAdvance();
+          }
+        }
+      };
   const sentenceParts = card.sentence_template.split('__');
 
   const getBorderColor = () => {
