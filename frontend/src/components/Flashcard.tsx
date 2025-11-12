@@ -56,17 +56,23 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
           }
         };
       
-        const handleCheck = () => {
-          if (!userInput.trim()) return;
-          const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
-          if (isCorrect) {
-            setAnswerState('correct');
-            playAudioAndAdvance();
-          } else {
-            setAnswerState('incorrect');
-            setUserInput('');
-          }
-        };
+  const handleCheck = () => {
+    const trimmedInput = userInput.trim();
+    const isCorrect = trimmedInput.toLowerCase() === card.target.word.toLowerCase();
+
+    if (!trimmedInput) { // If input is empty, treat as incorrect
+      setAnswerState('incorrect');
+      setUserInput(''); // Clear input to force re-typing
+      // No audio playback here, as it's an "I don't know" scenario.
+      // The user will see the correct answer and reading.
+    } else if (isCorrect) {
+      setAnswerState('correct');
+      playAudioAndAdvance();
+    } else { // Incorrect answer with input
+      setAnswerState('incorrect');
+      setUserInput(''); // Clear input to force re-typing
+    }
+  };
       
         const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
           if (e.key !== 'Enter') return;
