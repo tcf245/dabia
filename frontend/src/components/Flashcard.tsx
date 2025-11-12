@@ -39,31 +39,41 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
 
   // Effect for audio playback and auto-advancing
   useEffect(() => {
+    const playAudioAndAdvance = async () => {
+      // Guard to prevent re-triggering while audio is already queued or playing
+      if (isAudioPlaying) return;
+
+      if (card.audio_url) {
+        setIsAudioPlaying(true);
+        const audio = new Audio(card.audio_url);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          handleContinue();
+        };
+        
+        try {
+          // This might fail on some browsers if there wasn't a recent user interaction.
+          await audio.play();
+        } catch (err) {
+          console.error("Audio play failed:", err);
+          // If play() is blocked or fails, advance immediately so the user isn't stuck.
+          handleContinue();
+        }
+      } else {
+        // No audio, advance after a short delay for the user to see the "Correct!" message.
+        setTimeout(handleContinue, 500);
+      }
+    };
+
     const isAnsweredCorrectly = 
       answerState === 'correct' || 
       (answerState === 'incorrect' && userInput.trim().toLowerCase() === card.target.word.toLowerCase());
 
     if (isAnsweredCorrectly) {
-      if (card.audio_url) {
-        setIsAudioPlaying(true);
-        const audio = new Audio(card.audio_url);
-        audioRef.current = audio;
-        audio.play();
-        audio.onended = () => {
-          setIsAudioPlaying(false);
-          handleContinue();
-        };
-        audio.onerror = () => {
-          console.error("Audio playback failed.");
-          setIsAudioPlaying(false);
-          handleContinue(); // Advance even if audio fails
-        }
-      } else {
-        // No audio, advance after a short delay
-        setTimeout(handleContinue, 500);
-      }
+      playAudioAndAdvance();
     }
-  }, [answerState, userInput, card.audio_url, card.target.word]);
+  }, [answerState, userInput, card.audio_url, card.target.word, isAudioPlaying]);
 
 
   const handleCheck = () => {
