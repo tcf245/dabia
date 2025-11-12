@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageCircle, CornerDownLeft, Check, X } from 'lucide-react';
 import type { Card as FlashcardDataType } from '../services/api';
-import { FiMessageSquare } from 'react-icons/fi'; // Using react-icons for a nice icon
 
 interface FlashcardProps {
   card: FlashcardDataType;
@@ -13,7 +14,6 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   const [startTime, setStartTime] = useState(Date.now());
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state and focus input when a new card is passed in
   useEffect(() => {
     setUserInput('');
     setAnswerState('unanswered');
@@ -28,12 +28,14 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
       setAnswerState('correct');
     } else {
       setAnswerState('incorrect');
-      setUserInput(''); // Clear input on incorrect answer
+      setUserInput(''); // Clear input to force re-typing
     }
   };
 
   const handleContinue = () => {
     if (answerState === 'incorrect' && userInput.trim().toLowerCase() !== card.target.word.toLowerCase()) {
+      // Add a little shake animation for feedback
+      // This part can be enhanced later. For now, just prevent continuation.
       return;
     }
     const responseTime = Date.now() - startTime;
@@ -48,71 +50,95 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
     } else {
       handleContinue();
     }
-  }
+  };
 
   const sentenceParts = card.sentence_template.split('__');
 
-  const borderColorClass = () => {
-    if (answerState === 'correct') return 'border-green-500';
-    if (answerState === 'incorrect') return 'border-red-500';
-    return 'border-gray-200';
+  const getBorderColor = () => {
+    if (answerState === 'correct') return 'ring-success';
+    if (answerState === 'incorrect') return 'ring-destructive';
+    return 'ring-transparent';
   };
 
-  const isContinueDisabled = answerState === 'incorrect' && userInput.trim().toLowerCase() !== card.target.word.toLowerCase();
+  const getInputColor = () => {
+    // When incorrect, the user is typing the correct answer, so it should look neutral until submitted for continuation.
+    if (answerState === 'correct') return 'text-success';
+    if (answerState === 'incorrect') return 'text-foreground'; // User is re-typing
+    return 'text-primary';
+  }
+
+  const ActionButton = () => {
+    const isContinueDisabled = answerState === 'incorrect' && userInput.trim().toLowerCase() !== card.target.word.toLowerCase();
+    return (
+      <button
+        onClick={answerState === 'unanswered' ? handleCheck : handleContinue}
+        disabled={(answerState === 'unanswered' && !userInput.trim()) || isContinueDisabled}
+        className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+      >
+        {answerState === 'unanswered' ? 'Check' : 'Continue'}
+        <CornerDownLeft size={18} />
+      </button>
+    );
+  };
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg p-8 md:p-12 w-full ${borderColorClass()}`}>
-      {/* Header with reading */}
-      <div className="flex items-center text-gray-500 mb-8">
-        <FiMessageSquare className="mr-3 text-lg" />
-        <span>{card.reading}</span>
-      </div>
-
-      {/* Sentence with seamless input */}
-      <div className="text-3xl md:text-4xl text-gray-800 mb-10 leading-relaxed flex items-center flex-wrap">
-        {sentenceParts[0]}
-        <div className="inline-block mx-2 relative">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={answerState === 'correct'}
-            className="bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-32"
-            style={{ borderColor: answerState === 'incorrect' ? '#EF4444' : answerState === 'correct' ? '#22C55E' : '#E5E7EB' }}
-            autoFocus
-          />
+    <div className={`bg-card rounded-xl shadow-lg w-full max-w-2xl ring-2 ${getBorderColor()} transition-all duration-300`}>
+      <div className="p-8 md:p-10">
+        <div className="flex items-center text-muted-foreground mb-8">
+          <MessageCircle className="mr-3" size={20} />
+          <span>{card.reading}</span>
         </div>
-        {sentenceParts[1]}
-      </div>
 
-      {/* Correct answer display */}
-      {answerState === 'incorrect' && (
-        <div className="text-red-500 mb-6 text-center">
-          Correct answer: <span className="font-bold">{card.target.word}</span>
+        <div className="text-3xl md:text-4xl text-foreground mb-10 leading-relaxed flex items-center flex-wrap justify-center text-center">
+          {sentenceParts[0]}
+          <div className="inline-block mx-2 relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={answerState === 'correct'}
+              className={`bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40 transition-colors duration-300 ${getInputColor()} ${answerState === 'unanswered' ? 'border-input focus:border-primary' : 'border-transparent'}`}
+              autoFocus
+            />
+          </div>
+          {sentenceParts[1]}
         </div>
-      )}
+        
+        <AnimatePresence>
+          {answerState === 'incorrect' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col items-center justify-center mb-6"
+            >
+              <div className="flex items-center gap-2 text-destructive font-semibold text-lg">
+                <X size={22} /> 
+                <span>Correct answer: {card.target.word}</span>
+              </div>
+              <p className="text-muted-foreground text-sm mt-1">Please type the correct answer to continue.</p>
+            </motion.div>
+          )}
+          {answerState === 'correct' && (
+             <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex flex-col items-center justify-center mb-6"
+            >
+              <div className="flex items-center gap-2 text-success font-semibold text-lg">
+                <Check size={22} />
+                <span>Correct!</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Action Button */}
-      <div className="flex justify-end mt-8">
-        {answerState === 'unanswered' ? (
-          <button 
-            onClick={handleCheck} 
-            disabled={!userInput.trim()}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
-          >
-            Check
-          </button>
-        ) : (
-          <button 
-            onClick={handleContinue}
-            disabled={isContinueDisabled}
-            className="px-6 py-2 rounded-lg font-semibold transition-colors bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
-          >
-            Continue
-          </button>
-        )}
+        <div className="flex justify-end mt-8">
+          <ActionButton />
+        </div>
       </div>
     </div>
   );
