@@ -16,7 +16,7 @@ class MockAudio {
   play: () => Promise<void>;
   pause: () => void;
 
-  constructor(url: string | URL) {
+  constructor(_url: string | URL) {
     // The instance methods are just our global spies
     this.play = globalThis.playMock;
     this.pause = globalThis.pauseMock;
