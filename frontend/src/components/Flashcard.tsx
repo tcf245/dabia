@@ -154,7 +154,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
               <button
                 onClick={handleCheck}
                 disabled={!userInput.trim()}
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-[#c96442] text-white shadow hover:bg-[#b45738] h-8 rounded-md px-3 text-xs"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed py-2 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
               >
                 Submit
               </button>
