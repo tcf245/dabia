@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CornerDownLeft, Check, X, Volume2 } from 'lucide-react';
+import { CornerDownLeft, Check, X, Volume2 } from 'lucide-react';
 import type { Card as FlashcardDataType } from '../services/api';
 
 interface FlashcardProps {
@@ -14,23 +14,23 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   const [startTime, setStartTime] = useState(Date.now());
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-        // Reset state for new card
-        useEffect(() => {
-          setUserInput('');
-          setAnswerState('unanswered');
-          setStartTime(Date.now());
-          setIsAudioPlaying(false);
-          inputRef.current?.focus();
-          
-          // Stop any previous audio
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-          }
-        }, [card]);
-      
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Reset state for new card
+  useEffect(() => {
+    setUserInput('');
+    setAnswerState('unanswered');
+    setStartTime(Date.now());
+    setIsAudioPlaying(false);
+    inputRef.current?.focus();
+    
+    // Stop any previous audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+  }, [card]);
+
   const handleContinue = (isCorrect: boolean) => {
     const responseTime = Date.now() - startTime;
     onSubmit(card.card_id, isCorrect, responseTime);
@@ -95,39 +95,37 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
 
   const sentenceParts = card.sentence_template.split('__');
 
-  const getBorderColor = () => {
-    if (isAudioPlaying) return 'ring-primary';
-    if (answerState === 'correct') return 'ring-primary';
-    if (answerState === 'incorrect') return 'ring-destructive';
-    return 'ring-transparent';
-  };
-
-  const getInputColor = () => {
-    if (answerState === 'correct') return 'text-primary';
-    if (answerState === 'incorrect') return 'text-foreground';
-    return 'text-primary';
-  }
-
-  const ActionButton = () => (
-    <button
-      onClick={handleCheck}
-      disabled={!userInput.trim()}
-      className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
-    >
-      Check
-      <CornerDownLeft size={18} />
-    </button>
-  );
-
-  return (
-    <div className={`bg-card rounded-lg shadow-md border w-full max-w-2xl ring-2 ${getBorderColor()} transition-all duration-300`}>
-      <div className="p-8 md:p-10 relative">
-        <div className="flex items-center text-muted-foreground mb-8">
-          <MessageCircle className="mr-3" size={20} />
+  const Feedback = () => {
+    if (answerState === 'unanswered') {
+      return (
+        <div className="flex items-center text-muted-foreground">
           <span>{card.target.hint || card.reading}</span>
         </div>
+      );
+    }
+    if (answerState === 'incorrect') {
+      return (
+        <div className="flex items-center gap-2 text-destructive font-semibold">
+          <X size={20} /> 
+          <span>Correct answer: {card.target.word} {card.reading && `(${card.reading})`}</span>
+        </div>
+      );
+    }
+    if (answerState === 'correct') {
+      return (
+        <div className="flex items-center gap-2 text-primary font-semibold">
+          <Check size={20} />
+          <span>Correct!</span>
+        </div>
+      );
+    }
+    return null;
+  };
 
-        <div className="text-3xl md:text-4xl text-foreground mb-10 leading-relaxed flex items-center flex-wrap justify-center text-center">
+  return (
+    <div className="w-full max-w-2xl flex flex-col h-[450px]">
+      <div className="flex-grow flex flex-col items-center justify-center text-center">
+        <div className="text-4xl md:text-5xl text-foreground leading-relaxed flex items-center flex-wrap justify-center">
           {sentenceParts[0]}
           <div className="inline-block mx-2 relative">
             <input
@@ -137,48 +135,36 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
               onChange={(e) => setUserInput(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={answerState === 'correct' || isAudioPlaying}
-              className={`bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40 transition-colors duration-300 ${getInputColor()} ${answerState === 'unanswered' ? 'border-input focus:border-primary' : 'border-transparent'}`}
+              className="bg-transparent focus:outline-none text-center text-4xl md:text-5xl w-64 text-primary font-semibold"
               autoFocus
+              style={{ caretColor: 'var(--primary)' }}
             />
           </div>
           {sentenceParts[1]}
         </div>
-        
-        <AnimatePresence>
-          {answerState === 'incorrect' && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col items-center justify-center mb-6"
-            >
-              <div className="flex items-center gap-2 text-destructive font-semibold text-lg">
-                <X size={22} /> 
-                <span>Correct answer: {card.target.word} {card.reading && `(${card.reading})`}</span>
-              </div>
-            </motion.div>
-          )}
-          {answerState === 'correct' && (
-             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col items-center justify-center mb-6"
-            >
-              <div className="flex items-center gap-2 text-primary font-semibold text-lg">
-                <Check size={22} />
-                <span>Correct!</span>
-              </div>
-            </motion.div>
-          )}
+        <div className={`w-[270px] h-1 mt-2 rounded-full bg-primary/20 transition-colors duration-300 ${answerState !== 'unanswered' ? 'bg-transparent' : ''}`}></div>
+      </div>
+
+      <div className="h-24 flex flex-col items-center justify-start pt-4">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={answerState}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Feedback />
+          </motion.div>
         </AnimatePresence>
-
-        <div className="flex justify-end mt-8 min-h-[52px]">
-          {answerState === 'unanswered' && <ActionButton />}
-        </div>
-
+        {answerState === 'unanswered' && (
+          <div className="flex items-center text-muted-foreground mt-4">
+            <span className="mr-2">Press Enter</span>
+            <CornerDownLeft size={16} />
+          </div>
+        )}
         {isAudioPlaying && (
-          <div className="absolute bottom-8 right-10 flex items-center gap-2 text-primary font-semibold">
+          <div className="flex items-center gap-2 text-primary font-semibold mt-4">
             <Volume2 size={20} />
             <span>Playing...</span>
           </div>
@@ -186,7 +172,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
       </div>
 
       {card.sentence_translation && (
-        <div className="bg-muted/50 px-10 py-4 border-t border-border text-center text-muted-foreground rounded-b-lg">
+        <div className="border-t border-border text-center text-muted-foreground py-4">
           {card.sentence_translation}
         </div>
       )}
@@ -195,3 +181,4 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
 };
 
 export default Flashcard;
+

@@ -29,7 +29,12 @@ describe('Flashcard component', () => {
 
   const mockOnSubmit = vi.fn();
 
-  // Note: `beforeEach` and the Audio mock are now in the global setup file.
+  beforeEach(() => {
+    mockOnSubmit.mockClear();
+    if (globalThis.playMock) {
+      globalThis.playMock.mockClear();
+    }
+  });
 
   test('renders initial card state correctly', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
@@ -37,20 +42,18 @@ describe('Flashcard component', () => {
     expect(screen.getByText('A check')).toBeInTheDocument();
     expect(screen.getByText('这是一个测试。')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check/i })).toBeInTheDocument();
+    expect(screen.getByText(/Press Enter/i)).toBeInTheDocument();
   });
 
-  test.skip('handles correct answer on first try', async () => {
+  test('handles correct answer on first try', async () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
     
     const input = screen.getByRole('textbox');
-    const checkButton = screen.getByRole('button', { name: /check/i });
-
+    
     fireEvent.change(input, { target: { value: 'test' } });
     
-    // Wrap the state-updating event in act to ensure all updates are flushed
     await act(async () => {
-      fireEvent.click(checkButton);
+      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     });
 
     await waitFor(() => {
@@ -71,7 +74,9 @@ describe('Flashcard component', () => {
     
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'wrong' } });
-    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    await act(async () => {
+      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    });
 
     expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
     expect(globalThis.playMock).not.toHaveBeenCalled();
@@ -83,7 +88,9 @@ describe('Flashcard component', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
     
     const input = screen.getByRole('textbox');
-    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    await act(async () => {
+      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    });
 
     expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
     expect(mockOnSubmit).not.toHaveBeenCalled();
@@ -95,11 +102,15 @@ describe('Flashcard component', () => {
     const input = screen.getByRole('textbox');
     
     fireEvent.change(input, { target: { value: 'wrong' } });
-    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    await act(async () => {
+      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    });
     expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
 
     fireEvent.change(input, { target: { value: 'test' } });
-    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    await act(async () => {
+      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    });
 
     expect(globalThis.playMock).toHaveBeenCalled();
     globalThis.triggerOnended();
