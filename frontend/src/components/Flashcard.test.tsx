@@ -31,106 +31,73 @@ describe('Flashcard component', () => {
 
   beforeEach(() => {
     mockOnSubmit.mockClear();
-    if (globalThis.playMock) {
-      globalThis.playMock.mockClear();
-    }
   });
 
   test('renders initial card state correctly', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
     
-    expect(screen.getByText('A check')).toBeInTheDocument();
-    expect(screen.getByText('这是一个测试。')).toBeInTheDocument();
+    expect(screen.getByText('てすと')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
-    expect(screen.getByText(/Press Enter/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check answer/i })).toBeInTheDocument();
+    expect(screen.queryByText(/correct answer/i)).not.toBeInTheDocument();
   });
 
-  test('handles correct answer on first try', async () => {
+  test('handles checking a correct answer via button click', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
     
     const input = screen.getByRole('textbox');
-    
     fireEvent.change(input, { target: { value: 'test' } });
     
-    await act(async () => {
-      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    });
+    const checkButton = screen.getByRole('button', { name: /check answer/i });
+    fireEvent.click(checkButton);
 
-    await waitFor(() => {
-      expect(screen.getByText(/correct!/i)).toBeInTheDocument();
-      expect(globalThis.playMock).toHaveBeenCalled();
-    }, { timeout: 3000 });
-
-    // Simulate audio finishing
-    await act(async () => {
-      globalThis.triggerOnended();
-    });
-
-    expect(mockOnSubmit).toHaveBeenCalledWith('1', true, expect.any(Number));
+    // After checking, the "Correct" and "Incorrect" buttons should appear
+    expect(screen.getByRole('button', { name: /^Correct$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Incorrect$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /check answer/i })).not.toBeInTheDocument();
+    
+    // The input should be disabled and styled correctly
+    expect(input).toBeDisabled();
+    expect(input).toHaveClass('border-primary bg-primary/10');
   });
 
-  test('handles incorrect answer', async () => {
+  test('handles checking an incorrect answer via Enter key', async () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
     
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'wrong' } });
-    await act(async () => {
-      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    });
-
-    expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
-    expect(globalThis.playMock).not.toHaveBeenCalled();
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-    expect(input).toHaveValue('');
-  });
-
-  test('handles empty input as an incorrect answer', async () => {
-    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
-    
-    const input = screen.getByRole('textbox');
-    await act(async () => {
-      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    });
-
-    expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-  });
-
-  test('handles correcting a wrong answer', async () => {
-    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
-    
-    const input = screen.getByRole('textbox');
-    
-    fireEvent.change(input, { target: { value: 'wrong' } });
-    await act(async () => {
-      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    });
-    expect(await screen.findByText(/Correct answer: test \(てすと\)/)).toBeInTheDocument();
-
-    fireEvent.change(input, { target: { value: 'test' } });
-    await act(async () => {
-      fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    });
-
-    expect(globalThis.playMock).toHaveBeenCalled();
-    globalThis.triggerOnended();
-    expect(mockOnSubmit).toHaveBeenCalledWith('1', false, expect.any(Number));
-  });
-
-  test('advances without audio if URL is null', () => {
-    vi.useFakeTimers();
-    const cardWithoutAudio = { ...mockCard, sentence_audio_url: null };
-    render(<Flashcard card={cardWithoutAudio} onSubmit={mockOnSubmit} />);
-
-    const input = screen.getByRole('textbox');
-    fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    expect(globalThis.playMock).not.toHaveBeenCalled();
+    // Should show the "Correct Answer" text, split into two parts
+    expect(await screen.findByText(/Correct answer:/i)).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
     
-    vi.runAllTimers();
+    // The input should be disabled and styled correctly
+    expect(input).toBeDisabled();
+    expect(input).toHaveClass('border-destructive bg-destructive/10');
+  });
 
+  test('submits "correct" after checking', () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+    
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'test' } });
+    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+
+    // Click the "Correct" button
+    fireEvent.click(screen.getByRole('button', { name: /^Correct$/i }));
     expect(mockOnSubmit).toHaveBeenCalledWith('1', true, expect.any(Number));
-    vi.useRealTimers();
+  });
+
+  test('submits "incorrect" after checking', () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+    
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'wrong' } });
+    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+
+    // Click the "Incorrect" button
+    fireEvent.click(screen.getByRole('button', { name: /^Incorrect$/i }));
+    expect(mockOnSubmit).toHaveBeenCalledWith('1', false, expect.any(Number));
   });
 });
