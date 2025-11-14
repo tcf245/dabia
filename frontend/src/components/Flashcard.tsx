@@ -97,13 +97,13 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
 
   const getBorderColor = () => {
     if (isAudioPlaying) return 'ring-primary';
-    if (answerState === 'correct') return 'ring-success';
+    if (answerState === 'correct') return 'ring-primary';
     if (answerState === 'incorrect') return 'ring-destructive';
     return 'ring-transparent';
   };
 
   const getInputColor = () => {
-    if (answerState === 'correct') return 'text-success';
+    if (answerState === 'correct') return 'text-primary';
     if (answerState === 'incorrect') return 'text-foreground';
     return 'text-primary';
   }
@@ -120,7 +120,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   );
 
   return (
-    <div className={`bg-card rounded-xl shadow-lg w-full max-w-2xl ring-2 ${getBorderColor()} transition-all duration-300`}>
+    <div className={`bg-card rounded-lg shadow-md border w-full max-w-2xl ring-2 ${getBorderColor()} transition-all duration-300`}>
       <div className="p-8 md:p-10 relative">
         <div className="flex items-center text-muted-foreground mb-8">
           <MessageCircle className="mr-3" size={20} />
@@ -165,7 +165,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col items-center justify-center mb-6"
             >
-              <div className="flex items-center gap-2 text-success font-semibold text-lg">
+              <div className="flex items-center gap-2 text-primary font-semibold text-lg">
                 <Check size={22} />
                 <span>Correct!</span>
               </div>
@@ -186,7 +186,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
       </div>
 
       {card.sentence_translation && (
-        <div className="bg-muted/50 px-10 py-4 border-t border-border text-center text-muted-foreground rounded-b-xl">
+        <div className="bg-muted/50 px-10 py-4 border-t border-border text-center text-muted-foreground rounded-b-lg">
           {card.sentence_translation}
         </div>
       )}

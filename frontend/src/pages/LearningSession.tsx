@@ -45,7 +45,7 @@ const LearningSession: React.FC = () => {
   };
 
   const MessageCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode; }> = ({ icon, title, children }) => (
-    <div className="bg-card rounded-xl shadow-lg w-full max-w-md p-8 text-center flex flex-col items-center">
+    <div className="bg-card rounded-lg shadow-md border w-full max-w-md p-8 text-center flex flex-col items-center">
       <div className="mb-4">{icon}</div>
       <h2 className="text-2xl font-bold text-card-foreground mb-2">{title}</h2>
       <div className="text-muted-foreground">{children}</div>
@@ -85,7 +85,7 @@ const LearningSession: React.FC = () => {
       <>
         <SessionProgress progress={sessionProgress} />
         <MessageCard
-          icon={<PartyPopper className="text-success" size={48} />}
+          icon={<PartyPopper className="text-primary" size={48} />}
           title="Session Completed!"
         >
           <p>You've finished all your reviews for now. Great job!</p>
