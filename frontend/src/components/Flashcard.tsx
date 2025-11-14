@@ -108,7 +108,8 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              className={`inline-block mx-2 px-4 py-1 border-b-2 focus:outline-none text-center min-w-[150px] transition-colors duration-300 ${getInputClasses()}`}
+              className={`inline-block mx-2 px-2 py-1 border-b-2 focus:outline-none text-center transition-colors duration-300 ${getInputClasses()}`}
+              style={{ width: `${Math.max(card.target.word.length * 1.2, 8)}ch` }}
               disabled={answerState === 'correct'}
               placeholder=""
             />
@@ -146,24 +147,19 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
           </AnimatePresence>
         </div>
         
-        {/* Translation (Always Visible) */}
-        <div className="mt-6 pt-6 border-t border-border text-center">
-            <span className="text-lg font-medium text-muted-foreground">{card.sentence_translation}</span>
+        {/* Translation and Submit Button */}
+        <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
+            <span className="text-lg font-medium text-muted-foreground text-left">{card.sentence_translation}</span>
+            {answerState === 'unanswered' && (
+              <button
+                onClick={handleCheck}
+                disabled={!userInput.trim()}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed py-2 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                Submit
+              </button>
+            )}
         </div>
-      </div>
-
-      {/* Bottom Button */}
-      <div className="h-16">
-        {answerState === 'unanswered' && (
-          <button
-            onClick={handleCheck}
-            disabled={!userInput.trim()}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-          >
-            <Check size={20} />
-            Check Answer
-          </button>
-        )}
       </div>
     </div>
   );

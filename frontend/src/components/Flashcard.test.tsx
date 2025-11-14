@@ -42,7 +42,7 @@ describe('Flashcard component', () => {
     expect(screen.getByText(mockCard.target.hint)).toBeInTheDocument();
     expect(screen.getByText(mockCard.sentence_translation)).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check answer/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
   });
 
   test('handles correct answer and auto-advances with audio', async () => {
@@ -50,7 +50,7 @@ describe('Flashcard component', () => {
     
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'test' } });
-    fireEvent.click(screen.getByRole('button', { name: /check answer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
     expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
     expect(globalThis.playMock).toHaveBeenCalled();
