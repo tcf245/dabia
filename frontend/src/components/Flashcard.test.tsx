@@ -69,7 +69,9 @@ describe('Flashcard component', () => {
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    expect(await screen.findByText(mockCard.reading)).toBeInTheDocument();
+    const feedback = await screen.findByText(mockCard.reading);
+    expect(feedback).toBeInTheDocument();
+    expect(feedback.parentElement).toHaveClass('text-muted-foreground');
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
@@ -78,14 +80,19 @@ describe('Flashcard component', () => {
     
     const input = screen.getByRole('textbox');
     
+    // First attempt (incorrect)
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     expect(await screen.findByText(mockCard.reading)).toBeInTheDocument();
 
+    // Second attempt (correct)
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
+    // Should show "Correct!" UI, but submit as false
+    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
     expect(globalThis.playMock).toHaveBeenCalled();
+    
     await act(async () => {
       globalThis.triggerOnended();
     });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, CornerDownLeft } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import type { Card as FlashcardDataType } from '../services/api';
 
 interface FlashcardProps {
@@ -53,17 +53,11 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
     const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
     if (isCorrect) {
       setAnswerState('correct');
+      playAudioAndAdvance(true);
     } else {
       setAnswerState('incorrect');
     }
   };
-
-  // Auto-advance on correct answer
-  useEffect(() => {
-    if (answerState === 'correct') {
-      playAudioAndAdvance(true);
-    }
-  }, [answerState]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -71,11 +65,10 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
     if (answerState === 'unanswered') {
       handleCheck();
     } else if (answerState === 'incorrect') {
-      // If user re-types the correct answer after being wrong
       if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
-        playAudioAndAdvance(false); // Submitted as incorrect, but advance
+        setAnswerState('correct'); // Show correct UI
+        playAudioAndAdvance(false); // But submit as false because it was a correction
       } else {
-        // Shake animation or some other feedback could be added here
         setUserInput('');
       }
     }
@@ -98,7 +91,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
         {/* Hint */}
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center text-lg">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-lg">
               <span>💬</span>
             </div>
             <span className="text-sm font-medium">{card.target.hint}</span>
@@ -132,7 +125,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="flex items-center gap-2 text-destructive font-semibold"
+                className="flex items-center gap-2 text-muted-foreground font-semibold"
               >
                 <X size={20} />
                 <span>{card.reading}</span>
