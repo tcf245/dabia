@@ -39,8 +39,8 @@ describe('Flashcard component', () => {
   test('renders initial card state correctly', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
     
-    expect(screen.getByText(mockCard.target.hint)).toBeInTheDocument();
-    expect(screen.getByText(mockCard.sentence_translation)).toBeInTheDocument();
+    expect(screen.getByText(mockCard.target.hint!)).toBeInTheDocument();
+    expect(screen.getByText(mockCard.sentence_translation!)).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
   });
@@ -69,7 +69,7 @@ describe('Flashcard component', () => {
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    const feedback = await screen.findByText(mockCard.reading);
+    const feedback = await screen.findByText(mockCard.reading!);
     expect(feedback).toBeInTheDocument();
     expect(feedback.parentElement).toHaveClass('text-muted-foreground');
     expect(mockOnSubmit).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('Flashcard component', () => {
     // First attempt (incorrect)
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    expect(await screen.findByText(mockCard.reading)).toBeInTheDocument();
+    expect(await screen.findByText(mockCard.reading!)).toBeInTheDocument();
 
     // Second attempt (correct)
     fireEvent.change(input, { target: { value: 'test' } });
