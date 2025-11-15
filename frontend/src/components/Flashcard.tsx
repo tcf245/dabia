@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, CornerDownLeft, Check, X, Volume2 } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import type { Card as FlashcardDataType } from '../services/api';
 
 interface FlashcardProps {
@@ -12,35 +12,29 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'incorrect'>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-        // Reset state for new card
-        useEffect(() => {
-          setUserInput('');
-          setAnswerState('unanswered');
-          setStartTime(Date.now());
-          setIsAudioPlaying(false);
-          inputRef.current?.focus();
-          
-          // Stop any previous audio
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-          }
-        }, [card]);
-      
+
+  // Reset state for new card
+  useEffect(() => {
+    setUserInput('');
+    setAnswerState('unanswered');
+    setStartTime(Date.now());
+    inputRef.current?.focus();
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+  }, [card]);
+
   const handleContinue = (isCorrect: boolean) => {
     const responseTime = Date.now() - startTime;
     onSubmit(card.card_id, isCorrect, responseTime);
   };
 
   const playAudioAndAdvance = async (isCorrect: boolean) => {
-    if (isAudioPlaying) return;
-
     if (card.sentence_audio_url) {
-      setIsAudioPlaying(true);
       const audio = new Audio(card.sentence_audio_url);
       audioRef.current = audio;
       audio.onended = () => handleContinue(isCorrect);
@@ -48,150 +42,129 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
         await audio.play();
       } catch (err) {
         console.error("Audio play failed:", err);
-        handleContinue(isCorrect);
+        handleContinue(isCorrect); // Advance even if audio fails
       }
     } else {
-      setTimeout(() => handleContinue(isCorrect), 500);
+      setTimeout(() => handleContinue(isCorrect), 800); // Wait a bit before advancing
     }
   };
 
   const handleCheck = () => {
-    const trimmedInput = userInput.trim();
-    
-    if (!trimmedInput) {
-      setAnswerState('incorrect');
-      setUserInput('');
-      return;
-    }
-    
-    const isCorrect = trimmedInput.toLowerCase() === card.target.word.toLowerCase();
-
+    const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
     if (isCorrect) {
       setAnswerState('correct');
+      playAudioAndAdvance(true);
     } else {
       setAnswerState('incorrect');
-      setUserInput('');
     }
   };
 
-  // Effect to handle side-effects of answer state changes
-  useEffect(() => {
-    if (answerState === 'correct') {
-      playAudioAndAdvance(true);
-    }
-  }, [answerState]);
-
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
+
     if (answerState === 'unanswered') {
       handleCheck();
     } else if (answerState === 'incorrect') {
       if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
-        // A corrected answer was originally incorrect
-        playAudioAndAdvance(false);
+        setAnswerState('correct'); // Show correct UI
+        playAudioAndAdvance(false); // But submit as false because it was a correction
+      } else {
+        setUserInput('');
       }
     }
   };
 
   const sentenceParts = card.sentence_template.split('__');
 
-  const getBorderColor = () => {
-    if (isAudioPlaying) return 'ring-primary';
-    if (answerState === 'correct') return 'ring-success';
-    if (answerState === 'incorrect') return 'ring-destructive';
-    return 'ring-transparent';
+  const getInputClasses = () => {
+    if (answerState === 'unanswered') {
+      return 'border-input focus:border-primary';
+    }
+    return answerState === 'correct'
+      ? 'border-primary bg-primary/10' 
+      : 'border-destructive bg-destructive/10';
   };
 
-  const getInputColor = () => {
-    if (answerState === 'correct') return 'text-success';
-    if (answerState === 'incorrect') return 'text-foreground';
-    return 'text-primary';
-  }
-
-  const ActionButton = () => (
-    <button
-      onClick={handleCheck}
-      disabled={!userInput.trim()}
-      className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
-    >
-      Check
-      <CornerDownLeft size={18} />
-    </button>
-  );
-
   return (
-    <div className={`bg-card rounded-xl shadow-lg w-full max-w-2xl ring-2 ${getBorderColor()} transition-all duration-300`}>
-      <div className="p-8 md:p-10 relative">
-        <div className="flex items-center text-muted-foreground mb-8">
-          <MessageCircle className="mr-3" size={20} />
-          <span>{card.target.hint || card.reading}</span>
+    <div className="w-full max-w-2xl">
+      <div className="bg-card rounded-xl shadow-lg p-8 mb-4 border">
+        {/* Hint */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-lg">
+              <span>💬</span>
+            </div>
+            <span className="text-sm font-medium">{card.target.hint}</span>
+          </div>
         </div>
 
-        <div className="text-3xl md:text-4xl text-foreground mb-10 leading-relaxed flex items-center flex-wrap justify-center text-center">
-          {sentenceParts[0]}
-          <div className="inline-block mx-2 relative">
+        {/* Sentence and Input */}
+        <div className="mb-8">
+          <div className="text-3xl text-foreground font-light leading-relaxed text-center">
+            {sentenceParts[0]}
             <input
               ref={inputRef}
               type="text"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              disabled={answerState === 'correct' || isAudioPlaying}
-              className={`bg-transparent border-b-2 focus:outline-none text-center text-3xl md:text-4xl w-40 transition-colors duration-300 ${getInputColor()} ${answerState === 'unanswered' ? 'border-input focus:border-primary' : 'border-transparent'}`}
-              autoFocus
+              className={`inline-block mx-2 px-2 py-1 border-b-2 focus:outline-none text-center transition-colors duration-300 ${getInputClasses()}`}
+              style={{ width: `${Math.max(card.target.word.length * 1.2, 8)}ch` }}
+              disabled={answerState === 'correct'}
+              placeholder=""
             />
+            {sentenceParts[1]}
           </div>
-          {sentenceParts[1]}
+        </div>
+
+        {/* Feedback Area */}
+        <div className="h-12 flex items-center justify-center">
+          <AnimatePresence>
+            {answerState === 'incorrect' && (
+              <motion.div
+                key="incorrect"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="flex items-center gap-2 text-muted-foreground font-semibold"
+              >
+                <X size={20} />
+                <span>{card.reading}</span>
+              </motion.div>
+            )}
+             {answerState === 'correct' && (
+              <motion.div
+                key="correct"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="flex items-center gap-2 text-primary font-semibold"
+              >
+                <Check size={20} />
+                <span>Correct!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         
-        <AnimatePresence>
-          {answerState === 'incorrect' && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col items-center justify-center mb-6"
-            >
-              <div className="flex items-center gap-2 text-destructive font-semibold text-lg">
-                <X size={22} /> 
-                <span>Correct answer: {card.target.word} {card.reading && `(${card.reading})`}</span>
-              </div>
-            </motion.div>
-          )}
-          {answerState === 'correct' && (
-             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col items-center justify-center mb-6"
-            >
-              <div className="flex items-center gap-2 text-success font-semibold text-lg">
-                <Check size={22} />
-                <span>Correct!</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="flex justify-end mt-8 min-h-[52px]">
-          {answerState === 'unanswered' && <ActionButton />}
+        {/* Translation and Submit Button */}
+        <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
+            <span className="text-lg font-medium text-muted-foreground text-left">{card.sentence_translation}</span>
+            {answerState === 'unanswered' && (
+              <button
+                onClick={handleCheck}
+                disabled={!userInput.trim()}
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-[#c96442] text-white shadow hover:bg-[#b45738] h-8 rounded-md px-3 text-xs"
+              >
+                Submit
+              </button>
+            )}
         </div>
-
-        {isAudioPlaying && (
-          <div className="absolute bottom-8 right-10 flex items-center gap-2 text-primary font-semibold">
-            <Volume2 size={20} />
-            <span>Playing...</span>
-          </div>
-        )}
       </div>
-
-      {card.sentence_translation && (
-        <div className="bg-muted/50 px-10 py-4 border-t border-border text-center text-muted-foreground rounded-b-xl">
-          {card.sentence_translation}
-        </div>
-      )}
     </div>
   );
 };
 
 export default Flashcard;
+
+
