@@ -39,10 +39,7 @@ app = FastAPI(
 # In a production app, you should be more restrictive than this.
 # For this MVP, we'll allow the Vercel preview URLs and the main frontend URL.
 origins = [
-    "http://localhost:5173",
-    "http://localhost:3000", # Common port for React dev servers
-    "https://dabia-frontend.vercel.app", # Your main frontend URL
-    "https://*.vercel.app", # Allow all Vercel preview URLs
+    "*" # Allow all URLs
 ]
 
 app.add_middleware(
