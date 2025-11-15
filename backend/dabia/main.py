@@ -42,6 +42,7 @@ origins = [
     "http://localhost:5173",
     "http://localhost:3000", # Common port for React dev servers
     "https://dabia-frontend.vercel.app", # Your main frontend URL
+    "https://*.vercel.app", # Allow all Vercel preview URLs
 ]
 
 app.add_middleware(
