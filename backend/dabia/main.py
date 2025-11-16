@@ -9,26 +9,6 @@ import os
 from dabia.database import get_db
 from dabia.api.v1 import session as session_router
 
-def run_migrations():
-    print("Running migrations...")
-    db_url = os.getenv("DATABASE_URL")
-    print(f"DATABASE_URL: {db_url}")
-    # Path to your alembic.ini file
-    alembic_ini_path = os.path.join(os.path.dirname(__file__), '..', 'alembic.ini')
-    alembic_cfg = Config(alembic_ini_path)
-    
-    # Get the database URL from environment variables
-    # This ensures that the migration runs on the correct database
-    db_url = os.getenv("DATABASE_URL")
-    if db_url:
-        alembic_cfg.set_main_option("sqlalchemy.url", db_url)
-
-    # Run the 'upgrade head' command
-    command.upgrade(alembic_cfg, "head")
-
-# Run migrations on startup
-run_migrations()
-
 app = FastAPI(
     title="Dabia API",
     description="API for the Dabia language learning platform.",
