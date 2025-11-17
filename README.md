@@ -107,3 +107,7 @@ This project uses Docker Compose to manage the local development environment.
     The API will be accessible at `http://127.0.0.1:8000`.
 
     You can view the interactive API documentation (Swagger UI) at `http://127.0.0.1:8000/docs`.
+
+## Credits
+
+This project uses card data from the [anki-jlpt-decks](https://github.com/5mdld/anki-jlpt-decks) project, created by **egg rolls**. The card data is licensed under the [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) license. We have used the data in this project and have not made any modifications to the original card content.
