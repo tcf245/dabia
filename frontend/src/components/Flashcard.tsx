@@ -150,7 +150,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
         {/* Translation and Submit Button */}
         <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
             <span className="text-lg font-medium text-muted-foreground text-left">{card.sentence_translation}</span>
-            {answerState === 'unanswered' && (
+            { (answerState === 'unanswered' || answerState === 'incorrect') && (
               <button
                 onClick={handleCheck}
                 disabled={!userInput.trim()}
