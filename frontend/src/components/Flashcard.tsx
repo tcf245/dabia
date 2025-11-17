@@ -56,6 +56,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
       playAudioAndAdvance(true);
     } else {
       setAnswerState('incorrect');
+      setUserInput(''); // Clear input on incorrect answer
     }
   };
 
