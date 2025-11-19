@@ -5,7 +5,7 @@ import sqlalchemy as sa
 import uuid
 from typing import Optional
 from datetime import datetime, UTC, timedelta
-from dabia.core.srs import get_new_srs_data
+from dabia.core.scheduler import Scheduler
 
 from dabia import models, schemas
 from dabia.core.storage import storage_provider
@@ -31,38 +31,23 @@ def get_next_card(
     Retrieves the next card for the user's learning session based on an SRS algorithm.
     If a previous answer is provided, it's first recorded and the card's SRS state is updated.
     """
+    scheduler = Scheduler(db)
+
     if answer:
-        # 1. Save the previous answer to the review log
-        review_log_entry = models.ReviewLog(
+        # Determine quality
+        quality = answer.quality
+        if quality is None:
+            # Fallback mapping for V1 backward compatibility
+            quality = 4 if answer.is_correct else 2
+        
+        scheduler.update_card_state(
             user_id=current_user_id,
             card_id=answer.card_id,
-            is_correct=answer.is_correct,
-            response_time_ms=answer.response_time_ms,
+            quality=quality,
+            response_time_ms=answer.response_time_ms
         )
-        db.add(review_log_entry)
 
-        # 2. Update SRS data for the card
-        assoc = db.query(models.UserCardAssociation).filter_by(
-            user_id=current_user_id, card_id=answer.card_id
-        ).first()
-
-        if not assoc:
-            # This is the first time the user sees this card
-            assoc = models.UserCardAssociation(
-                user_id=current_user_id,
-                card_id=answer.card_id,
-                proficiency_level=1, # Start at "Needs Practice"
-                interval=1, # Start with 1 minute
-                next_review_at=datetime.now(UTC) + timedelta(minutes=1),
-                ease_factor=2.5,
-                lapses=0
-            )
-        
-        assoc = get_new_srs_data(assoc, answer.is_correct)
-        db.add(assoc)
-        db.commit()
-
-    # 3. Calculate today's progress
+    # Calculate today's progress
     today_start = datetime.now(UTC).date()
     completed_today_count = (
         db.query(models.ReviewLog)
@@ -74,82 +59,13 @@ def get_next_card(
     )
     progress = schemas.SessionProgress(completed_today=completed_today_count, goal_today=50)
 
-    # 4. Fetch the next card using SRS logic
-    now = datetime.now(UTC)
-    next_card_db = None
-
-    # Priority 1: Due "Needs Practice" cards (Level 1)
-    due_learning_card = (
-        db.query(models.Card)
-        .join(models.UserCardAssociation)
-        .filter(
-            models.UserCardAssociation.user_id == current_user_id,
-            models.UserCardAssociation.proficiency_level == 1,
-            models.UserCardAssociation.next_review_at <= now,
-        )
-        .order_by(models.UserCardAssociation.next_review_at.asc())
-        .options(joinedload(models.Card.users), joinedload(models.Card.deck))
-        .first()
-    )
-    if due_learning_card:
-        next_card_db = due_learning_card
-    else:
-        # Priority 2: Other due cards (Levels 2, 3, 4)
-        due_review_card = (
-            db.query(models.Card)
-            .join(models.UserCardAssociation)
-            .filter(
-                models.UserCardAssociation.user_id == current_user_id,
-                models.UserCardAssociation.proficiency_level > 1,
-                models.UserCardAssociation.next_review_at <= now,
-            )
-            .order_by(
-                models.UserCardAssociation.proficiency_level.asc(),
-                models.UserCardAssociation.next_review_at.asc(),
-            )
-            .options(joinedload(models.Card.users), joinedload(models.Card.deck))
-            .first()
-        )
-        if due_review_card:
-            next_card_db = due_review_card
-
-    # Priority 3: New cards (Level 0)
-    if not next_card_db:
-        # Check daily new card limit
-        NEW_CARDS_PER_DAY = 20
-        new_cards_today_count = (
-            db.query(models.UserCardAssociation)
-            .filter(
-                models.UserCardAssociation.user_id == current_user_id,
-                sa.func.date(models.UserCardAssociation.created_at) == today_start,
-            )
-            .count()
-        )
-
-        if new_cards_today_count < NEW_CARDS_PER_DAY:
-            # Find a card the user has never studied
-            new_card = (
-                db.query(models.Card)
-                .outerjoin(
-                    models.UserCardAssociation,
-                    sa.and_(
-                        models.UserCardAssociation.card_id == models.Card.id,
-                        models.UserCardAssociation.user_id == current_user_id,
-                    ),
-                )
-                .filter(models.UserCardAssociation.user_id.is_(None))
-                .order_by(func.random())
-                .options(joinedload(models.Card.users), joinedload(models.Card.deck))
-                .first()
-            )
-            if new_card:
-                next_card_db = new_card
+    # Fetch next card
+    next_card_db, meta = scheduler.get_next_card(current_user_id)
 
     if not next_card_db:
-        # No cards to review or learn
         return schemas.NextCardResponse(card=None, session_progress=progress)
 
-    # 5. Format the response
+    # Format response
     user_assoc = next(
         (assoc for assoc in next_card_db.users if assoc.user_id == current_user_id), None
     )

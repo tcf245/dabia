@@ -8,6 +8,7 @@ class PreviousAnswer(BaseModel):
     card_id: uuid.UUID = Field(..., alias='cardId')
     is_correct: bool = Field(..., alias='isCorrect')
     response_time_ms: int = Field(..., gt=0, alias='responseTimeMs')
+    quality: Optional[int] = Field(None, ge=0, le=5)
 
 class CardTarget(BaseModel):
     word: str
