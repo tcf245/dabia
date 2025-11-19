@@ -79,7 +79,10 @@ def test_next_card_flow(client, test_data, db_session):
     ).first()
     assert assoc is not None
     assert assoc.repetitions == 1
-    assert assoc.interval == 1.0
+    # V2: Interval is calculated from stability (0.6) -> approx 0.063
+    # assert assoc.interval == 1.0  <-- OLD V1 assertion
+    assert assoc.interval < 1.0 
+    assert assoc.stability == 0.6
     assert assoc.proficiency_level == 1
 
 def test_next_card_overdue_priority(client, test_data, db_session):
@@ -95,7 +98,8 @@ def test_next_card_overdue_priority(client, test_data, db_session):
         repetitions=1,
         next_review_at=datetime.now() - timedelta(days=1), # Overdue
         ease_factor=2.5,
-        lapses_count=0
+        lapses_count=0,
+        stability=1.0 # V2 field
     )
     db_session.add(assoc)
     db_session.commit()

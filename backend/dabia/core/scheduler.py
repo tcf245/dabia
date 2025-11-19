@@ -127,59 +127,69 @@ class Scheduler:
         )
         self.db.add(log)
 
-        # SRS Logic
+        # SRS Logic (v2 - Stability Based)
+        import math
+        
+        # Constants
+        S_INIT = 0.6
+        P_TARGET = 0.9
+        S_MIN = 0.05
+        S_MAX = 3650.0
+        
         if quality >= 3:
             # Success
             assoc.repetitions += 1
-            if assoc.repetitions == 1:
-                assoc.interval = 1.0
-            elif assoc.repetitions == 2:
-                assoc.interval = 6.0
-            else:
-                assoc.interval = round(assoc.interval * assoc.ease_factor, 2)
             
-            # Update Ease Factor
-            # EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-            q = quality
-            new_ef = assoc.ease_factor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-            assoc.ease_factor = max(1.3, new_ef)
-
+            if assoc.repetitions == 1:
+                # First success: Initialize stability
+                assoc.stability = S_INIT
+            else:
+                # Subsequent success: S_new = S * (1 + alpha * (q - 2))
+                # alpha is a tuning parameter, typically around 0.2
+                alpha = 0.2
+                growth_factor = 1 + alpha * (quality - 2)
+                assoc.stability = min(S_MAX, assoc.stability * growth_factor)
+            
+            # Calculate interval: I = -S * ln(P_target)
+            # We use P_target = 0.9 (90% retention)
+            assoc.interval = max(0.007, -assoc.stability * math.log(P_TARGET))
+            
         else:
             # Failure (Lapse)
             assoc.repetitions = 0
             assoc.lapses_count += 1
             
-            # Short interval for re-learning
-            # Quality 2: 1 hour (0.0417 days), Quality < 2: 10 mins (0.007 days)
-            assoc.interval = 0.0417 if quality == 2 else 0.007
+            # Decay stability: S_new = S * beta
+            beta = 0.5
+            assoc.stability = max(S_MIN, assoc.stability * beta)
             
-            # Decrease EF for severe failure
-            delta = 0.2 if quality <= 1 else 0.15
-            assoc.ease_factor = max(1.3, assoc.ease_factor - delta)
-
+            # Short interval for re-learning (Short Queue simulation)
+            # Set to 10 minutes (0.007 days)
+            assoc.interval = 0.007
+            
         # Update Next Review
         assoc.next_review_at = now + timedelta(days=assoc.interval)
         assoc.last_reviewed_at = now
 
-        # Update Proficiency Level (Derived)
-        assoc.proficiency_level = self._calculate_proficiency(assoc.interval, assoc.repetitions)
+        # Update Proficiency Level (Derived from Stability)
+        assoc.proficiency_level = self._calculate_proficiency(assoc.stability)
 
         self.db.commit()
         self.db.refresh(assoc)
         return assoc
 
-    def _calculate_proficiency(self, interval: float, repetitions: int) -> int:
+    def _calculate_proficiency(self, stability: float) -> int:
         """
-        Maps interval/repetitions to 0-5 scale.
+        Maps stability (days) to 0-5 scale.
         """
-        if repetitions == 0:
+        if stability < 0.5:
             return 0 # New / Needs Practice
-        if interval < 2:
+        if stability < 2:
             return 1 # Needs Practice
-        if interval < 7:
+        if stability < 7:
             return 2 # Learning
-        if interval < 14:
+        if stability < 14:
             return 3 # Almost there
-        if interval < 30:
+        if stability < 30:
             return 4 # Memorized
         return 5 # Mastered

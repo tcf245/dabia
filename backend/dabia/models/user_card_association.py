@@ -14,8 +14,12 @@ class UserCardAssociation(Base):
     proficiency_level = Column(Integer, default=0, nullable=False)
     next_review_at = Column(DateTime, default=func.now(), nullable=False, index=True)
     last_reviewed_at = Column(DateTime, nullable=True)
-
-    interval = Column(Float, default=0, nullable=False)
+    
+    # SRS Fields (v2)
+    stability = Column(Float, default=0.0, nullable=False)
+    
+    # SRS Fields (Legacy/Hybrid)
+    interval = Column(Float, default=0.0, nullable=False) # In days
     ease_factor = Column(Float, default=2.5, nullable=False)
     repetitions = Column(Integer, default=0, nullable=False)
     lapses_count = Column(Integer, default=0, nullable=False)
