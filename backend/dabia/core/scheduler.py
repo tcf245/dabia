@@ -20,22 +20,39 @@ class Scheduler:
         2. Learning/Lapsed cards (short term)
         3. New cards
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
         now = datetime.now(timezone.utc).replace(tzinfo=None) # Ensure naive datetime for comparison if DB is naive
 
         # 1. Check for overdue reviews
         # We want to prioritize cards that are most overdue, but also mix in some variety.
         # For V1, we'll just pick the one with the earliest next_review_at.
-        overdue_card_assoc = (
+        overdue_query = (
             self.db.query(UserCardAssociation)
             .filter(
                 UserCardAssociation.user_id == user_id,
                 UserCardAssociation.next_review_at <= now
             )
+        )
+        overdue_count = overdue_query.count()
+        
+        overdue_card_assoc = (
+            overdue_query
             .order_by(UserCardAssociation.next_review_at.asc())
             .first()
         )
 
         if overdue_card_assoc:
+            logger.info(
+                f"SRS Decision [User: {user_id}]: Selected OVERDUE card. "
+                f"Total Overdue: {overdue_count}. "
+                f"Selected Card: {overdue_card_assoc.card_id}. "
+                f"Due Date: {overdue_card_assoc.next_review_at}. "
+                f"Interval: {overdue_card_assoc.interval}. "
+                f"Repetitions: {overdue_card_assoc.repetitions}. "
+                f"Ease Factor: {overdue_card_assoc.ease_factor}."
+            )
             return overdue_card_assoc.card, {
                 "type": "review",
                 "due_date": overdue_card_assoc.next_review_at,
@@ -47,6 +64,8 @@ class Scheduler:
         # Find a card that the user hasn't seen yet (no UserCardAssociation)
         # or has proficiency_level 0 and repetitions 0 (if we pre-seeded associations)
         
+        logger.info(f"SRS Decision [User: {user_id}]: No overdue cards found. Looking for NEW card.")
+
         # Strategy: Find cards not in UserCardAssociation for this user
         subquery = (
             self.db.query(UserCardAssociation.card_id)
@@ -61,8 +80,10 @@ class Scheduler:
         )
 
         if new_card:
+            logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")
             return new_card, {"type": "new"}
 
+        logger.info(f"SRS Decision [User: {user_id}]: No cards available (Done).")
         return None, {"type": "done"}
 
     def update_card_state(self, user_id: str, card_id: str, quality: int, response_time_ms: int):
