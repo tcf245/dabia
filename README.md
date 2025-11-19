@@ -10,7 +10,44 @@ This project is a monorepo containing the frontend and backend for the Dabia app
 
 - `backend/`: The FastAPI backend application.
 
-- `frontend/`: The React frontend application (work in progress).
+- `frontend/`: The React frontend application.
+
+
+## Frontend Development
+
+All commands related to the frontend should be run from within the `frontend/` directory.
+
+```bash
+cd frontend
+```
+
+### How to Run
+
+1.  **Install Node.js dependencies**:
+
+    ```bash
+    npm install
+    ```
+
+2.  **Start the development server**:
+
+    ```bash
+    npm run dev
+    ```
+
+    The application will be accessible at `http://localhost:5173`.
+
+### Environment Variables
+
+The frontend uses environment variables to configure the backend API URL.
+
+1.  Copy the `.env.example` file to `.env`:
+
+    ```bash
+    cp .env.example .env
+    ```
+
+2.  Edit `.env` to set the `VITE_API_BASE_URL` if your backend is running on a different host or port (default is `http://localhost:8000`).
 
 
 
