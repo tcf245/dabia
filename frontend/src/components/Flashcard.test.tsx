@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import Flashcard from './Flashcard';
 import type { Card } from '../services/api';
@@ -38,7 +38,7 @@ describe('Flashcard component', () => {
 
   test('renders initial card state correctly', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
-    
+
     expect(screen.getByText(mockCard.target.hint!)).toBeInTheDocument();
     expect(screen.getByText(mockCard.sentence_translation!)).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('Flashcard component', () => {
 
   test('handles correct answer and auto-advances with audio', async () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
-    
+
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
@@ -64,7 +64,7 @@ describe('Flashcard component', () => {
 
   test('handles incorrect answer and shows reading hint', async () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
-    
+
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
@@ -77,9 +77,9 @@ describe('Flashcard component', () => {
 
   test('handles correcting a previously incorrect answer', async () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
-    
+
     const input = screen.getByRole('textbox');
-    
+
     // First attempt (incorrect)
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
@@ -92,7 +92,7 @@ describe('Flashcard component', () => {
     // Should show "Correct!" UI, but submit as false
     expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
     expect(globalThis.playMock).toHaveBeenCalled();
-    
+
     await act(async () => {
       globalThis.triggerOnended();
     });
@@ -104,7 +104,7 @@ describe('Flashcard component', () => {
   // that when a card has no audio URL, the component automatically advances to the
   // next card via `setTimeout` after a correct answer. The component logic itself
   // appears correct in manual testing, but the test environment consistently times out.
-  test.skip('advances without audio after a correct answer', async () => {
+  test('advances without audio after a correct answer', async () => {
     vi.useFakeTimers();
     const cardWithoutAudio = { ...mockCard, sentence_audio_url: null };
     render(<Flashcard card={cardWithoutAudio} onSubmit={mockOnSubmit} />);
@@ -113,17 +113,16 @@ describe('Flashcard component', () => {
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    expect(screen.getByText(/correct!/i)).toBeInTheDocument();
     expect(globalThis.playMock).not.toHaveBeenCalled();
-    
-    // Run the timers to fire the setTimeout
-    vi.runAllTimers();
 
-    // Use waitFor to poll for the mock to have been called
-    await waitFor(() => {
-      expect(mockOnSubmit).toHaveBeenCalledWith('1', true, expect.any(Number));
+    // Run the timers to fire the setTimeout
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
     });
-    
+
+    expect(mockOnSubmit).toHaveBeenCalledWith('1', true, expect.any(Number));
+
     vi.useRealTimers();
   });
 });
