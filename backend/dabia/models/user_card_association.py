@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, func, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, DateTime, func, ForeignKey, UniqueConstraint, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -10,8 +10,20 @@ class UserCardAssociation(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
     card_id = Column(UUID(as_uuid=True), ForeignKey("cards.id"), primary_key=True)
 
+    # 0: New, 1: Needs Practice, 2: Time to Learn, 3: Within Reach, 4: Mastered
     proficiency_level = Column(Integer, default=0, nullable=False)
-    next_review_at = Column(DateTime, default=func.now(), nullable=False)
+    next_review_at = Column(DateTime, default=func.now(), nullable=False, index=True)
+    last_reviewed_at = Column(DateTime, nullable=True)
+    
+    # SRS Fields (v2)
+    stability = Column(Float, default=0.0, nullable=False)
+    
+    # SRS Fields (Legacy/Hybrid)
+    interval = Column(Float, default=0.0, nullable=False) # In days
+    ease_factor = Column(Float, default=2.5, nullable=False)
+    repetitions = Column(Integer, default=0, nullable=False)
+    lapses_count = Column(Integer, default=0, nullable=False)
+
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

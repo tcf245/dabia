@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
+import sqlalchemy as sa
 import uuid
 from typing import Optional
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
+from dabia.core.scheduler import Scheduler
 
 from dabia import models, schemas
 from dabia.core.storage import storage_provider
@@ -26,70 +28,66 @@ def get_next_card(
     current_user_id: uuid.UUID = Depends(get_current_user_id)
 ):
     """
-    Retrieves the next card for the user's learning session.
-    If a previous answer is provided, it's first recorded in the review log.
+    Retrieves the next card for the user's learning session based on an SRS algorithm.
+    If a previous answer is provided, it's first recorded and the card's SRS state is updated.
     """
-    if answer:
-        # 1. Save the previous answer to the review log
-        review_log_entry = models.ReviewLog(
-            user_id=current_user_id,
-            card_id=answer.card_id,
-            is_correct=answer.is_correct,
-            response_time_ms=answer.response_time_ms,
+    try:
+        scheduler = Scheduler(db)
+
+        if answer:
+            # Determine quality
+            quality = answer.quality
+            if quality is None:
+                # Fallback mapping for V1 backward compatibility
+                quality = 4 if answer.is_correct else 2
+            
+            scheduler.update_card_state(
+                user_id=current_user_id,
+                card_id=answer.card_id,
+                quality=quality,
+                response_time_ms=answer.response_time_ms
+            )
+
+        # Calculate today's progress
+        today_start = datetime.now(UTC).date()
+        completed_today_count = (
+            db.query(models.ReviewLog)
+            .filter(
+                models.ReviewLog.user_id == current_user_id,
+                models.ReviewLog.reviewed_at >= today_start
+            )
+            .count()
         )
-        db.add(review_log_entry)
-        db.commit()
+        progress = schemas.SessionProgress(completed_today=completed_today_count, goal_today=50)
 
-    # 2. Calculate today's progress
-    today_start = datetime.now(UTC).date()
-    completed_today_count = (
-        db.query(models.ReviewLog)
-        .filter(
-            models.ReviewLog.user_id == current_user_id,
-            models.ReviewLog.reviewed_at >= today_start
+        # Fetch next card
+        next_card_db, meta = scheduler.get_next_card(current_user_id)
+
+        if not next_card_db:
+            return schemas.NextCardResponse(card=None, session_progress=progress)
+
+        # Format response
+        user_assoc = next(
+            (assoc for assoc in next_card_db.users if assoc.user_id == current_user_id), None
         )
-        .count()
-    )
-    progress = schemas.SessionProgress(completed_today=completed_today_count, goal_today=50)
+        proficiency_level = user_assoc.proficiency_level if user_assoc else 0
 
-    # 3. Fetch the next card
-    # MVP Logic: Just grab a random card from the DB.
-    # A real implementation would have sophisticated logic to pick the next card.
-    next_card_db = (
-        db.query(models.Card)
-        .options(
-            joinedload(models.Card.deck),
-            joinedload(models.Card.users).subqueryload(models.UserCardAssociation.user)
-        )
-        .order_by(func.random())
-        .first()
-    )
-
-
-    if not next_card_db:
-        # No cards in the database yet
-        return schemas.NextCardResponse(
-            card=None,
-            session_progress=progress
+        card_response = schemas.Card(
+            card_id=next_card_db.id,
+            deck=schemas.DeckInfo.model_validate(next_card_db.deck),
+            sentence_template=next_card_db.sentence_template,
+            target=schemas.CardTarget(word=next_card_db.target_word, hint=next_card_db.hint),
+            reading=next_card_db.reading,
+            audio_url=storage_provider.get_url(next_card_db.audio_url),
+            sentence=next_card_db.sentence,
+            sentence_furigana=next_card_db.sentence_furigana,
+            sentence_translation=next_card_db.sentence_translation,
+            sentence_audio_url=storage_provider.get_url(next_card_db.sentence_audio_url),
+            proficiency_level=proficiency_level,
         )
 
-    # 4. Format the response
-    # Find the user-specific card association to get the proficiency level
-    user_assoc = next((assoc for assoc in next_card_db.users if assoc.user_id == current_user_id), None)
-    proficiency_level = user_assoc.proficiency_level if user_assoc else 0
-
-    card_response = schemas.Card(
-        card_id=next_card_db.id,
-        deck=schemas.DeckInfo.model_validate(next_card_db.deck),
-        sentence_template=next_card_db.sentence_template,
-        target=schemas.CardTarget(word=next_card_db.target_word, hint=next_card_db.hint),
-        reading=next_card_db.reading,
-        audio_url=storage_provider.get_url(next_card_db.audio_url),
-        sentence=next_card_db.sentence,
-        sentence_furigana=next_card_db.sentence_furigana,
-        sentence_translation=next_card_db.sentence_translation,
-        sentence_audio_url=storage_provider.get_url(next_card_db.sentence_audio_url),
-        proficiency_level=proficiency_level
-    )
-
-    return schemas.NextCardResponse(card=card_response, session_progress=progress)
+        return schemas.NextCardResponse(card=card_response, session_progress=progress)
+    except Exception as e:
+        import logging
+        logging.error(f"Error in get_next_card: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
