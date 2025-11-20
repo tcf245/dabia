@@ -1,32 +1,47 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import uuid
 from types import SimpleNamespace
 
 from dabia.api.v1.session import get_next_card
 from dabia.schemas import PreviousAnswer
+from dabia.models.card import Card
+from dabia.models.deck import Deck
+from dabia.models.user_card_association import UserCardAssociation
 
-def test_get_next_card_no_answer_ut():
+@patch("dabia.api.v1.session.Scheduler")
+def test_get_next_card_no_answer_ut(MockScheduler):
     """Unit test for getting a card when no previous answer is provided."""
     # Arrange
     mock_db = MagicMock()
     user_id = uuid.uuid4()
+    
+    # Setup Mock Scheduler instance
+    mock_scheduler_instance = MockScheduler.return_value
+    
+    # Create a proper Card object (or a Mock that behaves like one)
+    # Using SimpleNamespace with proper types to satisfy Pydantic
+    mock_card = MagicMock(spec=Card)
+    mock_card.id = uuid.uuid4()
+    mock_card.deck = MagicMock(spec=Deck)
+    mock_card.deck.id = uuid.uuid4()
+    mock_card.deck.name = "Test Deck"
+    mock_card.sentence_template = "Hello __"
+    mock_card.target_word = "World"
+    mock_card.reading = "Sekai"
+    mock_card.hint = "A greeting"
+    mock_card.audio_url = "/audio.mp3"
+    mock_card.sentence = None
+    mock_card.sentence_furigana = None
+    mock_card.sentence_translation = None
+    mock_card.sentence_audio_url = None
+    
+    # Mock UserCardAssociation for proficiency level
+    mock_assoc = MagicMock(spec=UserCardAssociation)
+    mock_assoc.user_id = user_id
+    mock_assoc.proficiency_level = 0
+    mock_card.users = [mock_assoc]
 
-    # Mock the DB model object that the query returns
-    mock_card_db_obj = SimpleNamespace(
-        id=uuid.uuid4(),
-        deck=SimpleNamespace(id=uuid.uuid4(), name="Test Deck"),
-        sentence_template="Hello __",
-        target_word="World",
-        reading="Sekai",
-        hint="A greeting",
-        audio_url="/audio.mp3",
-        sentence=None,
-        sentence_furigana=None,
-        sentence_translation=None,
-        sentence_audio_url=None,
-        users=[]
-    )
-    mock_db.query.return_value.options.return_value.order_by.return_value.first.return_value = mock_card_db_obj
+    mock_scheduler_instance.get_next_card.return_value = (mock_card, {'type': 'new'})
 
     # Act
     response = get_next_card(answer=None, db=mock_db, current_user_id=user_id)
@@ -35,15 +50,20 @@ def test_get_next_card_no_answer_ut():
     assert response.card.sentence_template == "Hello __"
     assert response.card.target.word == "World"
     assert response.card.reading == "Sekai"
-    mock_db.commit.assert_not_called()
+    # Verify Scheduler was called
+    MockScheduler.assert_called_with(mock_db)
+    mock_scheduler_instance.get_next_card.assert_called_with(user_id)
 
-def test_get_next_card_with_answer_ut():
+@patch("dabia.api.v1.session.Scheduler")
+def test_get_next_card_with_answer_ut(MockScheduler):
     """Unit test for saving a previous answer."""
     # Arrange
     mock_db = MagicMock()
     user_id = uuid.uuid4()
-    # Adjust mock for the .order_by() call
-    mock_db.query.return_value.options.return_value.order_by.return_value.first.return_value = None  # No next card
+    
+    # Setup Mock Scheduler
+    mock_scheduler_instance = MockScheduler.return_value
+    mock_scheduler_instance.get_next_card.return_value = (None, {'type': 'done'})
 
     answer = PreviousAnswer(
         card_id=uuid.uuid4(),
@@ -56,10 +76,11 @@ def test_get_next_card_with_answer_ut():
 
     # Assert
     assert response.card is None
-    mock_db.add.assert_called_once()
-    mock_db.commit.assert_called_once()
-
-    added_object = mock_db.add.call_args[0][0]
-    assert added_object.card_id == answer.card_id
-    assert added_object.is_correct is False
-    assert added_object.user_id == user_id
+    
+    # Verify update_card_state was called
+    mock_scheduler_instance.update_card_state.assert_called_once_with(
+        user_id=user_id,
+        card_id=answer.card_id,
+        quality=2, # Default for is_correct=False
+        response_time_ms=5000
+    )

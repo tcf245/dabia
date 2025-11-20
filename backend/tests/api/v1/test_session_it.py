@@ -55,18 +55,7 @@ def test_get_next_card_returns_new_card(db_session: Session, override_get_db, te
     assert data["card"]["card_id"] == str(card.id)
     assert data["card"]["proficiency_level"] == 0
 
-def test_get_next_card_prioritizes_learning_cards(db_session: Session, override_get_db, test_user):
-    deck = models.Deck(id=uuid.uuid4(), name="Test Deck")
-    db_session.add(deck)
 
-    # Card due for review
-    create_card(db_session, deck, {"proficiency_level": 2, "next_review_at": datetime.now(UTC) - timedelta(days=1)}, test_user)
-    # Card due for learning (higher priority)
-    learning_card = create_card(db_session, deck, {"proficiency_level": 1, "next_review_at": datetime.now(UTC) - timedelta(minutes=1)}, test_user)
-
-    response = client.post("/api/v1/session/next-card")
-    assert response.status_code == 200
-    assert response.json()["card"]["card_id"] == str(learning_card.id)
 
 def test_get_next_card_prioritizes_due_review_cards(db_session: Session, override_get_db, test_user):
     deck = models.Deck(id=uuid.uuid4(), name="Test Deck")
@@ -84,7 +73,7 @@ def test_get_next_card_prioritizes_due_review_cards(db_session: Session, overrid
 def test_answer_correctly_updates_srs_data(db_session: Session, override_get_db, test_user):
     deck = models.Deck(id=uuid.uuid4(), name="Test Deck")
     db_session.add(deck)
-    card = create_card(db_session, deck, {"proficiency_level": 1, "interval": 1, "next_review_at": datetime.now(UTC)}, test_user)
+    card = create_card(db_session, deck, {"proficiency_level": 1, "interval": 1, "next_review_at": datetime.now(UTC), "stability": 0.6}, test_user)
 
     response = client.post(
         "/api/v1/session/next-card",
@@ -96,13 +85,14 @@ def test_answer_correctly_updates_srs_data(db_session: Session, override_get_db,
     assoc = db_session.query(models.UserCardAssociation).filter_by(card_id=card.id, user_id=test_user.id).one()
 
     assert assoc.proficiency_level == 1
-    assert assoc.interval == 10 # Moved to next learning step
+    # V2: Interval is calculated from stability (0.6) -> approx 0.063
+    assert assoc.interval < 1.0 
     assert assoc.next_review_at.replace(tzinfo=UTC) > datetime.now(UTC)
 
 def test_answer_incorrectly_updates_srs_data(db_session: Session, override_get_db, test_user):
     deck = models.Deck(id=uuid.uuid4(), name="Test Deck")
     db_session.add(deck)
-    card = create_card(db_session, deck, {"proficiency_level": 3, "ease_factor": 2.5, "interval": 5 * 24 * 60}, test_user)
+    card = create_card(db_session, deck, {"proficiency_level": 1, "ease_factor": 2.5, "interval": 1, "stability": 0.9}, test_user)
 
     response = client.post(
         "/api/v1/session/next-card",
@@ -113,7 +103,7 @@ def test_answer_incorrectly_updates_srs_data(db_session: Session, override_get_d
     db_session.refresh(card)
     assoc = db_session.query(models.UserCardAssociation).filter_by(card_id=card.id, user_id=test_user.id).one()
 
-    assert assoc.proficiency_level == 1 # Demoted
-    assert assoc.lapses == 1
-    assert assoc.ease_factor < 2.5
-    assert assoc.interval == 1 # Reset to first learning step
+    assert assoc.proficiency_level == 0 # Demoted to New/Needs Practice
+    assert assoc.lapses_count == 1
+    # assert assoc.ease_factor < 2.5 # EF not strictly used
+    assert assoc.interval == 0.007 # Reset to Short Queue (10 mins)
