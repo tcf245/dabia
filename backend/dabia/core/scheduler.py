@@ -136,6 +136,10 @@ class Scheduler:
         S_MIN = 0.05
         S_MAX = 3650.0
         
+        # Defensive coding: Ensure stability is not None (legacy data)
+        if assoc.stability is None:
+            assoc.stability = 0.0
+
         if quality >= 3:
             # Success
             assoc.repetitions += 1
