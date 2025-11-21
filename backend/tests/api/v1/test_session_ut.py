@@ -41,7 +41,7 @@ def test_get_next_card_no_answer_ut(MockScheduler):
     mock_assoc.proficiency_level = 0
     mock_card.users = [mock_assoc]
 
-    mock_scheduler_instance.get_next_card.return_value = (mock_card, {'type': 'new'})
+    mock_scheduler_instance.get_next_card.return_value = (mock_card, None, {'type': 'new'})
 
     # Act
     response = get_next_card(answer=None, db=mock_db, current_user_id=user_id)
@@ -63,7 +63,7 @@ def test_get_next_card_with_answer_ut(MockScheduler):
     
     # Setup Mock Scheduler
     mock_scheduler_instance = MockScheduler.return_value
-    mock_scheduler_instance.get_next_card.return_value = (None, {'type': 'done'})
+    mock_scheduler_instance.get_next_card.return_value = (None, None, {'type': 'done'})
 
     answer = PreviousAnswer(
         card_id=uuid.uuid4(),

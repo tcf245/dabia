@@ -12,13 +12,19 @@ class Scheduler:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_next_card(self, user_id: str) -> Tuple[Optional[Card], dict]:
+    def get_next_card(self, user_id: str) -> Tuple[Optional[Card], Optional[UserCardAssociation], dict]:
         """
         Selects the next card for the user based on the SRS algorithm.
         Prioritizes:
         1. Overdue reviews (weighted by overdue duration)
         2. Learning/Lapsed cards (short term)
         3. New cards
+        
+        Returns:
+            Tuple of (Card, UserCardAssociation, metadata)
+            - Card: The selected card
+            - UserCardAssociation: The user's association with the card (None for new cards)
+            - metadata: Dict with selection metadata
         """
         import logging
         logger = logging.getLogger(__name__)
@@ -50,7 +56,7 @@ class Scheduler:
                 f"Repetitions: {overdue_card_assoc.repetitions}. "
                 f"Ease Factor: {overdue_card_assoc.ease_factor}."
             )
-            return overdue_card_assoc.card, {
+            return overdue_card_assoc.card, overdue_card_assoc, {
                 "type": "review",
                 "due_date": overdue_card_assoc.next_review_at,
                 "interval": overdue_card_assoc.interval,
@@ -81,10 +87,10 @@ class Scheduler:
 
         if new_card:
             logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")
-            return new_card, {"type": "new"}
+            return new_card, None, {"type": "new"}
 
         logger.info(f"SRS Decision [User: {user_id}]: No cards available (Done).")
-        return None, {"type": "done"}
+        return None, None, {"type": "done"}
 
     def update_card_state(self, user_id: str, card_id: str, quality: int, response_time_ms: int):
         """

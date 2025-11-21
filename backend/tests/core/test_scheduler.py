@@ -116,14 +116,16 @@ def test_get_next_card_overdue(scheduler, db_session, test_user, test_card):
     db_session.add(assoc)
     db_session.commit()
 
-    next_card, meta = scheduler.get_next_card(test_user.id)
+    next_card, user_assoc, meta = scheduler.get_next_card(test_user.id)
     assert next_card.id == test_card.id
+    assert user_assoc is not None
     assert meta['type'] == 'review'
 
 def test_get_next_card_new(scheduler, db_session, test_user, test_card):
     # Ensure no associations exist
     # test_card is new for test_user
     
-    next_card, meta = scheduler.get_next_card(test_user.id)
+    next_card, user_assoc, meta = scheduler.get_next_card(test_user.id)
     assert next_card.id == test_card.id
+    assert user_assoc is None  # New cards don't have associations yet
     assert meta['type'] == 'new'
