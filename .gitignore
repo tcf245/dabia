@@ -103,4 +103,5 @@ yarn-error.log*
 .pnp.js
 
 # Gemini Context
-.gemini/docs/dev_logs/
+.gemini/
+docs/dev_logs/
