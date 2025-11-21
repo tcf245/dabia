@@ -64,8 +64,9 @@ class Scheduler:
         logger.info(f"SRS Decision [User: {user_id}]: No overdue cards found. Looking for NEW card.")
 
         # Strategy: Find cards not in UserCardAssociation for this user
-        # Optimized: Use LEFT JOIN + random offset without COUNT()
-        new_cards_query = (
+        # Optimized: Use ORDER BY random() instead of OFFSET
+        # PostgreSQL optimizes "ORDER BY random() LIMIT 1" much better than OFFSET
+        new_card = (
             self.db.query(Card)
             .options(joinedload(Card.deck))
             .outerjoin(UserCardAssociation, and_(
@@ -73,17 +74,10 @@ class Scheduler:
                 UserCardAssociation.user_id == user_id
             ))
             .filter(UserCardAssociation.card_id == None)
+            .order_by(func.random())
+            .limit(1)
+            .first()
         )
-        
-        # Try to fetch a card with a random offset
-        # Use a reasonable max offset to avoid edge cases
-        MAX_OFFSET = 1000
-        random_offset = random.randint(0, MAX_OFFSET)
-        new_card = new_cards_query.offset(random_offset).first()
-        
-        # If no card found (offset too large), try without offset
-        if not new_card:
-            new_card = new_cards_query.first()
 
         if new_card:
             logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")
