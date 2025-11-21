@@ -28,17 +28,15 @@ class Scheduler:
         # 1. Check for overdue reviews
         # We want to prioritize cards that are most overdue, but also mix in some variety.
         # For V1, we'll just pick the one with the earliest next_review_at.
-        overdue_query = (
+        from sqlalchemy.orm import joinedload
+        
+        overdue_card_assoc = (
             self.db.query(UserCardAssociation)
+            .options(joinedload(UserCardAssociation.card).joinedload(Card.deck))
             .filter(
                 UserCardAssociation.user_id == user_id,
                 UserCardAssociation.next_review_at <= now
             )
-        )
-        overdue_count = overdue_query.count()
-        
-        overdue_card_assoc = (
-            overdue_query
             .order_by(UserCardAssociation.next_review_at.asc())
             .first()
         )
@@ -46,7 +44,6 @@ class Scheduler:
         if overdue_card_assoc:
             logger.info(
                 f"SRS Decision [User: {user_id}]: Selected OVERDUE card. "
-                f"Total Overdue: {overdue_count}. "
                 f"Selected Card: {overdue_card_assoc.card_id}. "
                 f"Due Date: {overdue_card_assoc.next_review_at}. "
                 f"Interval: {overdue_card_assoc.interval}. "
@@ -67,10 +64,10 @@ class Scheduler:
         logger.info(f"SRS Decision [User: {user_id}]: No overdue cards found. Looking for NEW card.")
 
         # Strategy: Find cards not in UserCardAssociation for this user
-        # Optimized: Use LEFT JOIN + OFFSET/LIMIT instead of ORDER BY random()
-        # 1. Count total available new cards
+        # Optimized: Use LEFT JOIN + random offset without COUNT()
         new_cards_query = (
             self.db.query(Card)
+            .options(joinedload(Card.deck))
             .outerjoin(UserCardAssociation, and_(
                 Card.id == UserCardAssociation.card_id,
                 UserCardAssociation.user_id == user_id
@@ -78,16 +75,15 @@ class Scheduler:
             .filter(UserCardAssociation.card_id == None)
         )
         
-        total_new_cards = new_cards_query.count()
+        # Try to fetch a card with a random offset
+        # Use a reasonable max offset to avoid edge cases
+        MAX_OFFSET = 1000
+        random_offset = random.randint(0, MAX_OFFSET)
+        new_card = new_cards_query.offset(random_offset).first()
         
-        if total_new_cards == 0:
-            new_card = None
-        else:
-            # 2. Pick a random offset
-            random_offset = random.randint(0, total_new_cards - 1)
-            
-            # 3. Fetch single card at offset
-            new_card = new_cards_query.offset(random_offset).first()
+        # If no card found (offset too large), try without offset
+        if not new_card:
+            new_card = new_cards_query.first()
 
         if new_card:
             logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")
