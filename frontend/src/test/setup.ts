@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 // This function will be overwritten by the mock's onended setter,
 // allowing tests to trigger it.
-globalThis.triggerOnended = () => {};
+globalThis.triggerOnended = () => { };
 
 // Create mock functions that can be asserted in tests
 globalThis.playMock = vi.fn(() => Promise.resolve());
@@ -16,7 +16,7 @@ class MockAudio {
   play: () => Promise<void>;
   pause: () => void;
 
-  constructor(_url: string | URL) {
+  constructor() {
     // The instance methods are just our global spies
     this.play = globalThis.playMock;
     this.pause = globalThis.pauseMock;
@@ -36,5 +36,5 @@ vi.stubGlobal('Audio', MockAudio);
 beforeEach(() => {
   globalThis.playMock.mockClear();
   globalThis.pauseMock.mockClear();
-  globalThis.triggerOnended = () => {};
+  globalThis.triggerOnended = () => { };
 });

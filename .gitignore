@@ -104,3 +104,4 @@ yarn-error.log*
 
 # Gemini Context
 .gemini/
+docs/dev_logs/
