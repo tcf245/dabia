@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { LoaderCircle, AlertTriangle, PartyPopper } from 'lucide-react';
+import { AlertTriangle, PartyPopper } from 'lucide-react';
 import Flashcard from '../components/Flashcard';
+import SkeletonFlashcard from '../components/SkeletonFlashcard';
 import SessionProgress from '../components/SessionProgress';
 import { getNextCard } from '../services/api';
 import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
@@ -52,16 +53,7 @@ const LearningSession: React.FC = () => {
     </div>
   );
 
-  if (loading && !currentCard) { // Only show initial loading screen
-    return (
-      <MessageCard
-        icon={<LoaderCircle className="animate-spin text-primary" size={48} />}
-        title="Loading Session..."
-      >
-        <p>Getting your first card ready!</p>
-      </MessageCard>
-    );
-  }
+
 
   if (error) {
     return (
@@ -80,7 +72,7 @@ const LearningSession: React.FC = () => {
     );
   }
 
-  if (!currentCard) {
+  if (!loading && !currentCard) {
     return (
       <>
         <SessionProgress progress={sessionProgress} />
@@ -98,11 +90,11 @@ const LearningSession: React.FC = () => {
     <div className="w-full flex flex-col items-center">
       <SessionProgress progress={sessionProgress} />
       {loading ? (
-        <div className="w-full max-w-2xl h-[450px] flex items-center justify-center">
-            <LoaderCircle className="animate-spin text-primary" size={48} />
+        <div className="w-full flex justify-center">
+          <SkeletonFlashcard />
         </div>
       ) : (
-        <Flashcard card={currentCard} onSubmit={handleSubmitAnswer} />
+        <Flashcard card={currentCard!} onSubmit={handleSubmitAnswer} />
       )}
     </div>
   );
