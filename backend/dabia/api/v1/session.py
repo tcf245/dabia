@@ -61,15 +61,12 @@ def get_next_card(
         progress = schemas.SessionProgress(completed_today=completed_today_count, goal_today=50)
 
         # Fetch next card
-        next_card_db, meta = scheduler.get_next_card(current_user_id)
+        next_card_db, user_assoc, meta = scheduler.get_next_card(current_user_id)
 
         if not next_card_db:
             return schemas.NextCardResponse(card=None, session_progress=progress)
 
-        # Format response
-        user_assoc = next(
-            (assoc for assoc in next_card_db.users if assoc.user_id == current_user_id), None
-        )
+        # Use the UserCardAssociation returned from scheduler (no lazy loading!)
         proficiency_level = user_assoc.proficiency_level if user_assoc else 0
 
         card_response = schemas.Card(
