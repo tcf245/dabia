@@ -67,14 +67,14 @@ class Scheduler:
         logger.info(f"SRS Decision [User: {user_id}]: No overdue cards found. Looking for NEW card.")
 
         # Strategy: Find cards not in UserCardAssociation for this user
-        subquery = (
-            self.db.query(UserCardAssociation.card_id)
-            .filter(UserCardAssociation.user_id == user_id)
-        )
-        
+        # Optimized: Use LEFT JOIN instead of NOT IN subquery for better performance
         new_card = (
             self.db.query(Card)
-            .filter(Card.id.notin_(subquery))
+            .outerjoin(UserCardAssociation, and_(
+                Card.id == UserCardAssociation.card_id,
+                UserCardAssociation.user_id == user_id
+            ))
+            .filter(UserCardAssociation.card_id == None)
             .order_by(func.random())
             .first()
         )

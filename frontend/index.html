@@ -1,23 +1,34 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
-  </head>
-  <body>
-    <div id="root">
-      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #faf9f5;">
-        <div style="width: 40px; height: 40px; border: 4px solid #e9e6dc; border-top: 4px solid #c96442; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://dabia-backend.vercel.app" />
+  <title>Dabia</title>
+</head>
+
+<body>
+  <div id="root">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #faf9f5;">
+      <div
+        style="width: 40px; height: 40px; border: 4px solid #e9e6dc; border-top: 4px solid #c96442; border-radius: 50%; animation: spin 1s linear infinite;">
       </div>
-      <style>
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
     </div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <style>
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
