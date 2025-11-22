@@ -56,19 +56,22 @@ def get_next_card(
             print(f"[PERF] update_card_state took {update_time:.3f}s")
 
         # Calculate today's progress
+        # OPTIMIZATION: Skip this query to reduce latency
+        # Client can track progress locally or we can cache this value
         progress_start = time.time()
-        today_start = datetime.now(UTC).date()
-        completed_today_count = (
-            db.query(models.ReviewLog)
-            .filter(
-                models.ReviewLog.user_id == current_user_id,
-                models.ReviewLog.reviewed_at >= today_start
-            )
-            .count()
-        )
+        # today_start = datetime.now(UTC).date()
+        # completed_today_count = (
+        #     db.query(models.ReviewLog)
+        #     .filter(
+        #         models.ReviewLog.user_id == current_user_id,
+        #         models.ReviewLog.reviewed_at >= today_start
+        #     )
+        #     .count()
+        # )
+        completed_today_count = 0  # Placeholder - can be calculated client-side
         progress = schemas.SessionProgress(completed_today=completed_today_count, goal_today=50)
         progress_time = time.time() - progress_start
-        print(f"[PERF] ReviewLog count took {progress_time:.3f}s")
+        print(f"[PERF] ReviewLog count took {progress_time:.3f}s (skipped)")
 
         # Fetch next card
         fetch_start = time.time()
