@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, text
 import random
 from typing import Optional, Tuple
 
@@ -54,7 +54,7 @@ class Scheduler:
         # Test database connection latency
         if overdue_card_assoc:
             ping_start = time.time()
-            self.db.execute("SELECT 1")
+            self.db.execute(text("SELECT 1"))
             ping_time = time.time() - ping_start
             print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
 
@@ -102,7 +102,7 @@ class Scheduler:
         # Test database connection latency
         if new_card:
             ping_start = time.time()
-            self.db.execute("SELECT 1")
+            self.db.execute(text("SELECT 1"))
             ping_time = time.time() - ping_start
             print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
 
@@ -121,7 +121,7 @@ class Scheduler:
         
         # Measure database connection time
         conn_start = time.time()
-        self.db.execute("SELECT 1")
+        self.db.execute(text("SELECT 1"))
         conn_time = time.time() - conn_start
         print(f"[PERF] DB connection check in update_card_state took {conn_time:.3f}s")
         
