@@ -50,6 +50,13 @@ class Scheduler:
         )
         overdue_time = time.time() - overdue_start
         print(f"[PERF] Overdue query took {overdue_time:.3f}s")
+        
+        # Test database connection latency
+        if overdue_card_assoc:
+            ping_start = time.time()
+            self.db.execute("SELECT 1")
+            ping_time = time.time() - ping_start
+            print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
 
         if overdue_card_assoc:
             logger.info(
@@ -91,6 +98,13 @@ class Scheduler:
         )
         new_card_time = time.time() - new_card_start
         print(f"[PERF] New card query took {new_card_time:.3f}s")
+        
+        # Test database connection latency
+        if new_card:
+            ping_start = time.time()
+            self.db.execute("SELECT 1")
+            ping_time = time.time() - ping_start
+            print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
 
         if new_card:
             logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")
@@ -103,6 +117,14 @@ class Scheduler:
         """
         Updates the card state based on the review quality (0-5).
         """
+        import time
+        
+        # Measure database connection time
+        conn_start = time.time()
+        self.db.execute("SELECT 1")
+        conn_time = time.time() - conn_start
+        print(f"[PERF] DB connection check in update_card_state took {conn_time:.3f}s")
+        
         now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         assoc = (
