@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, text
 import random
 from typing import Optional, Tuple
 
@@ -35,7 +35,9 @@ class Scheduler:
         # We want to prioritize cards that are most overdue, but also mix in some variety.
         # For V1, we'll just pick the one with the earliest next_review_at.
         from sqlalchemy.orm import joinedload
+        import time
         
+        overdue_start = time.time()
         overdue_card_assoc = (
             self.db.query(UserCardAssociation)
             .options(joinedload(UserCardAssociation.card).joinedload(Card.deck))
@@ -46,6 +48,15 @@ class Scheduler:
             .order_by(UserCardAssociation.next_review_at.asc())
             .first()
         )
+        overdue_time = time.time() - overdue_start
+        print(f"[PERF] Overdue query took {overdue_time:.3f}s")
+        
+        # Test database connection latency
+        if overdue_card_assoc:
+            ping_start = time.time()
+            self.db.execute(text("SELECT 1"))
+            ping_time = time.time() - ping_start
+            print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
 
         if overdue_card_assoc:
             logger.info(
@@ -72,6 +83,7 @@ class Scheduler:
         # Strategy: Find cards not in UserCardAssociation for this user
         # Optimized: Use ORDER BY random() instead of OFFSET
         # PostgreSQL optimizes "ORDER BY random() LIMIT 1" much better than OFFSET
+        new_card_start = time.time()
         new_card = (
             self.db.query(Card)
             .options(joinedload(Card.deck))
@@ -84,6 +96,15 @@ class Scheduler:
             .limit(1)
             .first()
         )
+        new_card_time = time.time() - new_card_start
+        print(f"[PERF] New card query took {new_card_time:.3f}s")
+        
+        # Test database connection latency
+        if new_card:
+            ping_start = time.time()
+            self.db.execute(text("SELECT 1"))
+            ping_time = time.time() - ping_start
+            print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
 
         if new_card:
             logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")
@@ -96,6 +117,14 @@ class Scheduler:
         """
         Updates the card state based on the review quality (0-5).
         """
+        import time
+        
+        # Measure database connection time
+        conn_start = time.time()
+        self.db.execute(text("SELECT 1"))
+        conn_time = time.time() - conn_start
+        print(f"[PERF] DB connection check in update_card_state took {conn_time:.3f}s")
+        
         now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         assoc = (
