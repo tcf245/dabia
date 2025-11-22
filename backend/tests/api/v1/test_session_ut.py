@@ -43,11 +43,8 @@ def test_get_next_card_no_answer_ut(MockScheduler):
 
     mock_scheduler_instance.get_next_card.return_value = (mock_card, None, {'type': 'new'})
 
-    # Mock BackgroundTasks
-    mock_background_tasks = MagicMock()
-
     # Act
-    response = get_next_card(background_tasks=mock_background_tasks, answer=None, db=mock_db, current_user_id=user_id)
+    response = get_next_card(answer=None, db=mock_db, current_user_id=user_id)
 
     # Assert
     assert response.card.sentence_template == "Hello __"
@@ -74,19 +71,16 @@ def test_get_next_card_with_answer_ut(MockScheduler):
         response_time_ms=5000
     )
 
-    # Mock BackgroundTasks
-    mock_background_tasks = MagicMock()
-
     # Act
-    response = get_next_card(background_tasks=mock_background_tasks, answer=answer, db=mock_db, current_user_id=user_id)
+    response = get_next_card(answer=answer, db=mock_db, current_user_id=user_id)
 
     # Assert
     assert response.card is None
     
-    # Verify update_card_state was called (in sync mode for tests)
+    # Verify update_card_state was called
     mock_scheduler_instance.update_card_state.assert_called_once_with(
-        user_id=str(user_id),
-        card_id=str(answer.card_id),
+        user_id=user_id,
+        card_id=answer.card_id,
         quality=2, # Default for is_correct=False
         response_time_ms=5000
     )

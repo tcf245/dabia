@@ -6,9 +6,6 @@ from alembic.config import Config
 from alembic import command
 import os
 
-# Set TESTING environment variable for all tests
-os.environ["TESTING"] = "true"
-
 @pytest.fixture(scope="session")
 def db_engine():
     """Fixture for a test database engine."""
