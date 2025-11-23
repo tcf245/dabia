@@ -117,14 +117,6 @@ class Scheduler:
         """
         Updates the card state based on the review quality (0-5).
         """
-        import time
-        
-        # Measure database connection time
-        conn_start = time.time()
-        self.db.execute(text("SELECT 1"))
-        conn_time = time.time() - conn_start
-        print(f"[PERF] DB connection check in update_card_state took {conn_time:.3f}s")
-        
         now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         assoc = (
