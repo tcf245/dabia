@@ -10,16 +10,9 @@ from dabia.core.scheduler import Scheduler
 from dabia import models, schemas
 from dabia.core.storage import storage_provider
 from dabia.database import get_db
+from dabia.api.deps import get_current_user_id
 
 router = APIRouter()
-
-# This is a temporary dependency to simulate getting a user ID from an auth token.
-# In a real app, this would be a sophisticated function that decodes a JWT.
-# Adding a comment to force a rebuild.
-async def get_current_user_id() -> uuid.UUID:
-    # For now, we return a hardcoded UUID.
-    # This allows us to easily override it in tests.
-    return uuid.UUID("00000000-0000-0000-0000-000000000000")
 
 @router.post("/next-card", response_model=schemas.NextCardResponse)
 def get_next_card(
@@ -68,7 +61,14 @@ def get_next_card(
         if not next_card_db:
             total_time = time.time() - request_start
             print(f"[PERF] Total request time: {total_time:.3f}s (no card)")
-            return schemas.NextCardResponse(card=None, session_progress=progress)
+            
+            previous_card_id = answer.card_id if answer else None
+            
+            return schemas.NextCardResponse(
+                card=None, 
+                session_progress=progress,
+                previous_card_id=previous_card_id
+            )
 
         # Use the UserCardAssociation returned from scheduler (no lazy loading!)
         format_start = time.time()
@@ -93,7 +93,13 @@ def get_next_card(
         total_time = time.time() - request_start
         print(f"[PERF] Total request time: {total_time:.3f}s")
 
-        return schemas.NextCardResponse(card=card_response, session_progress=progress)
+        previous_card_id = answer.card_id if answer else None
+
+        return schemas.NextCardResponse(
+            card=card_response,
+            session_progress=progress,
+            previous_card_id=previous_card_id
+        )
     except Exception as e:
         import logging
         logging.error(f"Error in get_next_card: {str(e)}", exc_info=True)

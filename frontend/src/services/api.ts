@@ -48,9 +48,15 @@ export interface SessionProgress {
 export interface NextCardResponse {
   card: Card | null;
   session_progress: SessionProgress;
+  previous_card_id: string | null;
 }
 
 export const getNextCard = async (answer?: PreviousAnswer): Promise<NextCardResponse> => {
   const response = await api.post<NextCardResponse>('/api/v1/session/next-card', answer);
+  return response.data;
+};
+
+export const getCard = async (cardId: string): Promise<Card> => {
+  const response = await api.get<Card>(`/api/v1/cards/${cardId}`);
   return response.data;
 };

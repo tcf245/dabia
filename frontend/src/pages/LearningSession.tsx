@@ -3,12 +3,15 @@ import { AlertTriangle, PartyPopper } from 'lucide-react';
 import Flashcard from '../components/Flashcard';
 import SkeletonFlashcard from '../components/SkeletonFlashcard';
 import SessionProgress from '../components/SessionProgress';
-import { getNextCard } from '../services/api';
+import { getNextCard, getCard } from '../services/api';
 import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
+import { ArrowLeft } from 'lucide-react';
 
 const LearningSession: React.FC = () => {
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [sessionProgress, setSessionProgress] = useState<SessionProgressType>({ completed_today: 0, goal_today: 50 });
+  const [previousCardId, setPreviousCardId] = useState<string | null>(null);
+  const [isViewingPrevious, setIsViewingPrevious] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,6 +22,8 @@ const LearningSession: React.FC = () => {
       const response = await getNextCard(previousAnswer);
       setCurrentCard(response.card);
       setSessionProgress(response.session_progress);
+      setPreviousCardId(response.previous_card_id);
+      setIsViewingPrevious(false);
     } catch (err) {
       // A real app should have better error handling (e.g., check for 401, 500)
       // For now, we assume a network or CORS issue.
@@ -34,6 +39,14 @@ const LearningSession: React.FC = () => {
   }, []);
 
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
+    if (isViewingPrevious) {
+      // If viewing previous, just go back to current (or fetch next if we don't have a current buffered)
+      // Actually, if we are viewing previous, we probably want to return to the *next* card we were supposed to do.
+      // But for simplicity, let's just fetch next card as if we skipped.
+      // OR, better: Disable answering on previous card.
+      return;
+    }
+
     const previousAnswer: PreviousAnswer = {
       cardId: cardId,
       isCorrect: isCorrect,
@@ -43,6 +56,21 @@ const LearningSession: React.FC = () => {
       setSessionProgress(prev => ({ ...prev, completed_today: prev.completed_today + 1 }));
     }
     fetchNextCard(previousAnswer);
+  };
+
+  const handlePreviousClick = async () => {
+    if (!previousCardId) return;
+
+    setLoading(true);
+    try {
+      const card = await getCard(previousCardId);
+      setCurrentCard(card);
+      setIsViewingPrevious(true);
+    } catch (err) {
+      console.error("Failed to fetch previous card", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const MessageCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode; }> = ({ icon, title, children }) => (
@@ -87,14 +115,32 @@ const LearningSession: React.FC = () => {
   }
 
   return (
-    <div className="w-full flex flex-col items-center">
+    <div className="w-full flex flex-col items-center relative">
       <SessionProgress progress={sessionProgress} />
+
+      {/* Previous Button */}
+      {!loading && !isViewingPrevious && previousCardId && (
+        <button
+          onClick={handlePreviousClick}
+          className="absolute left-4 top-0 p-2 text-muted-foreground hover:text-foreground transition-colors"
+          title="Previous Card"
+        >
+          <ArrowLeft size={24} />
+        </button>
+      )}
+
       {loading ? (
         <div className="w-full flex justify-center">
           <SkeletonFlashcard />
         </div>
       ) : (
-        <Flashcard card={currentCard!} onSubmit={handleSubmitAnswer} />
+        <Flashcard
+          card={currentCard!}
+          onSubmit={handleSubmitAnswer}
+        // We might want to pass a prop to disable scoring if isViewingPrevious
+        // But Flashcard component might not support it yet.
+        // For now, handleSubmitAnswer handles the check.
+        />
       )}
     </div>
   );

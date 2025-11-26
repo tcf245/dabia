@@ -41,3 +41,4 @@ class SessionProgress(BaseModel):
 class NextCardResponse(BaseModel):
     card: Optional[Card]
     session_progress: SessionProgress
+    previous_card_id: Optional[uuid.UUID] = None
