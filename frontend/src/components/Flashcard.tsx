@@ -6,9 +6,11 @@ import type { Card as FlashcardDataType } from '../services/api';
 interface FlashcardProps {
   card: FlashcardDataType;
   onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
+  mode?: 'quiz' | 'review';
+  onContinue?: () => void;
 }
 
-const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
+const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', onContinue }) => {
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'incorrect'>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
@@ -21,12 +23,15 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
     setAnswerState('unanswered');
     setStartTime(Date.now());
     inputRef.current?.focus();
-    
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
   }, [card]);
+
+  // Handle global keyboard shortcuts for this component
+
 
   const handleContinue = (isCorrect: boolean) => {
     const responseTime = Date.now() - startTime;
@@ -75,6 +80,25 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
     }
   };
 
+  // Handle global keyboard shortcuts for this component
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        if (mode === 'review' && onContinue) {
+          onContinue();
+        } else if (mode === 'quiz' && answerState === 'unanswered') {
+          // Only submit if input is not empty, similar to button disabled state
+          if (userInput.trim()) {
+            handleCheck();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode, onContinue, answerState, userInput, handleCheck]);
+
   const sentenceParts = card.sentence_template.split('__');
 
   const getInputClasses = () => {
@@ -82,7 +106,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
       return 'border-input focus:border-primary';
     }
     return answerState === 'correct'
-      ? 'border-primary bg-primary/10' 
+      ? 'border-primary bg-primary/10'
       : 'border-destructive bg-destructive/10';
   };
 
@@ -102,64 +126,90 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit }) => {
         {/* Sentence and Input */}
         <div className="mb-8">
           <div className="text-3xl text-foreground font-light leading-relaxed text-center">
-            {sentenceParts[0]}
-            <input
-              ref={inputRef}
-              type="text"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className={`inline-block mx-2 px-2 py-1 border-b-2 focus:outline-none text-center transition-colors duration-300 ${getInputClasses()}`}
-              style={{ width: `${Math.max(card.target.word.length * 1.2, 8)}ch` }}
-              disabled={answerState === 'correct'}
-              placeholder=""
-            />
-            {sentenceParts[1]}
+            {mode === 'review' ? (
+              <span>
+                {sentenceParts[0]}
+                <span className="font-medium text-primary mx-1 border-b-2 border-primary/30 px-1">
+                  {card.target.word}
+                </span>
+                {sentenceParts[1]}
+              </span>
+            ) : (
+              <>
+                {sentenceParts[0]}
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className={`inline-block mx-2 px-2 py-1 border-b-2 focus:outline-none text-center transition-colors duration-300 ${getInputClasses()}`}
+                  style={{ width: `${Math.max(card.target.word.length * 1.2, 8)}ch` }}
+                  disabled={answerState === 'correct'}
+                  placeholder=""
+                />
+                {sentenceParts[1]}
+              </>
+            )}
           </div>
         </div>
 
         {/* Feedback Area */}
         <div className="h-12 flex items-center justify-center">
-          <AnimatePresence>
-            {answerState === 'incorrect' && (
-              <motion.div
-                key="incorrect"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="flex items-center gap-2 text-muted-foreground font-semibold"
-              >
-                <X size={20} />
-                <span>{card.reading}</span>
-              </motion.div>
-            )}
-             {answerState === 'correct' && (
-              <motion.div
-                key="correct"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="flex items-center gap-2 text-primary font-semibold"
-              >
-                <Check size={20} />
-                <span>Correct!</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {mode === 'review' ? (
+            <div className="flex items-center gap-2 text-primary font-semibold text-xl">
+              <span>{card.reading}</span>
+            </div>
+          ) : (
+            <AnimatePresence>
+              {answerState === 'incorrect' && (
+                <motion.div
+                  key="incorrect"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center gap-2 text-muted-foreground font-semibold"
+                >
+                  <X size={20} />
+                  <span>{card.reading}</span>
+                </motion.div>
+              )}
+              {answerState === 'correct' && (
+                <motion.div
+                  key="correct"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center gap-2 text-primary font-semibold"
+                >
+                  <Check size={20} />
+                  <span>Correct!</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
         </div>
-        
+
         {/* Translation and Submit Button */}
         <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
-            <span className="text-lg font-medium text-muted-foreground text-left">{card.sentence_translation}</span>
-            { (answerState === 'unanswered' || answerState === 'incorrect') && (
-              <button
-                onClick={handleCheck}
-                disabled={!userInput.trim()}
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-[#c96442] text-white shadow hover:bg-[#b45738] h-8 rounded-md px-3 text-xs"
-              >
-                Submit
-              </button>
-            )}
+          <span className="text-lg font-medium text-muted-foreground text-left">{card.sentence_translation}</span>
+          {mode !== 'review' && (answerState === 'unanswered' || answerState === 'incorrect') && (
+            <button
+              onClick={handleCheck}
+              disabled={!userInput.trim()}
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-[#c96442] text-white shadow hover:bg-[#b45738] h-8 rounded-md px-3 text-xs"
+            >
+              Submit
+            </button>
+          )}
+          {mode === 'review' && (
+            <button
+              onClick={onContinue}
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-[#c96442] text-white shadow hover:bg-[#b45738] h-8 rounded-md px-3 text-xs"
+            >
+              Continue
+            </button>
+          )}
         </div>
       </div>
     </div>

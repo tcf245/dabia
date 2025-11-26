@@ -38,6 +38,20 @@ const LearningSession: React.FC = () => {
     fetchNextCard(); // Fetch the first card when the component mounts
   }, []);
 
+  // Handle global keyboard shortcuts for session
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        if (!loading && !isViewingPrevious && previousCardId) {
+          handlePreviousClick();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [loading, isViewingPrevious, previousCardId]);
+
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
     if (isViewingPrevious) {
       // If viewing previous, just go back to current (or fetch next if we don't have a current buffered)
@@ -71,6 +85,11 @@ const LearningSession: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleContinue = () => {
+    setIsViewingPrevious(false);
+    fetchNextCard();
   };
 
   const MessageCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode; }> = ({ icon, title, children }) => (
@@ -137,9 +156,8 @@ const LearningSession: React.FC = () => {
         <Flashcard
           card={currentCard!}
           onSubmit={handleSubmitAnswer}
-        // We might want to pass a prop to disable scoring if isViewingPrevious
-        // But Flashcard component might not support it yet.
-        // For now, handleSubmitAnswer handles the check.
+          mode={isViewingPrevious ? 'review' : 'quiz'}
+          onContinue={handleContinue}
         />
       )}
     </div>
