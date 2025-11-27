@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, UTC
 from dabia.main import app
 from dabia import models
 from dabia.database import get_db
-from dabia.api.v1.session import get_current_user_id
+from dabia.database import get_db
+from dabia.api.deps import get_current_user_id
 
 client = TestClient(app)
 
@@ -81,6 +82,9 @@ def test_answer_correctly_updates_srs_data(db_session: Session, override_get_db,
     )
     assert response.status_code == 200
     
+    data = response.json()
+    assert data["previous_card_id"] == str(card.id)
+    
     db_session.refresh(card)
     assoc = db_session.query(models.UserCardAssociation).filter_by(card_id=card.id, user_id=test_user.id).one()
 
@@ -99,6 +103,9 @@ def test_answer_incorrectly_updates_srs_data(db_session: Session, override_get_d
         json={"card_id": str(card.id), "is_correct": False, "response_time_ms": 1000}
     )
     assert response.status_code == 200
+
+    data = response.json()
+    assert data["previous_card_id"] == str(card.id)
 
     db_session.refresh(card)
     assoc = db_session.query(models.UserCardAssociation).filter_by(card_id=card.id, user_id=test_user.id).one()
