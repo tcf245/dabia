@@ -163,9 +163,9 @@ class Scheduler:
         S_MIN = 0.05
         S_MAX = 3650.0
         
-        # Defensive coding: Ensure stability is not None (legacy data)
-        if assoc.stability is None:
-            assoc.stability = 0.0
+        # Defensive: Ensure stability is never 0 or None
+        if assoc.stability is None or assoc.stability < S_MIN:
+            assoc.stability = S_MIN
 
         if quality >= 3:
             # Success
@@ -180,6 +180,15 @@ class Scheduler:
                 alpha = 0.2
                 growth_factor = 1 + alpha * (quality - 2)
                 assoc.stability = min(S_MAX, assoc.stability * growth_factor)
+
+                # Recovery Mechanism:
+                # If stability is suspiciously low given the repetition streak (e.g. due to bad migration or bug),
+                # boost it exponentially based on repetitions.
+                # We use a conservative base (e.g. 1.15) to estimate a "floor" for stability.
+                # Floor = S_INIT * (1.15 ^ (reps - 1))
+                recovery_floor = S_INIT * (1.15 ** (assoc.repetitions - 1))
+                if assoc.stability < recovery_floor:
+                     assoc.stability = recovery_floor
             
             # Calculate interval: I = -S * ln(P_target)
             # We use P_target = 0.9 (90% retention)
