@@ -34,17 +34,15 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-            <div className="p-8 bg-white rounded-lg shadow-md">
-                <h1 className="mb-6 text-2xl font-bold text-center text-gray-800">Welcome to Dabia</h1>
-                <p className="mb-6 text-center text-gray-600">Sign in to track your progress</p>
-                <div className="flex justify-center">
-                    <GoogleLogin
-                        onSuccess={handleSuccess}
-                        onError={handleError}
-                        useOneTap
-                    />
-                </div>
+        <div className="flex flex-col items-center justify-center w-full max-w-sm mx-auto">
+            <h1 className="mb-6 text-2xl font-bold text-center text-gray-800">Welcome to Dabia</h1>
+            <p className="mb-6 text-center text-gray-600">Sign in to track your progress</p>
+            <div className="flex justify-center">
+                <GoogleLogin
+                    onSuccess={handleSuccess}
+                    onError={handleError}
+                    useOneTap
+                />
             </div>
         </div>
     );
