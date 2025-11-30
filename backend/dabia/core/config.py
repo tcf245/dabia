@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     R2_MEDIA_PATH: str = "medias"
 
     # Auth Settings
-    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_ID: str = "PLACEHOLDER_CLIENT_ID"
     SECRET_KEY: str = "dev_secret_key" # Default for dev, override in prod
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
