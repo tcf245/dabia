@@ -40,6 +40,9 @@ module.exports = {
         xl: 'var(--shadow-xl)',
         '2xl': 'var(--shadow-2xl)',
       },
+      fontFamily: {
+        serif: ['var(--font-serif)', 'serif'],
+      },
     },
   },
   plugins: [],

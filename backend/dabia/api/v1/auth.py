@@ -40,22 +40,48 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def login_google(request: GoogleLoginRequest, db: Session = Depends(get_db)):
     try:
         # Verify the token
-        # Specify the CLIENT_ID of the app that accesses the backend:
-        idinfo = id_token.verify_oauth2_token(request.token, requests.Request(), GOOGLE_CLIENT_ID)
+        # Try verifying as ID Token first
+        try:
+            id_info = id_token.verify_oauth2_token(
+                request.token, requests.Request(), settings.GOOGLE_CLIENT_ID
+            )
+        except ValueError:
+            # If ID Token verification fails, try as Access Token
+            # 1. Verify token info (audience)
+            token_info_resp = requests.get(
+                f"https://www.googleapis.com/oauth2/v3/tokeninfo?access_token={request.token}"
+            )
+            if token_info_resp.status_code != 200:
+                raise ValueError("Invalid token")
+            
+            token_info = token_info_resp.json()
+            # Verify audience matches our client ID
+            # Note: For some access tokens, 'aud' might be the client_id
+            if token_info.get("aud") != settings.GOOGLE_CLIENT_ID:
+                raise ValueError("Invalid token audience")
 
-        # ID token is valid. Get the user's Google Account ID from the decoded token.
-        google_id = idinfo['sub']
-        email = idinfo['email']
-        name = idinfo.get('name')
-        picture = idinfo.get('picture')
-        
-    except ValueError:
-        # Invalid token
+            # 2. Get User Info
+            user_info_resp = requests.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {request.token}"},
+            )
+            if user_info_resp.status_code != 200:
+                raise ValueError("Failed to fetch user info")
+            
+            id_info = user_info_resp.json()
+
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google token",
+            detail=f"Invalid authentication credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # ID token or Access Token is valid. Get the user's Google Account ID from the decoded token.
+    google_id = id_info['sub']
+    email = id_info['email']
+    name = id_info.get('name')
+    picture = id_info.get('picture')
 
     # Check if user exists
     user = db.query(User).filter(User.email == email).first()

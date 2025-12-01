@@ -50,15 +50,17 @@ function App() {
   return (
     <div className="bg-background min-h-screen w-full flex justify-center p-4 sm:p-6 lg:p-8 relative">
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white p-4 rounded-lg shadow-lg relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-sm p-4">
+          <div className="bg-[#F7F7F5] w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden border border-stone-200">
             <button
               onClick={() => setIsLoginModalOpen(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 transition-colors p-1 rounded-full hover:bg-stone-200/50"
             >
-              ✕
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <Login onLoginSuccess={handleLoginSuccess} />
+            <div className="p-8 sm:p-10">
+              <Login onLoginSuccess={handleLoginSuccess} />
+            </div>
           </div>
         </div>
       )}
