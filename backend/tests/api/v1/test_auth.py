@@ -80,4 +80,4 @@ def test_google_login_invalid_token(mock_db, override_get_db):
         response = client.post("/api/v1/auth/login/google", json={"token": "invalid_token"})
         
         assert response.status_code == 401
-        assert response.json()["detail"] == "Invalid Google token"
+        assert response.json()["detail"] == "Invalid authentication credentials: Invalid token"

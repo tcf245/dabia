@@ -41,7 +41,8 @@ module.exports = {
         '2xl': 'var(--shadow-2xl)',
       },
       fontFamily: {
-        serif: ['var(--font-serif)', 'serif'],
+        serif: ['"Source Serif 4"', 'serif'],
+        sans: ['Inter', '"Noto Sans SC"', '"Noto Sans JP"', 'sans-serif'],
       },
     },
   },

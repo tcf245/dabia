@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LearningSession from './pages/LearningSession';
 import Login from './components/Login';
 import { jwtDecode } from "jwt-decode";
+import { Menu, Transition } from '@headlessui/react';
 
 interface User {
   sub: string;
@@ -35,7 +36,7 @@ function App() {
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  const handleLoginSuccess = (newToken: string, _userInfo: any) => {
+  const handleLoginSuccess = (newToken: string) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setIsLoginModalOpen(false);
@@ -66,23 +67,54 @@ function App() {
       )}
 
       <div className="w-full max-w-4xl">
-        <header className="mb-8 flex justify-between items-center">
+        <header className="mb-24 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-foreground">Dabia</h1>
           <div className="flex items-center gap-4">
             {token ? (
-              <div className="flex items-center gap-2">
-                {user?.picture && <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full" />}
-                <span className="text-sm font-medium">{user?.name || user?.email}</span>
-                <button onClick={logout} className="text-sm text-red-500 hover:text-red-700 ml-2">
-                  Logout
-                </button>
-              </div>
+              <Menu as="div" className="relative inline-block text-left z-[100]">
+                <Menu.Button className="flex items-center gap-2 hover:bg-secondary/50 p-1.5 rounded-lg transition-colors focus:outline-none">
+                  {user?.picture ? (
+                    <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-border/50" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium border border-primary/20">
+                      {(user?.name || user?.email || '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-foreground hidden sm:block">{user?.name || user?.email}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="m6 9 6 6 6-6" /></svg>
+                </Menu.Button>
+                <Transition
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-border rounded-lg bg-popover shadow-lg ring-1 ring-black/5 focus:outline-none border border-border">
+                    <div className="px-1 py-1">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={logout}
+                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
+                            Logout
+                          </button>
+                        )}
+                      </Menu.Item>
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
             ) : (
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="text-sm font-medium text-[#3d3929] hover:text-[#c96442] transition-colors"
               >
-                Login with Google
+                Log In
               </button>
             )}
           </div>

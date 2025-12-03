@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from google.oauth2 import id_token
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
+import requests
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from typing import Optional
@@ -43,7 +44,7 @@ def login_google(request: GoogleLoginRequest, db: Session = Depends(get_db)):
         # Try verifying as ID Token first
         try:
             id_info = id_token.verify_oauth2_token(
-                request.token, requests.Request(), settings.GOOGLE_CLIENT_ID
+                request.token, google_requests.Request(), settings.GOOGLE_CLIENT_ID
             )
         except ValueError:
             # If ID Token verification fails, try as Access Token
@@ -115,7 +116,13 @@ def login_google(request: GoogleLoginRequest, db: Session = Depends(get_db)):
     # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(user.id)}, expires_delta=access_token_expires
+        data={
+            "sub": str(user.id),
+            "email": user.email,
+            "name": user.full_name,
+            "picture": user.avatar_url
+        },
+        expires_delta=access_token_expires
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
