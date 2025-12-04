@@ -89,6 +89,8 @@ backend/cython_debug/
 backend/.ruff_cache/
 backend/.pypirc
 backend/tmp/
+backend/scripts/analysis_data/
+backend/scripts/analysis_data/
 
 # Frontend (Node)
 frontend/node_modules/
