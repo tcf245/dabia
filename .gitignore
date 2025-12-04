@@ -90,7 +90,6 @@ backend/.ruff_cache/
 backend/.pypirc
 backend/tmp/
 backend/scripts/analysis_data/
-backend/scripts/analysis_data/
 
 # Frontend (Node)
 frontend/node_modules/
@@ -99,6 +98,7 @@ frontend/build/
 frontend/.next/
 frontend/.vercel/
 frontend/npm-debug.log*
+frontend/.env
 yarn-debug.log*
 yarn-error.log*
 .pnp/
