@@ -10,6 +10,8 @@ interface FlashcardProps {
   onContinue?: () => void;
 }
 
+import { validateAnswer } from '../utils/validation';
+
 const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', onContinue }) => {
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'incorrect'>('unanswered');
@@ -55,7 +57,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
   };
 
   const handleCheck = () => {
-    const isCorrect = userInput.trim().toLowerCase() === card.target.word.toLowerCase();
+    const isCorrect = validateAnswer(userInput, card.target.word, card.reading);
     if (isCorrect) {
       setAnswerState('correct');
       playAudioAndAdvance(true);
@@ -71,7 +73,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
     if (answerState === 'unanswered') {
       handleCheck();
     } else if (answerState === 'incorrect') {
-      if (userInput.trim().toLowerCase() === card.target.word.toLowerCase()) {
+      if (validateAnswer(userInput, card.target.word, card.reading)) {
         setAnswerState('correct'); // Show correct UI
         playAudioAndAdvance(false); // But submit as false because it was a correction
       } else {
