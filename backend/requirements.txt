@@ -1,6 +1,9 @@
 fastapi
 uvicorn[standard]
 pydantic-settings
+google-auth
+python-jose[cryptography]
+passlib[bcrypt]
 
 # Database
 sqlalchemy

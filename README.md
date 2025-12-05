@@ -143,7 +143,25 @@ This project uses Docker Compose to manage the local development environment.
 
     The API will be accessible at `http://127.0.0.1:8000`.
 
+    The API will be accessible at `http://127.0.0.1:8000`.
+
     You can view the interactive API documentation (Swagger UI) at `http://127.0.0.1:8000/docs`.
+
+### Google Authentication & Demo Mode
+
+The application supports **Google Login** but defaults to a **Demo Mode** if no user is logged in.
+
+1.  **Demo Mode**:
+    *   By default, the app runs in Demo Mode using a guest account.
+    *   Users can review cards without logging in.
+
+2.  **Google Login**:
+    *   To enable Google Login, you must configure a **Google Client ID**.
+    *   Follow the [Google Auth Setup Guide](docs/dev_logs/google_auth_setup.md) to obtain your Client ID.
+    *   **Backend**: Set `GOOGLE_CLIENT_ID` and `SECRET_KEY` in `backend/.env`.
+    *   **Frontend**: Set `VITE_GOOGLE_CLIENT_ID` in `frontend/.env`.
+
+    *Note: If `GOOGLE_CLIENT_ID` is not configured, the backend will start with a placeholder value, but login will fail.*
 
 ## Credits
 

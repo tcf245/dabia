@@ -4,24 +4,29 @@
   :root {
     --background: #faf9f5;
     --foreground: #3d3929;
-    --card: #faf9f5;
-    --card-foreground: #141413;
+    --card: #ffffff;
+    --card-foreground: #3d3929;
     --popover: #ffffff;
-    --popover-foreground: #28261b;
+    --popover-foreground: #3d3929;
     --primary: #c96442;
     --primary-foreground: #ffffff;
     --secondary: #e9e6dc;
-    --secondary-foreground: #535146;
+    --secondary-foreground: #3d3929;
     --muted: #ede9de;
     --muted-foreground: #83827d;
     --accent: #e9e6dc;
-    --accent-foreground: #28261b;
-    --destructive: #141413;
+    --accent-foreground: #3d3929;
+    --destructive: #ef4444;
     --destructive-foreground: #ffffff;
     --border: #dad9d4;
     --input: #b4b2a7;
     --ring: #c96442;
     --radius: 0.5rem;
+    --font-serif: 'Source Serif 4', serif;
+  }
+
+  .font-serif {
+    font-family: var(--font-serif);
   }
 
   body {

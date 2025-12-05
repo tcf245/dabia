@@ -12,8 +12,10 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
+    "@react-oauth/google": "^0.12.2",
     "axios": "^1.13.1",
     "framer-motion": "^12.23.24",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.553.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
@@ -21,6 +23,8 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@tailwindcss/vite": "^4.1.16",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.6.0",
