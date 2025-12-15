@@ -21,14 +21,17 @@ export const Login = ({ onLoginSuccess }: LoginProps) => {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Login failed');
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Login failed details:', errorData);
+                    throw new Error(errorData.detail || 'Login failed');
                 }
 
                 const data = await response.json();
                 onLoginSuccess(data.access_token);
             } catch (err) {
                 console.error('Login error:', err);
-                setError('Failed to log in. Please try again.');
+                const errorMessage = err instanceof Error ? err.message : 'Failed to log in. Please try again.';
+                setError(errorMessage);
             }
         },
         onError: () => {
