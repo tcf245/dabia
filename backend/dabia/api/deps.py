@@ -7,7 +7,14 @@ from dabia.api.v1.auth import ALGORITHM
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
-async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
+from sqlalchemy.orm import Session
+from dabia.database import get_db
+from dabia.models.user import User
+
+async def get_current_user_id(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> uuid.UUID:
     default_user_id = uuid.UUID("00000000-0000-0000-0000-000000000000")
     
     if not token:
@@ -15,10 +22,22 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
         
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        user_id_str: str = payload.get("sub")
+        if user_id_str is None:
             return default_user_id
-        return uuid.UUID(user_id)
+            
+        user_uuid = uuid.UUID(user_id_str)
+        
+        # Verify user exists in database
+        # If user is not found (e.g. DB reset), raise 401 to force re-login
+        if not db.get(User, user_uuid):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+            
+        return user_uuid
     except JWTError:
         # If token is invalid, we could raise 401, but for "Demo Mode" fallback,
         # maybe we just return the default user?
