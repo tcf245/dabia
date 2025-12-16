@@ -135,18 +135,22 @@ const LearningSession: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col items-center relative">
-      <SessionProgress progress={sessionProgress} />
-
-      {/* Previous Button */}
-      {!loading && !isViewingPrevious && previousCardId && (
-        <button
-          onClick={handlePreviousClick}
-          className="absolute left-4 top-0 p-2 text-muted-foreground hover:text-foreground transition-colors"
-          title="Previous Card"
-        >
-          <ArrowLeft size={24} />
-        </button>
-      )}
+      <div className="w-full max-w-2xl px-5">
+        <SessionProgress
+          progress={sessionProgress}
+          headerLeft={
+            !loading && !isViewingPrevious && previousCardId ? (
+              <button
+                onClick={handlePreviousClick}
+                className="text-muted-foreground hover:text-foreground transition-colors p-0 flex items-center"
+                title="Previous Card"
+              >
+                <ArrowLeft size={24} />
+              </button>
+            ) : null
+          }
+        />
+      </div>
 
       {loading ? (
         <div className="w-full flex justify-center">
