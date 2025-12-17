@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     # Auth Settings
     GOOGLE_CLIENT_ID: str = "PLACEHOLDER_CLIENT_ID"
+    GOOGLE_CLIENT_SECRET: str = "PLACEHOLDER_CLIENT_SECRET"
     SECRET_KEY: str = "dev_secret_key" # Default for dev, override in prod
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

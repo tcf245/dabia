@@ -15,7 +15,7 @@ from dabia.core.config import settings
 router = APIRouter()
 
 class GoogleLoginRequest(BaseModel):
-    token: str
+    code: str
 
 class Token(BaseModel):
     access_token: str
@@ -23,6 +23,7 @@ class Token(BaseModel):
 
 # TODO: Move to settings
 GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -40,38 +41,31 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 @router.post("/login/google", response_model=Token)
 def login_google(request: GoogleLoginRequest, db: Session = Depends(get_db)):
     try:
-        # Verify the token
-        # Try verifying as ID Token first
-        try:
-            id_info = id_token.verify_oauth2_token(
-                request.token, google_requests.Request(), settings.GOOGLE_CLIENT_ID
-            )
-        except ValueError:
-            # If ID Token verification fails, try as Access Token
-            # 1. Verify token info (audience)
-            token_info_resp = requests.get(
-                f"https://www.googleapis.com/oauth2/v3/tokeninfo?access_token={request.token}"
-            )
-            if token_info_resp.status_code != 200:
-                raise ValueError("Invalid token")
+        # Exchange authorization code for tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": request.code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": "postmessage",  # Use 'postmessage' for auth-code flow from frontend
+            "grant_type": "authorization_code",
+        }
+        
+        response = requests.post(token_url, data=data)
+        if response.status_code != 200:
+            raise ValueError(f"Failed to exchange code: {response.text}")
             
-            token_info = token_info_resp.json()
-            # Verify audience matches our client ID
-            # Note: For some access tokens, 'aud' might be the client_id
-            if token_info.get("aud") != settings.GOOGLE_CLIENT_ID:
-                raise ValueError("Invalid token audience")
-
-            # 2. Get User Info
-            user_info_resp = requests.get(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
-                headers={"Authorization": f"Bearer {request.token}"},
-            )
-            if user_info_resp.status_code != 200:
-                raise ValueError("Failed to fetch user info")
-            
-            id_info = user_info_resp.json()
+        tokens = response.json()
+        id_token_str = tokens.get("id_token")
+        
+        # Verify the ID token
+        # This checks the signature locally using Google's public keys
+        id_info = id_token.verify_oauth2_token(
+            id_token_str, google_requests.Request(), settings.GOOGLE_CLIENT_ID
+        )
 
     except ValueError as e:
+        print(f"Auth Error: {str(e)}") # Log error for debugging
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid authentication credentials: {str(e)}",
