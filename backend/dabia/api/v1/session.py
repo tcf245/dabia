@@ -48,8 +48,25 @@ def get_next_card(
             update_time = time.time() - update_start
             print(f"[PERF] update_card_state took {update_time:.3f}s")
 
-        # Calculate today's progress (moved to client-side to reduce latency)
-        completed_today_count = 0
+        # Calculate today's progress
+        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+        
+        # We use naive datetime for DB if it stores naive timestamps (which it seems to, based on models)
+        # However, ReviewLog.reviewed_at has server_default=func.now().
+        # Let's ensure consistency. If DB is Postgres, it might handle TZs.
+        # But safest is to simple filter >= today_start.
+        
+        from dabia.models.review_log import ReviewLog
+        
+        completed_today_count = (
+            db.query(func.count(ReviewLog.id))
+            .filter(
+                ReviewLog.user_id == current_user_id,
+                ReviewLog.reviewed_at >= today_start
+            )
+            .scalar()
+        )
+        
         progress = schemas.SessionProgress(completed_today=completed_today_count, goal_today=50)
 
         # Fetch next card
