@@ -20,8 +20,18 @@ def override_get_db(mock_db):
     app.dependency_overrides = {}
 
 def test_google_login_new_user(mock_db, override_get_db):
-    # Mock Google ID Token verification
-    with patch("dabia.api.v1.auth.id_token.verify_oauth2_token") as mock_verify:
+    # Mock Google Code Exchange and ID Token verification
+    with patch("dabia.api.v1.auth.requests.post") as mock_post, \
+         patch("dabia.api.v1.auth.id_token.verify_oauth2_token") as mock_verify:
+        
+        # Mock code exchange response
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {
+            "access_token": "google_access_token",
+            "id_token": "google_id_token"
+        }
+
+        # Mock ID Token verification
         mock_verify.return_value = {
             "sub": "google_123",
             "email": "test@example.com",
@@ -32,7 +42,7 @@ def test_google_login_new_user(mock_db, override_get_db):
         # Mock DB query to return None (user not found)
         mock_db.query.return_value.filter.return_value.first.return_value = None
         
-        response = client.post("/api/v1/auth/login/google", json={"token": "fake_token"})
+        response = client.post("/api/v1/auth/login/google", json={"code": "fake_auth_code"})
         
         assert response.status_code == 200
         assert "access_token" in response.json()
@@ -45,8 +55,17 @@ def test_google_login_new_user(mock_db, override_get_db):
         assert created_user.google_id == "google_123"
 
 def test_google_login_existing_user(mock_db, override_get_db):
-    # Mock Google ID Token verification
-    with patch("dabia.api.v1.auth.id_token.verify_oauth2_token") as mock_verify:
+    # Mock Google Code Exchange and ID Token verification
+    with patch("dabia.api.v1.auth.requests.post") as mock_post, \
+         patch("dabia.api.v1.auth.id_token.verify_oauth2_token") as mock_verify:
+        
+        # Mock code exchange response
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {
+            "access_token": "google_access_token",
+            "id_token": "google_id_token"
+        }
+
         mock_verify.return_value = {
             "sub": "google_123",
             "email": "test@example.com",
@@ -64,7 +83,7 @@ def test_google_login_existing_user(mock_db, override_get_db):
         )
         mock_db.query.return_value.filter.return_value.first.return_value = existing_user
         
-        response = client.post("/api/v1/auth/login/google", json={"token": "fake_token"})
+        response = client.post("/api/v1/auth/login/google", json={"code": "fake_auth_code"})
         
         assert response.status_code == 200
         
@@ -73,11 +92,14 @@ def test_google_login_existing_user(mock_db, override_get_db):
         assert existing_user.avatar_url == "http://example.com/new_avatar.jpg"
         mock_db.commit.assert_called()
 
-def test_google_login_invalid_token(mock_db, override_get_db):
-    with patch("dabia.api.v1.auth.id_token.verify_oauth2_token") as mock_verify:
-        mock_verify.side_effect = ValueError("Invalid token")
+def test_google_login_invalid_code(mock_db, override_get_db):
+    with patch("dabia.api.v1.auth.requests.post") as mock_post:
+        # Mock failed code exchange
+        mock_post.return_value.status_code = 400
+        mock_post.return_value.text = "Invalid Grant"
         
-        response = client.post("/api/v1/auth/login/google", json={"token": "invalid_token"})
+        response = client.post("/api/v1/auth/login/google", json={"code": "invalid_code"})
         
         assert response.status_code == 401
-        assert response.json()["detail"] == "Invalid authentication credentials: Invalid token"
+        # The error message comes from the ValueError raised in the view
+        assert "Invalid authentication credentials" in response.json()["detail"]
