@@ -111,3 +111,33 @@ def test_next_card_overdue_priority(client, test_data, db_session):
     
     # Should return the overdue card
     assert data["card"]["card_id"] == str(card_id)
+
+def test_session_progress_increment(client, test_data, db_session):
+    card_id = str(test_data["card"].id)
+    
+    # 1. Initial State: 0 reviews today
+    response = client.post("/api/v1/session/next-card")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["session_progress"]["completed_today"] == 0
+
+    # 2. Submit Answer 1
+    payload = {
+        "cardId": card_id,
+        "isCorrect": True,
+        "responseTimeMs": 1000,
+        "quality": 4
+    }
+    response = client.post("/api/v1/session/next-card", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    # The response contains the progress *after* the submission is processed
+    # So it should be 1 now.
+    assert data["session_progress"]["completed_today"] == 1
+
+    # 3. Submit Answer 2 (Simulating another card review, reusing same card for simplicity)
+    # In real SRS, next card would be different, but for counting logic it doesn't matter
+    response = client.post("/api/v1/session/next-card", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["session_progress"]["completed_today"] == 2
