@@ -45,8 +45,6 @@ def get_next_card(
                 quality=quality,
                 response_time_ms=answer.response_time_ms
             )
-            update_time = time.time() - update_start
-            print(f"[PERF] update_card_state took {update_time:.3f}s")
 
         # Calculate today's progress
         today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
@@ -72,12 +70,8 @@ def get_next_card(
         # Fetch next card
         fetch_start = time.time()
         next_card_db, user_assoc, meta = scheduler.get_next_card(current_user_id)
-        fetch_time = time.time() - fetch_start
-        print(f"[PERF] get_next_card took {fetch_time:.3f}s")
 
         if not next_card_db:
-            total_time = time.time() - request_start
-            print(f"[PERF] Total request time: {total_time:.3f}s (no card)")
             
             previous_card_id = answer.card_id if answer else None
             
@@ -104,12 +98,6 @@ def get_next_card(
             sentence_audio_url=storage_provider.get_url(next_card_db.sentence_audio_url),
             proficiency_level=proficiency_level,
         )
-        format_time = time.time() - format_start
-        print(f"[PERF] Response formatting took {format_time:.3f}s")
-
-        total_time = time.time() - request_start
-        print(f"[PERF] Total request time: {total_time:.3f}s")
-
         previous_card_id = answer.card_id if answer else None
 
         return schemas.NextCardResponse(

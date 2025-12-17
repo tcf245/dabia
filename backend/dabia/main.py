@@ -32,6 +32,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from dabia.core.middleware import LoggingMiddleware
+app.add_middleware(LoggingMiddleware)
+
 
 # Include routers
 # Include routers
