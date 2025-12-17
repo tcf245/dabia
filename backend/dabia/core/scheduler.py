@@ -49,15 +49,6 @@ class Scheduler:
             .first()
         )
         overdue_time = time.time() - overdue_start
-        print(f"[PERF] Overdue query took {overdue_time:.3f}s")
-        
-        # Test database connection latency
-        if overdue_card_assoc:
-            ping_start = time.time()
-            self.db.execute(text("SELECT 1"))
-            ping_time = time.time() - ping_start
-            print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
-
         if overdue_card_assoc:
             logger.info(
                 f"SRS Decision [User: {user_id}]: Selected OVERDUE card. "
@@ -97,15 +88,6 @@ class Scheduler:
             .first()
         )
         new_card_time = time.time() - new_card_start
-        print(f"[PERF] New card query took {new_card_time:.3f}s")
-        
-        # Test database connection latency
-        if new_card:
-            ping_start = time.time()
-            self.db.execute(text("SELECT 1"))
-            ping_time = time.time() - ping_start
-            print(f"[PERF] DB ping (SELECT 1) took {ping_time:.3f}s")
-
         if new_card:
             logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")
             return new_card, None, {"type": "new"}
