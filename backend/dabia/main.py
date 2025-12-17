@@ -11,10 +11,29 @@ from dabia.api.v1 import session as session_router
 from dabia.api.v1 import cards as cards_router
 from dabia.api.v1 import auth as auth_router
 
+from contextlib import asynccontextmanager
+from dabia.core.logging import logger
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run database migrations on startup
+    try:
+        logger.info("Running database migrations...")
+        # Point to alembic.ini in the project root (backend/)
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully.")
+    except Exception as e:
+        logger.error(f"Database migration failed: {str(e)}", exc_info=True)
+        # We might want to stop startup if migration fails, but for now log error.
+        
+    yield
+
 app = FastAPI(
     title="Dabia API",
     description="API for the Dabia language learning platform.",
     version="0.1.0",
+    lifespan=lifespan
 )
 
 # Set up CORS
