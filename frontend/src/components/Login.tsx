@@ -13,7 +13,7 @@ export const Login = ({ onLoginSuccess }: LoginProps) => {
         flow: 'auth-code',
         onSuccess: async (codeResponse) => {
             try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/login/google`, {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/auth/login/google`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
