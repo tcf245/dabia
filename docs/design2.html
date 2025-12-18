@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dabia Profile - Final Hybrid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        /* 配色变量 */
+        :root {
+            --bg-body: #F9F9F8;      /* 整体背景：暖灰/纸张色 */
+            --bg-card: #FFFFFF;      /* 卡片背景：纯白 */
+            --text-main: #2A2A29;    /* 主文字：深灰黑 */
+            --brand: #D97757;        /* 品牌色：陶土 */
+            --brand-light: #F2DCD6;  /* 浅陶土 */
+            --paper-gray: #F2F0EF;   /* 空状态灰 */
+            --border: #E6E6E3;       /* 边框 */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+        }
+        
+        .font-serif {
+            font-family: 'Noto Serif JP', serif;
+        }
+
+        /* V1 的呼吸浮动动画 */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen py-10 px-4">
+
+    <nav class="w-full max-w-2xl flex justify-between items-center mb-10 px-1 opacity-80">
+        <span class="font-serif text-xl font-bold tracking-tight text-[#D97757]">Dabia.</span>
+        <div class="w-8 h-8 rounded-full bg-white border border-[var(--border)] flex items-center justify-center text-xs text-[#666]">E</div>
+    </nav>
+
+    <main class="w-full max-w-2xl space-y-8">
+
+        <header class="text-center mb-8 space-y-2">
+            <h1 class="font-serif text-3xl text-[#2A2A29]">Your Progress</h1>
+            <p class="text-[#74746E] text-sm font-light tracking-wide">
+                Keep the rhythm alive.
+            </p>
+        </header>
+
+        <section class="bg-white rounded-2xl border border-[var(--border)] p-8 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+            <div class="flex justify-between items-end mb-6">
+                <h2 class="font-serif text-lg font-medium text-[#2A2A29]">Heatmap</h2>
+                
+                <div class="flex items-center gap-2 text-[10px] text-[#999]">
+                    <span>Less</span>
+                    <div class="w-2.5 h-2.5 rounded-[2px] bg-[var(--paper-gray)]"></div>
+                    <div class="w-2.5 h-2.5 rounded-[2px] bg-[var(--brand-light)]"></div>
+                    <div class="w-2.5 h-2.5 rounded-[2px] bg-[var(--brand)]"></div>
+                    <span>More</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-[4px] justify-center sm:justify-start" id="heatmap-grid">
+                </div>
+            
+            <div class="mt-6 pt-4 border-t border-dashed border-[#eee] text-center">
+                <p class="text-xs text-[#999] font-serif italic">
+                    "You practiced 24 days in the last 3 months."
+                </p>
+            </div>
+        </section>
+
+        <section class="relative h-72 w-full bg-white rounded-2xl border border-[var(--border)] shadow-[0_2px_10px_rgba(0,0,0,0.02)] overflow-hidden">
+           
+           <div class="absolute top-6 left-6 z-20 pointer-events-none">
+             <h2 class="font-serif text-lg font-medium text-[#2A2A29]">Garden</h2>
+             <p class="text-xs text-[#888] mt-1 font-light">Floating memories</p>
+           </div>
+
+           <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>
+
+           <div class="absolute inset-0" id="word-garden">
+             </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- 1. 日历逻辑 (V1 风格：正方形格子) ---
+        const gridContainer = document.getElementById('heatmap-grid');
+        const days = 104; // 约3个半月，填满看起来更舒服
+        
+        for (let i = 0; i < days; i++) {
+            const div = document.createElement('div');
+            const rand = Math.random();
+            let colorClass = 'bg-[var(--paper-gray)]'; // 默认灰
+            
+            // 调整概率
+            if (rand > 0.6) colorClass = 'bg-[var(--brand-light)]'; // 浅陶土
+            if (rand > 0.85) colorClass = 'bg-[var(--brand)]';      // 深陶土
+
+            div.className = `w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] transition-all duration-300 hover:scale-125 cursor-pointer ${colorClass}`;
+            div.title = `Day ${i+1}`;
+            gridContainer.appendChild(div);
+        }
+
+        // --- 2. 词云逻辑 (V1 风格：纯文字悬浮，无背景框) ---
+        const words = [
+            { text: '約束', romaji: 'Yakusoku', type: 'review', x: '10%', y: '30%', size: 'text-2xl' },
+            { text: '猫', romaji: 'Neko', type: 'learned', x: '25%', y: '60%', size: 'text-xl' },
+            { text: '素晴らしい', romaji: 'Subarashii', type: 'review', x: '60%', y: '20%', size: 'text-3xl' },
+            { text: '海', romaji: 'Umi', type: 'learned', x: '80%', y: '50%', size: 'text-lg' },
+            { text: '冒険', romaji: 'Bouken', type: 'learned', x: '15%', y: '75%', size: 'text-xl' },
+            { text: '愛', romaji: 'Ai', type: 'review', x: '50%', y: '70%', size: 'text-4xl' },
+            { text: '旅行', romaji: 'Ryokou', type: 'learned', x: '75%', y: '80%', size: 'text-xl' },
+            { text: '心', romaji: 'Kokoro', type: 'learned', x: '45%', y: '45%', size: 'text-lg' },
+        ];
+
+        const garden = document.getElementById('word-garden');
+
+        words.forEach((word, i) => {
+            const wrapper = document.createElement('div');
+            // V1 动画逻辑
+            const duration = 3 + (i % 4); 
+            
+            wrapper.className = 'absolute flex flex-col items-center justify-center cursor-pointer hover:opacity-100 transition-opacity';
+            wrapper.style.left = word.x;
+            wrapper.style.top = word.y;
+            wrapper.style.animation = `float ${duration}s ease-in-out infinite alternate`;
+            // 待复习的不透明，已学会的半透明
+            wrapper.style.opacity = word.type === 'review' ? '1' : '0.5';
+
+            // 纯文字结构
+            wrapper.innerHTML = `
+                <span class="font-serif ${word.size} ${word.type === 'review' ? 'text-[#D97757] font-medium' : 'text-[#555]'} select-none">
+                   ${word.text}
+                </span>
+                <span class="text-[10px] text-[#999] tracking-widest uppercase mt-1 select-none">
+                   ${word.romaji}
+                </span>
+                ${word.type === 'review' ? '<span class="w-1 h-1 bg-[#D97757] rounded-full mt-1"></span>' : ''}
+            `;
+            
+            garden.appendChild(wrapper);
+        });
+    </script>
+</body>
+</html>

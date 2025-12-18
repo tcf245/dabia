@@ -44,6 +44,15 @@ module.exports = {
         serif: ['"Noto Serif JP"', 'serif'],
         sans: ['Inter', '"Noto Sans SC"', '"Noto Sans JP"', 'sans-serif'],
       },
+      keyframes: {
+        float: {
+          '0%': { transform: 'translateY(0px)' },
+          '100%': { transform: 'translateY(-8px)' },
+        }
+      },
+      animation: {
+        float: 'float 3s ease-in-out infinite alternate',
+      },
     },
   },
   plugins: [],

@@ -3,6 +3,8 @@ import LearningSession from './pages/LearningSession';
 import Login from './components/Login';
 import { jwtDecode } from "jwt-decode";
 import { Menu, Transition } from '@headlessui/react';
+import { Routes, Route, Link } from 'react-router-dom';
+import Profile from './pages/Profile';
 
 interface User {
   sub: string;
@@ -19,14 +21,7 @@ function App() {
     if (token) {
       try {
         const decoded = jwtDecode<User>(token);
-        // Note: The backend JWT might not contain all user info (name, picture) depending on implementation.
-        // Ideally, we should fetch user profile from backend /me endpoint.
-        // For MVP, we'll assume the backend JWT *could* have it, or we just rely on session existence.
-        // Actually, our backend `create_access_token` only puts `sub` (user_id) in it.
-        // So we really should fetch the profile.
-        // But for now, let's just set the user ID.
         setUser(decoded);
-        console.log("Decoded token:", decoded);
       } catch (e) {
         console.error("Invalid token", e);
         logout();
@@ -35,6 +30,10 @@ function App() {
   }, [token]);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // When wrapping in BrowserRouter in main.tsx, we can use hooks here if needed,
+  // but we primarily need Link and Routes.
+  // Note: We need to import Link and Routes etc.
 
   const handleLoginSuccess = (newToken: string) => {
     localStorage.setItem('token', newToken);
@@ -46,6 +45,8 @@ function App() {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    // Ideally redirect to home, but for now just clear state
+    window.location.href = '/';
   };
 
   return (
@@ -68,7 +69,7 @@ function App() {
 
       <div className="w-full max-w-4xl">
         <header className="mb-24 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-foreground">Dabia</h1>
+          <Link to="/" className="text-2xl font-bold text-foreground">Dabia</Link>
           <div className="flex items-center gap-4">
             {token ? (
               <Menu as="div" className="relative inline-block text-left z-[100]">
@@ -93,6 +94,18 @@ function App() {
                 >
                   <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-border rounded-lg bg-popover shadow-lg ring-1 ring-black/5 focus:outline-none border border-border">
                     <div className="px-1 py-1">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/profile"
+                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            Profile
+                          </Link>
+                        )}
+                      </Menu.Item>
                       <Menu.Item>
                         {({ active }) => (
                           <button
@@ -120,7 +133,10 @@ function App() {
           </div>
         </header>
         <main className="flex flex-col items-center justify-center w-full">
-          <LearningSession />
+          <Routes>
+            <Route path="/" element={<LearningSession />} />
+            <Route path="/profile" element={token ? <Profile /> : <div className="text-center py-20">Please login to view profile.</div>} />
+          </Routes>
         </main>
       </div>
     </div>

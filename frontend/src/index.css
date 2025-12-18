@@ -23,6 +23,15 @@
     --ring: #c96442;
     --radius: 0.5rem;
     --font-serif: 'Noto Serif JP', serif;
+    /* Design 2 Variables */
+    --bg-body: #F9F9F8;
+    --bg-card: #FFFFFF;
+    --text-main: #2A2A29;
+    --brand: #D97757;
+    --brand-light: #F2DCD6;
+    --paper-gray: #F2F0EF;
+    /* Override or coexist with existing border */
+    /* --border: #E6E6E3; */
   }
 
   .font-serif {
