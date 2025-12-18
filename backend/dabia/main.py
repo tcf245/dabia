@@ -10,6 +10,7 @@ from dabia.database import get_db
 from dabia.api.v1 import session as session_router
 from dabia.api.v1 import cards as cards_router
 from dabia.api.v1 import auth as auth_router
+from dabia.api.v1 import profile as profile_router
 
 from contextlib import asynccontextmanager
 from dabia.core.logging import logger
@@ -60,6 +61,7 @@ app.add_middleware(LoggingMiddleware)
 app.include_router(session_router.router, prefix="/api/v1/session", tags=["Session"])
 app.include_router(cards_router.router, prefix="/api/v1/cards", tags=["Cards"])
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(profile_router.router, prefix="/api/v1/profile", tags=["Profile"])
 
 
 @app.get("/")

@@ -1,27 +1,105 @@
+import { useState, useEffect } from 'react';
+import * as api from '../services/api';
+
 const Profile = () => {
 
-    // --- MOCK DATA FOR HEATMAP (104 items) ---
-    // In a real app, this would come from the backend.
-    const days = Array.from({ length: 104 }, (_, i) => {
-        const rand = Math.random();
-        let colorClass = 'bg-[var(--paper-gray)]';
-        // Mocking the probability from the design file
-        if (rand > 0.6) colorClass = 'bg-[var(--brand-light)]';
-        if (rand > 0.85) colorClass = 'bg-[var(--brand)]';
-        return { id: i, colorClass };
-    });
+    const [heatmapData, setHeatmapData] = useState<any[]>([]);
+    const [gardenWords, setGardenWords] = useState<any[]>([]);
+    // const [loading, setLoading] = useState(true);
 
-    // --- MOCK DATA FOR GARDEN ---
-    const words = [
-        { text: '約束', romaji: 'Yakusoku', type: 'review', x: '10%', y: '30%', size: 'text-2xl' },
-        { text: '猫', romaji: 'Neko', type: 'learned', x: '25%', y: '60%', size: 'text-xl' },
-        { text: '素晴らしい', romaji: 'Subarashii', type: 'review', x: '60%', y: '20%', size: 'text-3xl' },
-        { text: '海', romaji: 'Umi', type: 'learned', x: '80%', y: '50%', size: 'text-lg' },
-        { text: '冒険', romaji: 'Bouken', type: 'learned', x: '15%', y: '75%', size: 'text-xl' },
-        { text: '愛', romaji: 'Ai', type: 'review', x: '50%', y: '70%', size: 'text-4xl' },
-        { text: '旅行', romaji: 'Ryokou', type: 'learned', x: '75%', y: '80%', size: 'text-xl' },
-        { text: '心', romaji: 'Kokoro', type: 'learned', x: '45%', y: '45%', size: 'text-lg' },
-    ];
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [heatmap, garden] = await Promise.all([
+                    api.getProfileHeatmap(),
+                    api.getProfileGarden()
+                ]);
+
+                // Process heatmap to match the 104 days grid
+                const today = new Date();
+                const daysMap = new Map();
+                heatmap.forEach((d) => daysMap.set(d.date, d));
+
+                const newDays = Array.from({ length: 104 }, (_, i) => {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - (103 - i));
+                    const dateStr = date.toISOString().split('T')[0];
+                    const dayData = daysMap.get(dateStr);
+
+                    let colorClass = 'bg-[var(--paper-gray)]';
+                    if (dayData) {
+                        if (dayData.level >= 3) colorClass = 'bg-[var(--brand)]';
+                        else if (dayData.level >= 1) colorClass = 'bg-[var(--brand-light)]';
+                    }
+
+                    return { id: i, date: dateStr, colorClass, count: dayData?.count || 0 };
+                });
+
+                setHeatmapData(newDays);
+
+                // Process Garden with Grid-based Jitter + Exclusion Zone
+                // We define a 5x4 grid but exclude the top-left area where the title is.
+
+                const COLS = 5;
+                const ROWS = 4;
+                const validSlots: { r: number, c: number }[] = [];
+
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        // Exclude Top-Left (Row 0, Col 0 & 1) to avoid "Garden" title collision
+                        if (r === 0 && c <= 1) continue;
+                        validSlots.push({ r, c });
+                    }
+                }
+
+                // Shuffle slots to randomize position assignments
+                const shuffledSlots = validSlots.sort(() => 0.5 - Math.random());
+
+                // We can accomodate at most shuffledSlots.length words
+                const gardenSubset = garden.slice(0, shuffledSlots.length);
+
+                const newWords = gardenSubset.map((w, i) => {
+                    const slot = shuffledSlots[i];
+
+                    // Cell dimensions in %
+                    const cellWidth = 100 / COLS;
+                    const cellHeight = 100 / ROWS;
+
+                    // Center of the cell
+                    const centerX = slot.c * cellWidth + cellWidth / 2;
+                    const centerY = slot.r * cellHeight + cellHeight / 2;
+
+                    // Jitter: Allow moderate movement (50% of cell)
+                    const jitterX = (Math.random() - 0.5) * (cellWidth * 0.5);
+                    const jitterY = (Math.random() - 0.5) * (cellHeight * 0.5);
+
+                    const x = centerX + jitterX;
+                    const y = centerY + jitterY;
+
+                    const sizes = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
+                    // Larger words for 'review' type? Or random.
+                    const size = sizes[Math.floor(Math.random() * sizes.length)];
+
+                    return { ...w, x: `${x}%`, y: `${y}%`, size };
+                });
+                setGardenWords(newWords);
+
+            } catch (error) {
+                console.error("Failed to fetch profile data", error);
+            } finally {
+                // setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    // Use heatmapData if loaded, else (or initially) maybe empty or skeleton?
+    // The original code used 104 mock items directly.
+    // If loading, we could show skeleton or just the empty grid.
+
+    const displayDays = heatmapData.length > 0 ? heatmapData : Array.from({ length: 104 }, (_, i) => ({ id: i, colorClass: 'bg-[var(--paper-gray)]' }));
+
 
     return (
         <div className="flex flex-col items-center w-full max-w-2xl animate-fade-in">
@@ -46,11 +124,11 @@ const Profile = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-[4px] justify-center sm:justify-start">
-                    {days.map((day) => (
+                    {displayDays.map((day) => (
                         <div
                             key={day.id}
                             className={`w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] transition-all duration-300 hover:scale-125 cursor-pointer ${day.colorClass}`}
-                            title={`Day ${day.id + 1}`}
+                            title={day.date ? `${day.date}: ${day.count} reviews` : `Day ${day.id + 1}`}
                         ></div>
                     ))}
                 </div>
@@ -71,9 +149,9 @@ const Profile = () => {
                 <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>
 
                 <div className="absolute inset-0">
-                    {words.map((word, i) => {
-                        // Animation customization per item mimicking the design's inline style
-                        const duration = 3 + (i % 4);
+                    {gardenWords.map((word, i) => {
+                        // Animation: float with random duration between 3s and 7s
+                        const duration = 3 + Math.random() * 4;
                         return (
                             <div
                                 key={i}

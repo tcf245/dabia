@@ -135,7 +135,7 @@ function App() {
         <main className="flex flex-col items-center justify-center w-full">
           <Routes>
             <Route path="/" element={<LearningSession />} />
-            <Route path="/profile" element={token ? <Profile /> : <div className="text-center py-20">Please login to view profile.</div>} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
       </div>

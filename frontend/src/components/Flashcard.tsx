@@ -114,7 +114,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-card rounded-xl shadow-lg p-8 mb-4 border">
+      <div className="bg-white rounded-2xl border border-[#E6E6E3] shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-8 mb-4">
         {/* Hint */}
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -127,11 +127,11 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
 
         {/* Sentence and Input */}
         <div className="mb-8">
-          <div className="text-3xl text-foreground font-light leading-relaxed text-center">
+          <div className="text-3xl text-foreground font-serif font-light leading-relaxed text-center">
             {mode === 'review' ? (
               <span>
                 {sentenceParts[0]}
-                <span className="font-medium text-primary mx-1 border-b-2 border-primary/30 px-1">
+                <span className="font-serif font-medium text-primary mx-1 border-b-2 border-primary/30 px-1">
                   {card.target.word}
                 </span>
                 {sentenceParts[1]}

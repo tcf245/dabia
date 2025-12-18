@@ -2,25 +2,25 @@
 
 @layer base {
   :root {
-    --background: #faf9f5;
-    --foreground: #3d3929;
-    --card: #ffffff;
-    --card-foreground: #3d3929;
-    --popover: #ffffff;
-    --popover-foreground: #3d3929;
-    --primary: #c96442;
-    --primary-foreground: #ffffff;
-    --secondary: #e9e6dc;
-    --secondary-foreground: #3d3929;
-    --muted: #ede9de;
-    --muted-foreground: #83827d;
-    --accent: #e9e6dc;
-    --accent-foreground: #3d3929;
+    --background: #F9F9F8;
+    --foreground: #2A2A29;
+    --card: #FFFFFF;
+    --card-foreground: #2A2A29;
+    --popover: #FFFFFF;
+    --popover-foreground: #2A2A29;
+    --primary: #D97757;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F2DCD6;
+    --secondary-foreground: #D97757;
+    --muted: #F2F0EF;
+    --muted-foreground: #74746E;
+    --accent: #F2DCD6;
+    --accent-foreground: #D97757;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    --border: #dad9d4;
-    --input: #b4b2a7;
-    --ring: #c96442;
+    --border: #E6E6E3;
+    --input: #E6E6E3;
+    --ring: #D97757;
     --radius: 0.5rem;
     --font-serif: 'Noto Serif JP', serif;
     /* Design 2 Variables */
