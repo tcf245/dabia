@@ -41,8 +41,17 @@ module.exports = {
         '2xl': 'var(--shadow-2xl)',
       },
       fontFamily: {
-        serif: ['"Source Serif 4"', 'serif'],
-        sans: ['Inter', '"Noto Sans SC"', '"Noto Sans JP"', 'sans-serif'],
+        serif: ['ui-serif', 'Georgia', 'Cambria', '\"Times New Roman\"', 'Times', '\"Noto Serif JP\"', 'serif'],
+        sans: ['Inter', '\"Noto Sans SC\"', '\"Noto Sans JP\"', 'sans-serif'],
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px) rotate(-1deg)' },
+          '50%': { transform: 'translateY(-12px) rotate(1deg)' },
+        }
+      },
+      animation: {
+        float: 'float 3s ease-in-out infinite alternate',
       },
     },
   },

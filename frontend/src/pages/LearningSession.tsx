@@ -93,10 +93,10 @@ const LearningSession: React.FC = () => {
   };
 
   const MessageCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode; }> = ({ icon, title, children }) => (
-    <div className="bg-card rounded-lg shadow-md border w-full max-w-md p-8 text-center flex flex-col items-center">
+    <div className="bg-white rounded-2xl border border-[#E6E6E3] shadow-[0_2px_10px_rgba(0,0,0,0.02)] w-full max-w-md p-8 text-center flex flex-col items-center">
       <div className="mb-4">{icon}</div>
-      <h2 className="text-2xl font-bold text-card-foreground mb-2">{title}</h2>
-      <div className="text-muted-foreground">{children}</div>
+      <h2 className="font-serif text-2xl font-normal text-[#2A2A29] mb-2">{title}</h2>
+      <div className="text-[#74746E] font-light">{children}</div>
     </div>
   );
 

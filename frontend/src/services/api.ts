@@ -74,3 +74,26 @@ export const getCard = async (cardId: string): Promise<Card> => {
   const response = await api.get<Card>(`/api/v1/cards/${cardId}`);
   return response.data;
 };
+
+// Profile types
+export interface HeatmapDay {
+  date: string;
+  count: number;
+  level: number; // 0-4
+}
+
+export interface GardenWord {
+  text: string;
+  romaji: string | null;
+  type: 'review' | 'learned';
+}
+
+export const getProfileHeatmap = async (): Promise<HeatmapDay[]> => {
+  const response = await api.get<HeatmapDay[]>('/api/v1/profile/heatmap');
+  return response.data;
+}
+
+export const getProfileGarden = async (): Promise<GardenWord[]> => {
+  const response = await api.get<GardenWord[]>('/api/v1/profile/garden');
+  return response.data;
+}
