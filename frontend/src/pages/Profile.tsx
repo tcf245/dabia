@@ -37,17 +37,16 @@ const Profile = () => {
 
                 setHeatmapData(newDays);
 
-                // Process Garden with Grid-based Jitter + Exclusion Zone
-                // We define a 5x4 grid but exclude the top-left area where the title is.
-
-                const COLS = 5;
-                const ROWS = 4;
+                // Exclude only top-left corner (Row 0, Col 0) to keep title clear
+                // Use a 3x3 grid for 8 words to be more centered
+                const COLS = 3;
+                const ROWS = 3;
                 const validSlots: { r: number, c: number }[] = [];
 
                 for (let r = 0; r < ROWS; r++) {
                     for (let c = 0; c < COLS; c++) {
-                        // Exclude Top-Left (Row 0, Col 0 & 1) to avoid "Garden" title collision
-                        if (r === 0 && c <= 1) continue;
+                        // Exclude only top-left corner for title
+                        if (r === 0 && c === 0) continue;
                         validSlots.push({ r, c });
                     }
                 }
@@ -102,23 +101,25 @@ const Profile = () => {
 
 
     return (
-        <div className="flex flex-col items-center w-full max-w-2xl animate-fade-in">
-            <header className="text-center mb-8 space-y-2">
-                <h1 className="font-serif text-3xl text-[#2A2A29]">Your Progress</h1>
-                <p className="text-[#74746E] text-sm font-light tracking-wide">
-                    Keep the rhythm alive.
+        <div className="flex flex-col items-center w-full max-w-3xl animate-fade-in">
+            <header className="text-center mb-12">
+                <h1 className="font-serif text-5xl font-normal text-[#1A1A1A] mb-4 tracking-tight" style={{ lineHeight: '1' }}>Your Journey</h1>
+                <p className="text-[#888] text-sm font-light tracking-wider mt-3">
+                    每一次坚持，都是记忆的生长。
                 </p>
             </header>
 
-            <section className="bg-white rounded-2xl border border-[var(--border)] p-8 shadow-[0_2px_10px_rgba(0,0,0,0.02)] w-full mb-8">
-                <div className="flex justify-between items-end mb-6">
-                    <h2 className="font-serif text-lg font-medium text-[#2A2A29]">Heatmap</h2>
+            <section className="bg-white rounded-[20px] border border-[#E6E6E3] p-10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] w-full mb-10">
+                <div className="flex justify-between items-baseline mb-8">
+                    <h2 className="font-serif text-2xl text-[#333]">Study Streak</h2>
 
-                    <div className="flex items-center gap-2 text-[10px] text-[#999]">
+                    <div className="flex items-center gap-3 text-sm text-[#888] font-light">
                         <span>Less</span>
-                        <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--paper-gray)]"></div>
-                        <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--brand-light)]"></div>
-                        <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--brand)]"></div>
+                        <div className="flex gap-1.5">
+                            <div className="w-3.5 h-3.5 rounded-[2px] bg-[#F2F0EF]"></div>
+                            <div className="w-3.5 h-3.5 rounded-[2px] bg-[#F2DCD6]"></div>
+                            <div className="w-3.5 h-3.5 rounded-[2px] bg-[#D97757]"></div>
+                        </div>
                         <span>More</span>
                     </div>
                 </div>
@@ -133,17 +134,17 @@ const Profile = () => {
                     ))}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-dashed border-[#eee] text-center">
-                    <p className="text-xs text-[#999] font-serif italic">
+                <div className="mt-8 pt-6 border-t border-dashed border-[#F0F0F0] text-center">
+                    <p className="text-[#888] font-serif italic text-sm tracking-wide">
                         "You practiced 24 days in the last 3 months."
                     </p>
                 </div>
             </section>
 
-            <section className="relative h-72 w-full bg-white rounded-2xl border border-[var(--border)] shadow-[0_2px_10px_rgba(0,0,0,0.02)] overflow-hidden">
-                <div className="absolute top-6 left-6 z-20 pointer-events-none">
-                    <h2 className="font-serif text-lg font-medium text-[#2A2A29]">Garden</h2>
-                    <p className="text-xs text-[#888] mt-1 font-light">Floating memories</p>
+            <section className="relative h-80 w-full bg-white rounded-[20px] border border-[#E6E6E3] shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden">
+                <div className="absolute top-8 left-10 z-20 pointer-events-none">
+                    <h2 className="font-serif text-2xl text-[#333]">Vocabulary Garden</h2>
+                    <p className="text-sm text-[#555] mt-2 font-light">需复习 (Review) & 已掌握 (Mastered)</p>
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>
@@ -167,7 +168,7 @@ const Profile = () => {
                                 <span className={`font-serif ${word.size} ${word.type === 'review' ? 'text-[#D97757] font-medium' : 'text-[#555]'} select-none`}>
                                     {word.text}
                                 </span>
-                                <span className="text-[10px] text-[#999] tracking-widest uppercase mt-1 select-none">
+                                <span className="font-sans text-[10px] text-[#999] tracking-[0.2em] uppercase mt-1 select-none">
                                     {word.romaji}
                                 </span>
                                 {word.type === 'review' && (

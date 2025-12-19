@@ -22,7 +22,7 @@
     --input: #E6E6E3;
     --ring: #D97757;
     --radius: 0.5rem;
-    --font-serif: 'Noto Serif JP', serif;
+    --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, 'Noto Serif JP', serif;
     /* Design 2 Variables */
     --bg-body: #F9F9F8;
     --bg-card: #FFFFFF;
@@ -41,6 +41,8 @@
     color: var(--foreground);
     font-family: 'Inter', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
   }
 }
 
@@ -52,11 +54,11 @@
     transform: translate(-50%, -50%) translateY(0px);
   }
 
-  50% {
-    transform: translate(-50%, -50%) translateY(-12px);
+  55% {
+    transform: translate(-50%, -50%) translateY(-8px);
   }
 }
 
 .animate-float {
-  animation: float 4s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite alternate;
 }

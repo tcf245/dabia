@@ -41,8 +41,8 @@ module.exports = {
         '2xl': 'var(--shadow-2xl)',
       },
       fontFamily: {
-        serif: ['"Noto Serif JP"', 'serif'],
-        sans: ['Inter', '"Noto Sans SC"', '"Noto Sans JP"', 'sans-serif'],
+        serif: ['ui-serif', 'Georgia', 'Cambria', '\"Times New Roman\"', 'Times', '\"Noto Serif JP\"', 'serif'],
+        sans: ['Inter', '\"Noto Sans SC\"', '\"Noto Sans JP\"', 'sans-serif'],
       },
       keyframes: {
         float: {

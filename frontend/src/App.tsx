@@ -69,7 +69,7 @@ function App() {
 
       <div className="w-full max-w-4xl">
         <header className="mb-24 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold text-foreground">Dabia</Link>
+          <Link to="/" className="font-serif text-2xl font-bold text-[#D97757] tracking-tight">Dabia.</Link>
           <div className="flex items-center gap-4">
             {token ? (
               <Menu as="div" className="relative inline-block text-left z-[100]">
