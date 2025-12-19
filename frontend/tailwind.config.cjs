@@ -46,8 +46,8 @@ module.exports = {
       },
       keyframes: {
         float: {
-          '0%': { transform: 'translateY(0px)' },
-          '100%': { transform: 'translateY(-8px)' },
+          '0%, 100%': { transform: 'translateY(0px) rotate(-1deg)' },
+          '50%': { transform: 'translateY(-12px) rotate(1deg)' },
         }
       },
       animation: {

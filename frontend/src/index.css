@@ -30,8 +30,6 @@
     --brand: #D97757;
     --brand-light: #F2DCD6;
     --paper-gray: #F2F0EF;
-    /* Override or coexist with existing border */
-    /* --border: #E6E6E3; */
   }
 
   .font-serif {
@@ -41,6 +39,24 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-family: 'Inter', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* Float animation for Garden words */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0px);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) translateY(-12px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
 }

@@ -117,11 +117,11 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
       <div className="bg-white rounded-2xl border border-[#E6E6E3] shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-8 mb-4">
         {/* Hint */}
         <div className="flex items-start justify-between mb-8">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-lg">
+          <div className="flex items-center gap-3 text-[#74746E]">
+            <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-base">
               <span>💬</span>
             </div>
-            <span className="text-sm font-medium">{card.target.hint}</span>
+            <span className="text-sm font-light">{card.target.hint}</span>
           </div>
         </div>
 
@@ -193,13 +193,13 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
         </div>
 
         {/* Translation and Submit Button */}
-        <div className="mt-6 pt-6 border-t border-border flex justify-between items-center">
-          <span className="text-lg font-medium text-muted-foreground text-left">{card.sentence_translation}</span>
+        <div className="mt-6 pt-6 border-t border-dashed border-[#E6E6E3] flex justify-between items-center">
+          <span className="text-base font-light text-[#74746E] text-left">{card.sentence_translation}</span>
           {mode !== 'review' && (answerState === 'unanswered' || answerState === 'incorrect') && (
             <button
               onClick={handleCheck}
               disabled={!userInput.trim()}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-[#c96442] text-white shadow hover:bg-[#b45738] h-10 rounded-lg px-6 text-sm"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] disabled:bg-[#F2F0EF] disabled:text-[#999] disabled:cursor-not-allowed bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
             >
               Submit
             </button>
@@ -207,7 +207,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
           {mode === 'review' && (
             <button
               onClick={onContinue}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-[#c96442] text-white shadow hover:bg-[#b45738] h-10 rounded-lg px-6 text-sm"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
             >
               Continue
             </button>

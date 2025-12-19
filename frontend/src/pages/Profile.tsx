@@ -55,8 +55,8 @@ const Profile = () => {
                 // Shuffle slots to randomize position assignments
                 const shuffledSlots = validSlots.sort(() => 0.5 - Math.random());
 
-                // We can accomodate at most shuffledSlots.length words
-                const gardenSubset = garden.slice(0, shuffledSlots.length);
+                // Limit to 8 words max per design specification
+                const gardenSubset = garden.slice(0, 8);
 
                 const newWords = gardenSubset.map((w, i) => {
                     const slot = shuffledSlots[i];
@@ -159,6 +159,7 @@ const Profile = () => {
                                 style={{
                                     left: word.x,
                                     top: word.y,
+                                    transform: 'translate(-50%, -50%)',
                                     animationDuration: `${duration}s`,
                                     opacity: word.type === 'review' ? 1 : 0.5,
                                 }}
