@@ -60,23 +60,28 @@ const Profile = () => {
                 const newWords = gardenSubset.map((w, i) => {
                     const slot = shuffledSlots[i];
 
-                    // Cell dimensions in %
-                    const cellWidth = 100 / COLS;
-                    const cellHeight = 100 / ROWS;
+                    // Safe area padding (15% from each edge)
+                    const PADDING = 15;
+                    const safeWidth = 100 - (PADDING * 2);
+                    const safeHeight = 100 - (PADDING * 2);
 
-                    // Center of the cell
-                    const centerX = slot.c * cellWidth + cellWidth / 2;
-                    const centerY = slot.r * cellHeight + cellHeight / 2;
+                    // Cell dimensions within safe area
+                    const cellWidth = safeWidth / COLS;
+                    const cellHeight = safeHeight / ROWS;
 
-                    // Jitter: Allow moderate movement (50% of cell)
-                    const jitterX = (Math.random() - 0.5) * (cellWidth * 0.5);
-                    const jitterY = (Math.random() - 0.5) * (cellHeight * 0.5);
+                    // Center of the cell (offset by padding)
+                    const centerX = PADDING + slot.c * cellWidth + cellWidth / 2;
+                    const centerY = PADDING + slot.r * cellHeight + cellHeight / 2;
 
-                    const x = centerX + jitterX;
-                    const y = centerY + jitterY;
+                    // Jitter: Allow moderate movement (40% of cell) but clamp to safe bounds
+                    const jitterX = (Math.random() - 0.5) * (cellWidth * 0.4);
+                    const jitterY = (Math.random() - 0.5) * (cellHeight * 0.4);
+
+                    // Clamp to safe area
+                    const x = Math.max(PADDING, Math.min(100 - PADDING, centerX + jitterX));
+                    const y = Math.max(PADDING, Math.min(100 - PADDING, centerY + jitterY));
 
                     const sizes = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
-                    // Larger words for 'review' type? Or random.
                     const size = sizes[Math.floor(Math.random() * sizes.length)];
 
                     return { ...w, x: `${x}%`, y: `${y}%`, size };
