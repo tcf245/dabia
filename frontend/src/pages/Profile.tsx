@@ -60,26 +60,30 @@ const Profile = () => {
                 const newWords = gardenSubset.map((w, i) => {
                     const slot = shuffledSlots[i];
 
-                    // Safe area padding (15% from each edge)
-                    const PADDING = 15;
-                    const safeWidth = 100 - (PADDING * 2);
-                    const safeHeight = 100 - (PADDING * 2);
+                    // Asymmetric padding: less horizontal, more top vertical
+                    const PADDING_LEFT = 10;
+                    const PADDING_RIGHT = 10;
+                    const PADDING_TOP = 30;    // More space from top (title area)
+                    const PADDING_BOTTOM = 10; // Less from bottom
+
+                    const safeWidth = 100 - PADDING_LEFT - PADDING_RIGHT;
+                    const safeHeight = 100 - PADDING_TOP - PADDING_BOTTOM;
 
                     // Cell dimensions within safe area
                     const cellWidth = safeWidth / COLS;
                     const cellHeight = safeHeight / ROWS;
 
                     // Center of the cell (offset by padding)
-                    const centerX = PADDING + slot.c * cellWidth + cellWidth / 2;
-                    const centerY = PADDING + slot.r * cellHeight + cellHeight / 2;
+                    const centerX = PADDING_LEFT + slot.c * cellWidth + cellWidth / 2;
+                    const centerY = PADDING_TOP + slot.r * cellHeight + cellHeight / 2;
 
                     // Jitter: Allow moderate movement (40% of cell) but clamp to safe bounds
                     const jitterX = (Math.random() - 0.5) * (cellWidth * 0.4);
                     const jitterY = (Math.random() - 0.5) * (cellHeight * 0.4);
 
                     // Clamp to safe area
-                    const x = Math.max(PADDING, Math.min(100 - PADDING, centerX + jitterX));
-                    const y = Math.max(PADDING, Math.min(100 - PADDING, centerY + jitterY));
+                    const x = Math.max(PADDING_LEFT, Math.min(100 - PADDING_RIGHT, centerX + jitterX));
+                    const y = Math.max(PADDING_TOP, Math.min(100 - PADDING_BOTTOM, centerY + jitterY));
 
                     const sizes = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
                     const size = sizes[Math.floor(Math.random() * sizes.length)];
