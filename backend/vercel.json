@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pip install -r requirements.txt && alembic upgrade head",
+  "buildCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && /root/.cargo/bin/uv export --format requirements-txt --output-file requirements.txt && pip install -r requirements.txt && /root/.cargo/bin/uv run alembic upgrade head",
   "builds": [
     {
       "src": "dabia/main.py",
