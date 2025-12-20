@@ -5,7 +5,7 @@ const Profile = () => {
 
     const [heatmapData, setHeatmapData] = useState<any[]>([]);
     const [gardenWords, setGardenWords] = useState<any[]>([]);
-    // const [loading, setLoading] = useState(true);
+    const [activeDays, setActiveDays] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -15,27 +15,78 @@ const Profile = () => {
                     api.getProfileGarden()
                 ]);
 
-                // Process heatmap to match the 104 days grid
+                // -------------------------------------------------------------
+                // 1. Process Heatmap Data (GitHub Style)
+                // -------------------------------------------------------------
                 const today = new Date();
+
+                // Calculate start date: Exactly 32 weeks ago (reduced from 34 to fix overflow)
+                // User requested removing about 2 columns.
+                const startDate = new Date(today);
+                startDate.setDate(today.getDate() - (32 * 7));
+
+                // Adjust start date to the nearest preceding Sunday to align the grid
+                const dayOfWeek = startDate.getDay(); // 0 = Sunday
+                startDate.setDate(startDate.getDate() - dayOfWeek);
+
+                // Initialize Days Grid
                 const daysMap = new Map();
                 heatmap.forEach((d) => daysMap.set(d.date, d));
 
-                const newDays = Array.from({ length: 104 }, (_, i) => {
-                    const date = new Date(today);
-                    date.setDate(date.getDate() - (103 - i));
-                    const dateStr = date.toISOString().split('T')[0];
-                    const dayData = daysMap.get(dateStr);
+                let activeDaysCount = 0;
+                let iterDate = new Date(startDate);
 
-                    let colorClass = 'bg-[var(--paper-gray)]';
-                    if (dayData) {
-                        if (dayData.level >= 3) colorClass = 'bg-[var(--brand)]';
-                        else if (dayData.level >= 1) colorClass = 'bg-[var(--brand-light)]';
+                // Group by weeks for better layout control
+                const weeks: any[][] = [];
+                let currentWeek: any[] = [];
+
+                // The month label logic is now handled in the render section for simplicity
+                // as it doesn't require a separate state and can be derived from existing data.
+
+                while (iterDate <= today) {
+                    const dateStr = iterDate.toISOString().split('T')[0];
+                    const dayData = daysMap.get(dateStr);
+                    const count = dayData ? dayData.count : 0;
+
+                    let colorClass = 'bg-[var(--paper-gray)]'; // 0 (Empty)
+
+                    if (count > 0) {
+                        activeDaysCount++;
+                        if (count >= 50) colorClass = 'bg-[#B05030]';      // 50+ (Full Dark)
+                        else if (count >= 30) colorClass = 'bg-[#D97757]'; // 30-49 (Medium)
+                        else if (count >= 10) colorClass = 'bg-[#E5A087]'; // 10-29 (Medium-Light) - Custom Mix
+                        else colorClass = 'bg-[#F2DCD6]';                  // 1-9 (Light)
                     }
 
-                    return { id: i, date: dateStr, colorClass, count: dayData?.count || 0 };
-                });
+                    currentWeek.push({
+                        date: dateStr,
+                        colorClass,
+                        count
+                    });
 
-                setHeatmapData(newDays);
+                    // If Saturday, push week and start new
+                    if (iterDate.getDay() === 6) {
+                        weeks.push(currentWeek);
+                        currentWeek = [];
+                    }
+
+                    // Next day
+                    iterDate.setDate(iterDate.getDate() + 1);
+                }
+
+                // Push partial last week if exists
+                if (currentWeek.length > 0) {
+                    weeks.push(currentWeek);
+                }
+
+                setHeatmapData(weeks);
+                setActiveDays(activeDaysCount);
+
+
+                // -------------------------------------------------------------
+                // 2. Process Garden Grid (Clean Layout)
+                // -------------------------------------------------------------
+                // ... (Existing Garden Logic - Keeping mostly same but checking styles)
 
                 // Exclude only top-left corner (Row 0, Col 0) to keep title clear
                 // Use a 3x3 grid for 8 words to be more centered
@@ -94,19 +145,13 @@ const Profile = () => {
 
             } catch (error) {
                 console.error("Failed to fetch profile data", error);
-            } finally {
-                // setLoading(false);
             }
         };
 
         fetchData();
     }, []);
 
-    // Use heatmapData if loaded, else (or initially) maybe empty or skeleton?
-    // The original code used 104 mock items directly.
-    // If loading, we could show skeleton or just the empty grid.
 
-    const displayDays = heatmapData.length > 0 ? heatmapData : Array.from({ length: 104 }, (_, i) => ({ id: i, colorClass: 'bg-[var(--paper-gray)]' }));
 
 
     return (
@@ -118,34 +163,92 @@ const Profile = () => {
                 </p>
             </header>
 
-            <section className="bg-white rounded-[20px] border border-[#E6E6E3] p-10 shadow-[0_4px_20px_rgba(0,0,0,0.02)] w-full mb-10">
-                <div className="flex justify-between items-baseline mb-8">
-                    <h2 className="font-serif text-2xl text-[#333]">Study Streak</h2>
+            <section className="bg-white rounded-[20px] border border-[#E6E6E3] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] w-full mb-10">
+                <div className="flex justify-between items-baseline mb-6">
+                    <h2 className="font-serif text-2xl text-[#333333]">Study Streak</h2>
 
-                    <div className="flex items-center gap-3 text-sm text-[#888] font-light">
+                    {/* Legend */}
+                    <div className="flex items-center gap-2 text-xs text-[#888888] font-light">
                         <span>Less</span>
-                        <div className="flex gap-1.5">
-                            <div className="w-3.5 h-3.5 rounded-[2px] bg-[#F2F0EF]"></div>
-                            <div className="w-3.5 h-3.5 rounded-[2px] bg-[#F2DCD6]"></div>
-                            <div className="w-3.5 h-3.5 rounded-[2px] bg-[#D97757]"></div>
+                        <div className="flex gap-1">
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[var(--paper-gray)]"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[#F2DCD6]"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[#E5A087]"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[#D97757]"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[#B05030]"></div>
                         </div>
                         <span>More</span>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-[4px] justify-center sm:justify-start">
-                    {displayDays.map((day) => (
-                        <div
-                            key={day.id}
-                            className={`w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] transition-all duration-300 hover:scale-125 cursor-pointer ${day.colorClass}`}
-                            title={day.date ? `${day.date}: ${day.count} reviews` : `Day ${day.id + 1}`}
-                        ></div>
-                    ))}
+                {/* Heatmap Container with Axes */}
+                <div className="flex flex-col w-full">
+
+                    {/* Month Labels Row */}
+                    <div className="flex flex-row ml-8 mb-2 gap-1 text-xs text-[#888] h-4">
+                        {heatmapData.map((week, i) => {
+                            if (!week || week.length === 0) return <div key={i} className="w-3 sm:w-4"></div>;
+                            const firstDayDate = new Date(week[0].date);
+                            // Simple logic: Label if it's the first week of a month OR index 0
+                            const isNewMonth = i === 0 || new Date(heatmapData[i - 1][0].date).getMonth() !== firstDayDate.getMonth();
+                            return (
+                                <div key={i} className="w-3 sm:w-4 text-[10px] overflow-visible whitespace-nowrap relative">
+                                    {isNewMonth ? (
+                                        <span className="absolute left-0">{firstDayDate.toLocaleString('en-US', { month: 'short' })}</span>
+                                    ) : null}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex flex-row w-full">
+                        {/* Day Labels Column */}
+                        <div className="flex flex-col gap-1 mr-2 mt-[0px] text-[10px] text-[#888] h-full justify-start pt-[0px] leading-4">
+                            {/* Days are 0-6.  0=Sun, 1=Mon, 3=Wed, 5=Fri */}
+                            {/* Row heights are 4 (16px) + gap 1 (4px) = 20px. */}
+                            {/* We just need to place 'Mon', 'Wed', 'Fri' at correct vertical positions. */}
+                            {/* Instead of absolute, just render 7 rows? Or just 3 specific ones? */}
+                            {/* Standard Grid approach: Render 7 rows, leave empty ones empty. */}
+                            {/* Row 0 (Sun) */} <div className="h-3 sm:h-4"></div>
+                            {/* Row 1 (Mon) */} <div className="h-3 sm:h-4 flex items-center">Mon</div>
+                            {/* Row 2 (Tue) */} <div className="h-3 sm:h-4"></div>
+                            {/* Row 3 (Wed) */} <div className="h-3 sm:h-4 flex items-center">Wed</div>
+                            {/* Row 4 (Thu) */} <div className="h-3 sm:h-4"></div>
+                            {/* Row 5 (Fri) */} <div className="h-3 sm:h-4 flex items-center">Fri</div>
+                            {/* Row 6 (Sat) */} <div className="h-3 sm:h-4"></div>
+                        </div>
+
+                        {/* Heatmap Grid */}
+                        <div className="flex flex-row gap-1 overflow-x-auto no-scrollbar pb-2">
+                            {heatmapData.map((week, weekIndex) => (
+                                <div key={weekIndex} className="flex flex-col gap-1">
+                                    {week.map((day: any) => (
+                                        <div
+                                            key={day.date}
+                                            className={`w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] transition-all duration-300 hover:scale-125 cursor-pointer group relative ${day.colorClass} z-0 hover:z-20`}
+                                        >
+                                            {/* Tooltip - Smart Positioning */}
+                                            {/* 
+                                                Left side: left-0
+                                                Right side: right-0
+                                                Middle: left-1/2 -translate-x-1/2
+                                            */}
+                                            <div className={`absolute bottom-full mb-2 px-2 py-1 bg-[#2A2A29] text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-sm
+                                                ${weekIndex < 2 ? 'left-0' : (weekIndex >= heatmapData.length - 4 ? 'right-0' : 'left-1/2 -translate-x-1/2')}
+                                            `}>
+                                                {day.date}: {day.count} cards
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-dashed border-[#F0F0F0] text-center">
-                    <p className="text-[#888] font-serif italic text-sm tracking-wide">
-                        "You practiced 24 days in the last 3 months."
+                    <p className="text-[#888888] font-serif italic text-sm tracking-wide">
+                        "You practiced {activeDays} days in the last 8 months."
                     </p>
                 </div>
             </section>
