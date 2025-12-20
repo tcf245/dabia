@@ -97,8 +97,19 @@ class Scheduler:
 
     def update_card_state(self, user_id: str, card_id: str, quality: int, response_time_ms: int):
         """
-        Updates the card state based on the review quality (0-5).
+        Updates the card state based on the review quality (0-5). 
+        Implements SRS v3 Proficiency State Machine.
         """
+        import logging
+        from dabia.core.srs_constants import (
+            INTERVAL_L2_SECONDS, INTERVAL_L3_SECONDS,
+            INTERVAL_L4_DAYS, INTERVAL_L5_DAYS,
+            PROFICIENCY_NEW, PROFICIENCY_HARD,
+            PROFICIENCY_LEARNING, PROFICIENCY_EASY,
+            PROFICIENCY_MASTERED
+        )
+        
+        logger = logging.getLogger(__name__)
         now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         assoc = (
@@ -110,21 +121,30 @@ class Scheduler:
             .first()
         )
 
+        previous_level = 0
+
         if not assoc:
             # First time seeing this card, create association
+            # Initial state is effectively Proficiency 1 (New) before processing the result
+            previous_level = PROFICIENCY_NEW # Logic implies input was against "New" state
             assoc = UserCardAssociation(
                 user_id=user_id,
                 card_id=card_id,
-                proficiency_level=0,
+                proficiency_level=PROFICIENCY_NEW,
                 interval=0,
                 ease_factor=2.5,
                 repetitions=0,
                 lapses_count=0,
-                next_review_at=now, # Will be updated below
+                next_review_at=now,
                 last_reviewed_at=now
             )
             self.db.add(assoc)
-        
+        else:
+            previous_level = assoc.proficiency_level
+            # Defensive fix for legacy data (0 -> 1)
+            if previous_level == 0:
+                previous_level = PROFICIENCY_NEW
+
         # Update Review Log
         is_correct = quality >= 3
         log = ReviewLog(
@@ -136,82 +156,80 @@ class Scheduler:
         )
         self.db.add(log)
 
-        # SRS Logic (v2 - Stability Based)
-        import math
-        
-        # Constants
-        S_INIT = 0.6
-        P_TARGET = 0.9
-        S_MIN = 0.05
-        S_MAX = 3650.0
-        
-        # Defensive: Ensure stability is never 0 or None
-        if assoc.stability is None or assoc.stability < S_MIN:
-            assoc.stability = S_MIN
-
-        if quality >= 3:
-            # Success
+        # Update Statistics Counters
+        if is_correct:
             assoc.repetitions += 1
-            
-            if assoc.repetitions == 1:
-                # First success: Initialize stability
-                assoc.stability = S_INIT
-            else:
-                # Subsequent success: S_new = S * (1 + alpha * (q - 2))
-                # alpha is a tuning parameter, typically around 0.2
-                alpha = 0.2
-                growth_factor = 1 + alpha * (quality - 2)
-                assoc.stability = min(S_MAX, assoc.stability * growth_factor)
-
-                # Recovery Mechanism:
-                # If stability is suspiciously low given the repetition streak (e.g. due to bad migration or bug),
-                # boost it exponentially based on repetitions.
-                # We use a conservative base (e.g. 1.15) to estimate a "floor" for stability.
-                # Floor = S_INIT * (1.15 ^ (reps - 1))
-                recovery_floor = S_INIT * (1.15 ** (assoc.repetitions - 1))
-                if assoc.stability < recovery_floor:
-                     assoc.stability = recovery_floor
-            
-            # Calculate interval: I = -S * ln(P_target)
-            # We use P_target = 0.9 (90% retention)
-            assoc.interval = max(0.007, -assoc.stability * math.log(P_TARGET))
-            
         else:
-            # Failure (Lapse)
             assoc.repetitions = 0
             assoc.lapses_count += 1
-            
-            # Decay stability: S_new = S * beta
-            beta = 0.5
-            assoc.stability = max(S_MIN, assoc.stability * beta)
-            
-            # Short interval for re-learning (Short Queue simulation)
-            # Set to 10 minutes (0.007 days)
-            assoc.interval = 0.007
-            
-        # Update Next Review
-        assoc.next_review_at = now + timedelta(days=assoc.interval)
-        assoc.last_reviewed_at = now
 
-        # Update Proficiency Level (Derived from Stability)
-        assoc.proficiency_level = self._calculate_proficiency(assoc.stability)
+        # --- SRS v3 State Machine ---
+        new_level = previous_level
+        interval_delta = timedelta(seconds=0)
+        
+        # State Machine Transitions
+        if previous_level == PROFICIENCY_NEW: # L1
+            if is_correct:
+                new_level = PROFICIENCY_MASTERED # L1 -> L5 (Graduate)
+                interval_delta = timedelta(days=INTERVAL_L5_DAYS)
+            else:
+                new_level = PROFICIENCY_HARD # L1 -> L2
+                interval_delta = timedelta(seconds=INTERVAL_L2_SECONDS)
+
+        elif previous_level == PROFICIENCY_HARD: # L2
+            if is_correct:
+                new_level = PROFICIENCY_LEARNING # L2 -> L3
+                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
+            else:
+                new_level = PROFICIENCY_HARD # L2 -> L2 (Stay)
+                interval_delta = timedelta(seconds=INTERVAL_L2_SECONDS)
+
+        elif previous_level == PROFICIENCY_LEARNING: # L3
+            if is_correct:
+                new_level = PROFICIENCY_EASY # L3 -> L4
+                interval_delta = timedelta(days=INTERVAL_L4_DAYS)
+            else:
+                new_level = PROFICIENCY_LEARNING # L3 -> L3 (Stay)
+                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
+
+        elif previous_level == PROFICIENCY_EASY: # L4
+            if is_correct:
+                new_level = PROFICIENCY_MASTERED # L4 -> L5
+                interval_delta = timedelta(days=INTERVAL_L5_DAYS)
+            else:
+                new_level = PROFICIENCY_LEARNING # L4 -> L3 (Regression)
+                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
+
+        elif previous_level == PROFICIENCY_MASTERED: # L5
+            if is_correct:
+                new_level = PROFICIENCY_MASTERED # L5 -> L5 (Maintain)
+                interval_delta = timedelta(days=INTERVAL_L5_DAYS)
+            else:
+                new_level = PROFICIENCY_LEARNING # L5 -> L3 (Regression)
+                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
+        
+        else:
+            # Fallback for unknown levels
+            logger.warning(f"Unknown proficiency level {previous_level}, resetting to L1 rules.")
+            new_level = PROFICIENCY_NEW
+            interval_delta = timedelta(minutes=1)
+
+        # Apply Updates
+        assoc.proficiency_level = new_level
+        assoc.next_review_at = now + interval_delta
+        assoc.last_reviewed_at = now
+        
+        # Calculate interval in days for legacy/stats compatibility
+        assoc.interval = interval_delta.total_seconds() / 86400.0
+
+        # Log transition decision
+        logger.info(
+            f"SRS Transition [User: {user_id} Card: {card_id}]: "
+            f"L{previous_level} -> L{new_level} "
+            f"(Correct: {is_correct}, Quality: {quality}). "
+            f"Next Review: {assoc.next_review_at} (+{interval_delta})"
+        )
 
         self.db.commit()
         self.db.refresh(assoc)
         return assoc
-
-    def _calculate_proficiency(self, stability: float) -> int:
-        """
-        Maps stability (days) to 0-5 scale.
-        """
-        if stability < 0.5:
-            return 0 # New / Needs Practice
-        if stability < 2:
-            return 1 # Needs Practice
-        if stability < 7:
-            return 2 # Learning
-        if stability < 14:
-            return 3 # Almost there
-        if stability < 30:
-            return 4 # Memorized
-        return 5 # Mastered

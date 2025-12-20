@@ -113,35 +113,37 @@ This project uses Docker Compose to manage the local development environment.
 
 ### How to Run
 
-
-
-1.  **Install Python dependencies**:
+1.  **Sync Environment**:
 
     ```bash
-
-    pip install -r requirements.txt
-
+    uv sync
     ```
 
 2.  **Apply database migrations**:
 
     ```bash
-
-    alembic upgrade head
-
+    uv run alembic upgrade head
     ```
 
 3.  **Start the FastAPI server**:
 
     ```bash
-
-    uvicorn dabia.main:app --reload
-
+    uv run uvicorn dabia.main:app --reload
     ```
 
-
-
     The API will be accessible at `http://127.0.0.1:8000`.
+
+## SRS Algorithm (Memory Engine)
+
+Dabia uses a custom **5-Stage Proficiency System** designed for optimal memory retention. It moves beyond simple "right/wrong" by classifying memory into explicit states:
+
+- **1 (New)**: The first encounter.
+- **2 (Hard)**: Needs immediate practice.
+- **3 (Learning)**: Short-term consolidation.
+- **4 (Easy)**: Long-term retention (weekly).
+- **5 (Mastered)**: Permanent memory (monthly).
+
+The scheduler intelligently transitions cards between these states, using short-term intervals (seconds/minutes) for lower proficiency to build initial strength, and long-term intervals (days/weeks) for higher proficiency to combat the forgetting curve.
 
     The API will be accessible at `http://127.0.0.1:8000`.
 
