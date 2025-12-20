@@ -1,3 +1,8 @@
+import os
+# Set dummy DATABASE_URL to satisfy Pydantic validation during test collection
+# The actual tests will override this with the Testcontainer URL via the fixture
+os.environ.setdefault("DATABASE_URL", "postgresql://dummy:dummy@localhost:5432/dummy")
+
 import pytest
 from testcontainers.postgres import PostgresContainer
 from sqlalchemy import create_engine
