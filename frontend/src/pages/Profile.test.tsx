@@ -21,7 +21,7 @@ describe('Profile Component - Heatmap', () => {
 
     it('renders the heatmap with correct layout and colors', async () => {
         const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
+
 
         // Mock data: 
         // 1 day with 0 count (should be empty color)
