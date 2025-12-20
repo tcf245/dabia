@@ -99,11 +99,7 @@ describe('Flashcard component', () => {
     expect(mockOnSubmit).toHaveBeenCalledWith('1', false, expect.any(Number));
   });
 
-  // @TODO: This test is skipped due to a persistent and difficult-to-debug timeout
-  // issue when `vi.useFakeTimers()` is active. The test is intended to verify
-  // that when a card has no audio URL, the component automatically advances to the
-  // next card via `setTimeout` after a correct answer. The component logic itself
-  // appears correct in manual testing, but the test environment consistently times out.
+
   test('advances without audio after a correct answer', async () => {
     vi.useFakeTimers();
     const cardWithoutAudio = { ...mockCard, sentence_audio_url: null };

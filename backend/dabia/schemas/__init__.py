@@ -15,3 +15,4 @@ __all__ = [
     "SessionProgress",
     "NextCardResponse",
 ]
+from .stats import DailyStats

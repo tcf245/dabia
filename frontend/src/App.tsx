@@ -6,6 +6,7 @@ import { Menu, Transition } from '@headlessui/react';
 import { Routes, Route, Link } from 'react-router-dom';
 import Profile from './pages/Profile';
 
+
 interface User {
   sub: string;
   email?: string;
