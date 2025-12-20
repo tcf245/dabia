@@ -15,7 +15,7 @@ describe('SkeletonFlashcard', () => {
         expect(skeletonContainer).toBeInTheDocument();
 
         // Check for some internal skeleton elements (e.g., hint, sentence, feedback)
-        const skeletonElements = container.querySelectorAll('.bg-secondary\\/50');
+        const skeletonElements = container.querySelectorAll('.bg-\\[\\#F2F0EF\\]');
         expect(skeletonElements.length).toBeGreaterThan(0);
     });
 });

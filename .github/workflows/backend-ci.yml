@@ -60,4 +60,17 @@ jobs:
           # Tell conftest to use the service container instead of spinning up a new one
           USE_SERVICE_CONTAINER: "true" 
         run: |
-          PYTHONPATH=backend/ pytest backend/tests/
+          PYTHONPATH=backend/ pytest --cov=backend --cov-report=xml backend/tests/
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: backend
+
+      - name: Upload Backend Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage.xml
