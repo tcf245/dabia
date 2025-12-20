@@ -114,7 +114,7 @@ describe('LearningSession', () => {
         // The popup fetches stats, so we wait for that text
         await waitFor(() => {
             expect(screen.getByText(/你做得很棒!/i)).toBeInTheDocument();
-            expect(screen.getByText(/完成50张词卡/i)).toBeInTheDocument();
+            expect(screen.getByText(/完成\s*50\s*张词卡/i)).toBeInTheDocument();
         });
     });
 });
