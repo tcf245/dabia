@@ -20,7 +20,7 @@ describe('Profile Component - Heatmap', () => {
     };
 
     it('renders the heatmap with correct layout and colors', async () => {
-        const today = new Date();
+
 
 
         // Mock data: 
