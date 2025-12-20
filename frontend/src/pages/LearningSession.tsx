@@ -3,6 +3,7 @@ import { AlertTriangle, PartyPopper } from 'lucide-react';
 import Flashcard from '../components/Flashcard';
 import SkeletonFlashcard from '../components/SkeletonFlashcard';
 import SessionProgress from '../components/SessionProgress';
+import DailyGoalPopup from '../components/DailyGoalPopup';
 import { getNextCard, getCard } from '../services/api';
 import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
 import { ArrowLeft } from 'lucide-react';
@@ -15,6 +16,9 @@ const LearningSession: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isDailyGoalPopupOpen, setIsDailyGoalPopupOpen] = useState(false);
+  const hasShownDailyGoal = React.useRef(false);
+
   const fetchNextCard = async (previousAnswer?: PreviousAnswer) => {
     setLoading(true);
     setError(null);
@@ -24,6 +28,15 @@ const LearningSession: React.FC = () => {
       setSessionProgress(response.session_progress);
       setPreviousCardId(response.previous_card_id);
       setIsViewingPrevious(false);
+
+      // Check for daily goal completion
+      if (
+        response.session_progress.completed_today >= response.session_progress.goal_today &&
+        !hasShownDailyGoal.current
+      ) {
+        setIsDailyGoalPopupOpen(true);
+        hasShownDailyGoal.current = true;
+      }
     } catch (err) {
       // A real app should have better error handling (e.g., check for 401, 500)
       // For now, we assume a network or CORS issue.
@@ -164,6 +177,11 @@ const LearningSession: React.FC = () => {
           onContinue={handleContinue}
         />
       )}
+
+      <DailyGoalPopup
+        isOpen={isDailyGoalPopupOpen}
+        onClose={() => setIsDailyGoalPopupOpen(false)}
+      />
     </div>
   );
 };
