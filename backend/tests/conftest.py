@@ -14,22 +14,40 @@ import os
 @pytest.fixture(scope="session")
 def db_engine():
     """Fixture for a test database engine."""
-    with PostgresContainer("postgres:13") as postgres:
-        # Set the database URL for the test session
-        os.environ["DATABASE_URL"] = postgres.get_connection_url()
+    
+    # If running in CI with a service container, use that
+    if os.getenv("USE_SERVICE_CONTAINER") == "true":
+        db_url = os.getenv("DATABASE_URL")
+        engine = create_engine(db_url)
         
-        # Create an engine
-        engine = create_engine(postgres.get_connection_url())
-
-        # Run Alembic migrations
-        # We need to point to the alembic.ini file in the backend directory
+        # Migrations are already run by the CI step 'Run Database Migrations',
+        # but running them again here ensures the DB is ready even if running pytest locally 
+        # against a docker-compose setup without prior migration.
+        # It's idempotent so it's safe.
         alembic_ini_path = os.path.join(os.path.dirname(__file__), "..", "alembic.ini")
         alembic_cfg = Config(alembic_ini_path)
         command.upgrade(alembic_cfg, "head")
-
+        
         yield engine
+        # We don't dispose the engine here as it's just a connection to the external service
+        
+    else:
+        # Local execution: Spin up a Testcontainer
+        with PostgresContainer("postgres:13") as postgres:
+            # Set the database URL for the test session
+            os.environ["DATABASE_URL"] = postgres.get_connection_url()
+            
+            # Create an engine
+            engine = create_engine(postgres.get_connection_url())
 
-        # The container will be stopped automatically
+            # Run Alembic migrations
+            alembic_ini_path = os.path.join(os.path.dirname(__file__), "..", "alembic.ini")
+            alembic_cfg = Config(alembic_ini_path)
+            command.upgrade(alembic_cfg, "head")
+
+            yield engine
+
+            # The container will be stopped automatically
         
 @pytest.fixture(scope="function")
 def db_session(db_engine):

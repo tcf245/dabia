@@ -14,6 +14,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://user:password@localhost:5432/test_db
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,12 +39,25 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # Or your desired python version
+          python-version: '3.12'
 
       - name: Install Dependencies
         run: |
           pip install -r backend/requirements.txt
 
+      - name: Run Database Migrations
+        run: |
+          cd backend
+          alembic upgrade head
+
+      - name: Check for DB Model Changes
+        run: |
+          cd backend
+          alembic check
+
       - name: Run Tests
+        env:
+          # Tell conftest to use the service container instead of spinning up a new one
+          USE_SERVICE_CONTAINER: "true" 
         run: |
           PYTHONPATH=backend/ pytest backend/tests/
