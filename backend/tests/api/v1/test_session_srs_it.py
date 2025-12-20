@@ -1,7 +1,3 @@
-import os
-# Set dummy DATABASE_URL before importing app to avoid validation error
-os.environ["DATABASE_URL"] = "postgresql://test:test@localhost:5432/testdb"
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
