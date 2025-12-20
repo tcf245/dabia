@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogPanel, DialogBackdrop } from '@headlessui/react';
 import {
-    X, Check, Maximize2, MoveVertical, ArrowUp, AlignJustify,
-    Clock, Star, CheckCircle2, ChevronDown, ChevronUp
+    X, Check, Maximize2, MoveVertical, ArrowUp,
+    Clock, Star, CheckCircle2
 } from 'lucide-react';
 import { getDailySummary } from '../api/stats';
 import type { DailyStats } from '../api/stats';
@@ -15,15 +15,12 @@ interface DailyGoalPopupProps {
 
 const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initialStats }) => {
     const [stats, setStats] = useState<DailyStats | null>(initialStats || null);
-    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen && !stats && !initialStats) {
-            setLoading(true);
             getDailySummary()
                 .then(setStats)
-                .catch(console.error)
-                .finally(() => setLoading(false));
+                .catch(console.error);
         }
     }, [isOpen]);
 
@@ -39,70 +36,78 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
 
     return (
         <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-            <DialogBackdrop className="fixed inset-0 bg-black/30" />
+            <DialogBackdrop className="fixed inset-0 bg-stone-900/20 backdrop-blur-[2px] transition-opacity" />
 
             <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-                <DialogPanel className="w-full max-w-md bg-white rounded-2xl p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+                <DialogPanel className="w-full max-w-md bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-[#E6E6E3] p-8 space-y-6 max-h-[90vh] overflow-y-auto">
                     {/* Header */}
                     <div className="flex justify-between items-start">
-                        <h2 className="text-xl font-medium text-slate-800">
+                        <h2 className="font-serif text-2xl text-[#333333]">
                             {todayStr}
                         </h2>
-                        <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-                            <X size={20} />
+                        <button onClick={onClose} className="text-[#888888] hover:text-[#2A2A29] transition-colors p-1">
+                            <X size={20} strokeWidth={1.5} />
                         </button>
                     </div>
 
                     {/* Celebration Banner */}
-                    <div className="flex items-start gap-4 py-2">
-                        <div className="bg-green-100 p-2 rounded-lg text-green-600 shrink-0">
-                            <Check size={24} />
+                    <div className="flex items-start gap-4 p-4 bg-[#F9F9F8] rounded-[20px] border border-[#E6E6E3]">
+                        <div className="bg-[#FFFFFF] p-2.5 rounded-full text-[#D97757] shadow-sm shrink-0 border border-[#E6E6E3]">
+                            <Check size={20} strokeWidth={2} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-800 text-lg">你做得很棒!</h3>
-                            <p className="text-slate-600 font-medium">完成{stats?.total_answered || 50}张词卡</p>
-                            <p className="text-slate-500 text-sm mt-1">50张词卡是最佳学习的建议目标。</p>
+                            <h3 className="font-serif text-xl text-[#2A2A29] mb-1">你做得很棒!</h3>
+                            <p className="font-sans text-sm text-[#2A2A29] font-medium">完成 {stats?.total_answered || 50} 张词卡</p>
+                            <p className="font-sans text-xs text-[#888888] mt-1 font-light tracking-wide">50张词卡是最佳学习的建议目标。</p>
                         </div>
                     </div>
 
                     {/* Stats List */}
-                    <div className="space-y-1">
-                        <StatRow icon={<Maximize2 size={18} className="text-teal-600" />} label="要学的单词" value={stats?.to_learn_count ?? 0} />
-                        <StatRow icon={<MoveVertical size={18} className="text-cyan-600" />} label="已学单词" value={stats?.learned_count ?? 0} />
-                        <StatRow icon={<ArrowUp size={18} className="text-teal-700" />} label="单词已强化" value={stats?.reinforced_count ?? 0} />
-                    </div>
-
-                    <div className="py-2">
-                        <div className="items-center justify-between flex p-3 bg-white">
-                            <div className="flex items-center gap-3">
-                                <AlignJustify size={18} className="text-cyan-400" />
-                                <span className="text-slate-700 font-medium">已答卡片</span>
-                            </div>
-                            <span className="text-slate-600 font-medium">{stats?.total_answered ?? 0}</span>
+                    <div className="space-y-4">
+                        {/* Primary Stats Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <StatBox
+                                icon={<Maximize2 size={16} strokeWidth={1.5} className="text-[#D97757]" />}
+                                label="要学的单词"
+                                value={stats?.to_learn_count ?? 0}
+                            />
+                            <StatBox
+                                icon={<MoveVertical size={16} strokeWidth={1.5} className="text-[#D97757]" />}
+                                label="已学单词"
+                                value={stats?.learned_count ?? 0}
+                            />
                         </div>
-                    </div>
 
-                    {/* Time */}
-                    <div className="py-1">
-                        <div className="flex items-center justify-between p-3">
-                            <div className="flex items-center gap-3">
-                                <Clock size={18} className="text-slate-600" />
-                                <span className="text-slate-700 font-medium">总耗时</span>
-                            </div>
-                            <span className="text-slate-600">{formatTime(stats?.total_time_seconds || 0)}</span>
+                        {/* Detailed Stats List */}
+                        <div className="bg-[#F9F9F8] rounded-[20px] p-1 border border-[#E6E6E3]">
+                            <StatRow
+                                icon={<ArrowUp size={16} strokeWidth={1.5} className="text-[#888888]" />}
+                                label="单词已强化"
+                                value={stats?.reinforced_count ?? 0}
+                            />
+                            <StatRow
+                                icon={<Clock size={16} strokeWidth={1.5} className="text-[#888888]" />}
+                                label="总耗时"
+                                value={formatTime(stats?.total_time_seconds || 0)}
+                            />
+                            <StatRow
+                                icon={<Star size={16} strokeWidth={1.5} className="text-[#888888]" />}
+                                label="新单词"
+                                value={stats?.new_words_count ?? 0}
+                            />
+                            <StatRow
+                                icon={<CheckCircle2 size={16} strokeWidth={1.5} className="text-[#888888]" />}
+                                label="正确率"
+                                value={`${Math.round(stats?.accuracy ?? 0)}%`}
+                                isLast
+                            />
                         </div>
-                    </div>
-
-                    {/* Bottom Stats */}
-                    <div className="space-y-1 bg-slate-50 rounded-xl overflow-hidden divide-y divide-slate-100">
-                        <StatRow icon={<Star size={18} className="text-orange-400" />} label="新单词" value={stats?.new_words_count ?? 0} />
-                        <StatRow icon={<CheckCircle2 size={18} className="text-green-500" />} label="正确率" value={`${Math.round(stats?.accuracy ?? 0)}%`} />
                     </div>
 
                     {/* Action Button */}
                     <button
                         onClick={onClose}
-                        className="w-full bg-slate-800 text-white font-medium py-3 rounded-xl hover:bg-slate-900 transition-colors mt-4"
+                        className="w-full bg-[#D97757] text-white font-medium py-3 rounded-full hover:bg-[#B05030] transition-colors shadow-sm"
                     >
                         继续
                     </button>
@@ -113,18 +118,30 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
     );
 };
 
-// Helper Component for Row
-const StatRow: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => {
+// Helper Component for Grid Box
+const StatBox: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => {
     return (
-        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <div className="flex flex-col items-start gap-2 p-4 bg-white rounded-[20px] border border-[#E6E6E3] shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
+            <div className="p-1.5 bg-[#F9F9F8] rounded-full border border-[#E6E6E3]">
+                {icon}
+            </div>
+            <div>
+                <p className="font-sans text-xs text-[#888888] font-light mb-0.5">{label}</p>
+                <p className="font-serif text-xl text-[#2A2A29]">{value}</p>
+            </div>
+        </div>
+    );
+};
+
+// Helper Component for Row
+const StatRow: React.FC<{ icon: React.ReactNode; label: string; value: string | number; isLast?: boolean }> = ({ icon, label, value, isLast }) => {
+    return (
+        <div className={`flex items-center justify-between p-3.5 ${!isLast ? 'border-b border-[#E6E6E3]' : ''}`}>
             <div className="flex items-center gap-3">
-                <div className="w-6 flex justify-center">{icon}</div>
-                <span className="text-slate-700 font-medium">{label}</span>
+                <div className="text-[#888888]">{icon}</div>
+                <span className="font-sans text-sm text-[#2A2A29]">{label}</span>
             </div>
-            <div className="flex items-center gap-2">
-                <span className="text-slate-600 font-medium">{value}</span>
-                <ChevronDown size={16} className="text-slate-400" />
-            </div>
+            <span className="font-mono text-sm text-[#888888]">{value}</span>
         </div>
     );
 };
