@@ -21,8 +21,9 @@ async def lifespan(app: FastAPI):
     # Run database migrations on startup
     try:
         logger.info("Running database migrations...")
-        # Point to alembic.ini in the project root (backend/)
-        alembic_cfg = Config("alembic.ini")
+        # Point to alembic.ini in the project root (backend/) relative to this file
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        alembic_cfg = Config(os.path.join(base_dir, "alembic.ini"))
         command.upgrade(alembic_cfg, "head")
         logger.info("Database migrations completed successfully.")
     except Exception as e:

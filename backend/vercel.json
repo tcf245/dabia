@@ -1,15 +1,9 @@
 {
-  "buildCommand": "pip install -r requirements.txt && alembic upgrade head",
-  "builds": [
+  "installCommand": "pip install uv && uv export --format requirements-txt --output-file requirements.txt && uv pip install -r requirements.txt --system",
+  "rewrites": [
     {
-      "src": "dabia/main.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "dabia/main.py"
+      "source": "/(.*)",
+      "destination": "api/index.py"
     }
   ]
 }
