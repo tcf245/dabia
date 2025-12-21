@@ -57,8 +57,11 @@ def setup_logging():
     if logger.hasHandlers():
         logger.handlers.clear()
         
+    # Attach filter to handler so it applies to all records (including propagated ones)
+    handler.addFilter(ContextFilter())
+    
     logger.addHandler(handler)
-    logger.addFilter(ContextFilter())
+    # logger.addFilter(ContextFilter()) # Removed: Filter on logger doesn't apply to children during propagation
     
     return logger
 
