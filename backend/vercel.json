@@ -1,5 +1,4 @@
 {
-  "installCommand": "pip install uv && uv export --format requirements-txt --output-file requirements.txt && uv pip install -r requirements.txt --system",
   "rewrites": [
     {
       "source": "/(.*)",
