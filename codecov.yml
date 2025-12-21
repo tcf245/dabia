@@ -1,5 +1,5 @@
 comment:
-  layout: "reach, diff, flags, files"
+  layout: "header, diff, changes, sunburst, methods"
   behavior: default
   require_changes: false
 
