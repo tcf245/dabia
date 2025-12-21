@@ -1,9 +1,14 @@
 {
-  "installCommand": "uv export --format requirements-txt --output-file requirements.txt && pip install -r requirements.txt",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "api/index.py"
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
     }
   ]
 }
