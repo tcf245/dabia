@@ -42,66 +42,68 @@ def test_card(db_session: Session, test_deck):
     return card
 
 def test_new_card_association(scheduler, db_session, test_user, test_card):
-    # Test first review of a new card
+    # Test first review of a new card (L1 -> Correct -> L5)
     assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=4, response_time_ms=1000)
     
     assert assoc.repetitions == 1
-    # V2: Interval is calculated from stability (0.6) -> approx 0.063
-    assert assoc.interval < 1.0
-    assert assoc.stability == 0.6
-    assert assoc.proficiency_level == 1 # Stability < 2
-    # Ease factor is not strictly used in v2 core logic but kept for compatibility
-    # assert assoc.ease_factor == 2.5 
+    # SRS v3: L5 Interval ~ 30 days
+    assert 29.0 < assoc.interval < 31.0
+    # Stability not used in v3 logic
+    # assert assoc.stability == 0.6
+    assert assoc.proficiency_level == 5
     assert assoc.lapses_count == 0
 
 def test_correct_answer_progression(scheduler, db_session, test_user, test_card):
-    # 1st review (Correct)
-    # 1st review (Correct)
+    # 1. New (L1) -> Correct -> Mastered (L5)
     assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=4, response_time_ms=1000)
-    assert assoc.interval < 1.0 # V2: 0.063
-    assert assoc.repetitions == 1
-    assert assoc.stability == 0.6
+    assert assoc.proficiency_level == 5
+    assert 29.0 < assoc.interval < 31.0
 
-    # 2nd review (Correct)
-    # S_new = 0.6 * (1 + 0.2 * (4 - 2)) = 0.84
-    assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=4, response_time_ms=1000)
-    assert assoc.stability == 0.84
-    assert assoc.repetitions == 2
-    # Interval = -0.84 * ln(0.9) = 0.088
-    assert assoc.interval > 0.06
-    assert assoc.interval < 1.0
+    # 2. Mastered (L5) -> Correct -> Mastered (L5) (Maintain)
+    assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=5, response_time_ms=1000)
+    assert assoc.proficiency_level == 5
+    assert 29.0 < assoc.interval < 31.0
+    
+    # Reset to L2 check logic manually for test coverage complexity
+    assoc.proficiency_level = 2
+    assoc.repetitions = 0
+    db_session.commit()
 
-    # 3rd review (Correct)
-    # S_new = 0.84 * 1.4 = 1.176
-    assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=4, response_time_ms=1000)
-    assert abs(assoc.stability - 1.176) < 0.001
-    assert assoc.repetitions == 3
-    # Interval = -1.176 * ln(0.9) = 0.123
-    assert assoc.interval > 0.1
+    # 3. Hard (L2) -> Correct -> Learning (L3)
+    assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=3, response_time_ms=1000)
+    assert assoc.proficiency_level == 3
+    # Interval ~ 300s (5 mins = 0.0035 days)
+    assert 0.003 < assoc.interval < 0.004
+
+    # 4. Learning (L3) -> Correct -> Easy (L4)
+    assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=3, response_time_ms=1000)
+    assert assoc.proficiency_level == 4
+    # Interval ~ 7 days
+    assert 6.9 < assoc.interval < 7.1
 
 def test_incorrect_answer_lapse(scheduler, db_session, test_user, test_card):
-    # Setup a learned card
+    # Setup a learned card (L5)
     assoc = UserCardAssociation(
         user_id=test_user.id,
         card_id=test_card.id,
-        interval=10.0,
+        interval=30.0,
         ease_factor=2.5,
-        repetitions=3,
+        repetitions=5,
         lapses_count=0,
         next_review_at=datetime.now(),
-        stability=10.0 # V2 field
+        proficiency_level=5
     )
     db_session.add(assoc)
     db_session.commit()
 
-    # Fail the card (Quality 2)
-    # Fail the card (Quality 2)
+    # Fail the card (L5 -> Incorrect -> L3 Learning)
     assoc = scheduler.update_card_state(test_user.id, test_card.id, quality=2, response_time_ms=1000)
     
-    assert assoc.repetitions == 0
+    assert assoc.repetitions == 0 # Reset repetitions logic in code
     assert assoc.lapses_count == 1
-    assert assoc.interval == 0.007 # V2: Short Queue (10 mins) for any failure
-    # assert assoc.ease_factor < 2.5 # EF not strictly used in v2 core logic
+    assert assoc.proficiency_level == 3
+    # Interval ~ 300s (0.0035 days)
+    assert 0.003 < assoc.interval < 0.005
 
 def test_get_next_card_overdue(scheduler, db_session, test_user, test_card):
     # Setup an overdue card

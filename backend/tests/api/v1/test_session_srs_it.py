@@ -75,11 +75,11 @@ def test_next_card_flow(client, test_data, db_session):
     ).first()
     assert assoc is not None
     assert assoc.repetitions == 1
-    # V2: Interval is calculated from stability (0.6) -> approx 0.063
-    # assert assoc.interval == 1.0  <-- OLD V1 assertion
-    assert assoc.interval < 1.0 
-    assert assoc.stability == 0.6
-    assert assoc.proficiency_level == 1
+    # SRS v3: L1 (New) -> Correct -> L5 (Mastered), Interval ~ 30 days
+    assert 29.0 < assoc.interval < 31.0
+    # Stability field is legacy/informational, not asserted in v3 logic
+    # assert assoc.stability == 0.6 
+    assert assoc.proficiency_level == 5
 
 def test_next_card_overdue_priority(client, test_data, db_session):
     # Manually set up an overdue card
