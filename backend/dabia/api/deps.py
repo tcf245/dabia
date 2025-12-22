@@ -48,8 +48,12 @@ async def get_current_user_id(
         
         return user_uuid
     except JWTError:
-        # Fallback to default user, but Log it!
-        user_id_ctx.set(str(default_user_id))
+        # If a token was provided but is invalid/expired, raise 401
+        # This signals the frontend to clear the local session and redirect to login
         from dabia.core.logging import logger
-        logger.warning(f"[AUTH] Invalid Token - Falling back to default user: {default_user_id}")
-        return default_user_id
+        logger.warning(f"[AUTH] Invalid/Expired Token - Raising 401")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

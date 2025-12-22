@@ -121,4 +121,34 @@ describe('Flashcard component', () => {
 
     vi.useRealTimers();
   });
+
+  test('renders in review mode correctly', () => {
+    const onContinue = vi.fn();
+    render(<Flashcard card={mockCard} mode="review" onContinue={onContinue} onSubmit={mockOnSubmit} />);
+
+    expect(screen.getByText(mockCard.target.word)).toBeInTheDocument();
+    expect(screen.getByText(mockCard.reading!)).toBeInTheDocument();
+    expect(screen.getByText(mockCard.sentence_translation!)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
+  });
+
+  test('handles ArrowRight keyboard shortcut in review mode', () => {
+    const onContinue = vi.fn();
+    render(<Flashcard card={mockCard} mode="review" onContinue={onContinue} onSubmit={mockOnSubmit} />);
+
+    fireEvent.keyDown(window, { key: 'ArrowRight', code: 'ArrowRight' });
+    expect(onContinue).toHaveBeenCalled();
+  });
+
+  test('handles ArrowRight keyboard shortcut in quiz mode', async () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'test' } });
+
+    fireEvent.keyDown(window, { key: 'ArrowRight', code: 'ArrowRight' });
+
+    // Should behave like clicking submit
+    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+  });
 });
