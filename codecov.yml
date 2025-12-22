@@ -7,9 +7,9 @@ coverage:
   status:
     project:
       default:
-        target: auto
-        threshold: 0%    # Be strict or allow minor drops
+        target: 80%      # PR will fail if total project coverage is below 80%
+        threshold: 0%
     patch:
       default:
         target: auto
-        informational: true # Don't fail the build just because patch coverage is low
+        informational: true
