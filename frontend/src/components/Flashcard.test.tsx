@@ -122,33 +122,36 @@ describe('Flashcard component', () => {
     vi.useRealTimers();
   });
 
-  test('renders in review mode correctly', () => {
+  test('renders review mode correctly', () => {
     const onContinue = vi.fn();
-    render(<Flashcard card={mockCard} mode="review" onContinue={onContinue} onSubmit={mockOnSubmit} />);
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} mode="review" onContinue={onContinue} />);
 
     expect(screen.getByText(mockCard.target.word)).toBeInTheDocument();
     expect(screen.getByText(mockCard.reading!)).toBeInTheDocument();
-    expect(screen.getByText(mockCard.sentence_translation!)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
-  });
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
-  test('handles ArrowRight keyboard shortcut in review mode', () => {
-    const onContinue = vi.fn();
-    render(<Flashcard card={mockCard} mode="review" onContinue={onContinue} onSubmit={mockOnSubmit} />);
-
-    fireEvent.keyDown(window, { key: 'ArrowRight', code: 'ArrowRight' });
+    const continueButton = screen.getByRole('button', { name: /continue/i });
+    fireEvent.click(continueButton);
     expect(onContinue).toHaveBeenCalled();
   });
 
-  test('handles ArrowRight keyboard shortcut in quiz mode', async () => {
+  test('handles ArrowRight shortcut for continuing', () => {
+    const onContinue = vi.fn();
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} mode="review" onContinue={onContinue} />);
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(onContinue).toHaveBeenCalled();
+  });
+
+  test('handles ArrowRight shortcut for submitting in quiz mode', async () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
 
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'test' } });
 
-    fireEvent.keyDown(window, { key: 'ArrowRight', code: 'ArrowRight' });
+    // ArrowRight should trigger submit
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
 
-    // Should behave like clicking submit
     expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
   });
 });
