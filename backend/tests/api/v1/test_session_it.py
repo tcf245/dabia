@@ -88,9 +88,10 @@ def test_answer_correctly_updates_srs_data(db_session: Session, override_get_db,
     db_session.refresh(card)
     assoc = db_session.query(models.UserCardAssociation).filter_by(card_id=card.id, user_id=test_user.id).one()
 
-    assert assoc.proficiency_level == 1
-    # V2: Interval is calculated from stability (0.6) -> approx 0.063
-    assert assoc.interval < 1.0 
+    # SRS v3: L1 (New) -> Correct -> L5 (Mastered)
+    assert assoc.proficiency_level == 5
+    # Interval ~ 30 days
+    assert 29.0 < assoc.interval < 31.0
     assert assoc.next_review_at.replace(tzinfo=UTC) > datetime.now(UTC)
 
 def test_answer_incorrectly_updates_srs_data(db_session: Session, override_get_db, test_user):
@@ -110,7 +111,8 @@ def test_answer_incorrectly_updates_srs_data(db_session: Session, override_get_d
     db_session.refresh(card)
     assoc = db_session.query(models.UserCardAssociation).filter_by(card_id=card.id, user_id=test_user.id).one()
 
-    assert assoc.proficiency_level == 0 # Demoted to New/Needs Practice
+    # SRS v3: L1 (New) -> Incorrect -> L2 (Hard)
+    assert assoc.proficiency_level == 2
     assert assoc.lapses_count == 1
-    # assert assoc.ease_factor < 2.5 # EF not strictly used
-    assert assoc.interval == 0.007 # Reset to Short Queue (10 mins)
+    # Interval ~ 90s (0.001 days)
+    assert assoc.interval < 0.01

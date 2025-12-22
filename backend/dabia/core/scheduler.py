@@ -163,54 +163,38 @@ class Scheduler:
             assoc.repetitions = 0
             assoc.lapses_count += 1
 
-        # --- SRS v3 State Machine ---
-        new_level = previous_level
-        interval_delta = timedelta(seconds=0)
+        # --- SRS v3 State Machine (Table-Driven) ---
         
-        # State Machine Transitions
-        if previous_level == PROFICIENCY_NEW: # L1
-            if is_correct:
-                new_level = PROFICIENCY_MASTERED # L1 -> L5 (Graduate)
-                interval_delta = timedelta(days=INTERVAL_L5_DAYS)
-            else:
-                new_level = PROFICIENCY_HARD # L1 -> L2
-                interval_delta = timedelta(seconds=INTERVAL_L2_SECONDS)
-
-        elif previous_level == PROFICIENCY_HARD: # L2
-            if is_correct:
-                new_level = PROFICIENCY_LEARNING # L2 -> L3
-                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
-            else:
-                new_level = PROFICIENCY_HARD # L2 -> L2 (Stay)
-                interval_delta = timedelta(seconds=INTERVAL_L2_SECONDS)
-
-        elif previous_level == PROFICIENCY_LEARNING: # L3
-            if is_correct:
-                new_level = PROFICIENCY_EASY # L3 -> L4
-                interval_delta = timedelta(days=INTERVAL_L4_DAYS)
-            else:
-                new_level = PROFICIENCY_LEARNING # L3 -> L3 (Stay)
-                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
-
-        elif previous_level == PROFICIENCY_EASY: # L4
-            if is_correct:
-                new_level = PROFICIENCY_MASTERED # L4 -> L5
-                interval_delta = timedelta(days=INTERVAL_L5_DAYS)
-            else:
-                new_level = PROFICIENCY_LEARNING # L4 -> L3 (Regression)
-                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
-
-        elif previous_level == PROFICIENCY_MASTERED: # L5
-            if is_correct:
-                new_level = PROFICIENCY_MASTERED # L5 -> L5 (Maintain)
-                interval_delta = timedelta(days=INTERVAL_L5_DAYS)
-            else:
-                new_level = PROFICIENCY_LEARNING # L5 -> L3 (Regression)
-                interval_delta = timedelta(seconds=INTERVAL_L3_SECONDS)
+        # Transition Logic: (Current Level, Is Correct) -> (Next Level, Interval Delta)
+        TRANSITIONS = {
+            # L1: New
+            (PROFICIENCY_NEW, True): (PROFICIENCY_MASTERED, timedelta(days=INTERVAL_L5_DAYS)),
+            (PROFICIENCY_NEW, False): (PROFICIENCY_HARD, timedelta(seconds=INTERVAL_L2_SECONDS)),
+            
+            # L2: Hard
+            (PROFICIENCY_HARD, True): (PROFICIENCY_LEARNING, timedelta(seconds=INTERVAL_L3_SECONDS)),
+            (PROFICIENCY_HARD, False): (PROFICIENCY_HARD, timedelta(seconds=INTERVAL_L2_SECONDS)),
+            
+            # L3: Learning
+            (PROFICIENCY_LEARNING, True): (PROFICIENCY_EASY, timedelta(days=INTERVAL_L4_DAYS)),
+            (PROFICIENCY_LEARNING, False): (PROFICIENCY_LEARNING, timedelta(seconds=INTERVAL_L3_SECONDS)),
+            
+            # L4: Easy
+            (PROFICIENCY_EASY, True): (PROFICIENCY_MASTERED, timedelta(days=INTERVAL_L5_DAYS)),
+            (PROFICIENCY_EASY, False): (PROFICIENCY_LEARNING, timedelta(seconds=INTERVAL_L3_SECONDS)),
+            
+            # L5: Mastered
+            (PROFICIENCY_MASTERED, True): (PROFICIENCY_MASTERED, timedelta(days=INTERVAL_L5_DAYS)),
+            (PROFICIENCY_MASTERED, False): (PROFICIENCY_LEARNING, timedelta(seconds=INTERVAL_L3_SECONDS)),
+        }
         
+        transition = TRANSITIONS.get((previous_level, is_correct))
+        
+        if transition:
+            new_level, interval_delta = transition
         else:
-            # Fallback for unknown levels
-            logger.warning(f"Unknown proficiency level {previous_level}, resetting to L1 rules.")
+            # Fallback for unknown levels or states
+            logger.warning(f"Unknown proficiency state: Level {previous_level}, Correct {is_correct}. Resetting to L1 logic.")
             new_level = PROFICIENCY_NEW
             interval_delta = timedelta(minutes=1)
 
