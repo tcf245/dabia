@@ -27,8 +27,33 @@ function App() {
         console.error("Invalid token", e);
         logout();
       }
+    } else {
+      setUser(null);
     }
   }, [token]);
+
+  // Handle cross-tab and silent token updates
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setToken(null);
+      setUser(null);
+      setIsLoginModalOpen(true);
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token') {
+        setToken(e.newValue);
+      }
+    };
+
+    window.addEventListener('dabia:unauthorized', handleUnauthorized);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('dabia:unauthorized', handleUnauthorized);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 

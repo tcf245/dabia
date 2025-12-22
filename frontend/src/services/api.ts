@@ -23,6 +23,28 @@ api.interceptors.request.use(
   }
 );
 
+// Add a response interceptor to handle silent token refresh and unauthorized errors
+api.interceptors.response.use(
+  (response) => {
+    // Check for refresh token in headers
+    const refreshToken = response.headers['x-refresh-token'];
+    if (refreshToken) {
+      console.log("Token refreshed silently.");
+      localStorage.setItem('token', refreshToken);
+    }
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      console.warn("Unauthorized! Triggering session expiry event.");
+      localStorage.removeItem('token');
+      // Dispatch a custom event instead of hard redirect
+      window.dispatchEvent(new CustomEvent('dabia:unauthorized'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Define types for API requests and responses
 export interface PreviousAnswer {
   cardId: string;

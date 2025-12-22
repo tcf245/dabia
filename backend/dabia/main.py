@@ -52,10 +52,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Refresh-Token"], # Allow frontend to read refreshed tokens
 )
 
 from dabia.core.middleware import LoggingMiddleware
+from dabia.core.token_refresh_middleware import TokenRefreshMiddleware
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(TokenRefreshMiddleware)
 
 
 # Include routers
