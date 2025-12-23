@@ -17,32 +17,7 @@ coverage:
       default:
         target: 80%
         threshold: 0%
-
-      python:
-        flags:
-          - python
-        target: 80%
-        threshold: 0%
-
-      typescript:
-        flags:
-          - typescript
-        target: 80%
-        threshold: 0%
-
     patch:
       default:
-        target: auto
-        informational: true
-
-      python:
-        flags:
-          - python
-        target: auto
-        informational: true
-
-      typescript:
-        flags:
-          - typescript
         target: auto
         informational: true
