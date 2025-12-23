@@ -1,14 +1,23 @@
 comment:
-  layout: "header, diff, changes, sunburst, methods"
+  layout: "header, reach, diff, flags, files"
   behavior: default
   require_changes: false
+
+flags:
+  python:
+    paths:
+      - backend/
+  typescript:
+    paths:
+      - frontend/
 
 coverage:
   status:
     project:
       default:
-        target: auto
-        threshold: 1%
+        target: 80%
+        threshold: 0%
     patch:
       default:
         target: auto
+        informational: true

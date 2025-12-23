@@ -41,7 +41,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./frontend/coverage
-          flags: frontend
+          flags: typescript
+          fail_ci_if_error: true
 
       - name: Upload Frontend Coverage Artifact
         uses: actions/upload-artifact@v4
