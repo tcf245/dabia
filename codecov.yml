@@ -1,15 +1,40 @@
 comment:
-  layout: "header, diff, changes, sunburst"
+  layout: "header, reach, diff, flags, files"
   behavior: default
-  require_changes: false  # Always post a comment even if no changes in coverage
+  require_changes: false
 
 coverage:
   status:
     project:
       default:
-        target: 80%      # PR will fail if total project coverage is below 80%
+        target: 80%
         threshold: 0%
+
+      python:
+        flags:
+          - python
+        target: 80%
+        threshold: 0%
+
+      typescript:
+        flags:
+          - typescript
+        target: 80%
+        threshold: 0%
+
     patch:
       default:
+        target: auto
+        informational: true
+
+      python:
+        flags:
+          - python
+        target: auto
+        informational: true
+
+      typescript:
+        flags:
+          - typescript
         target: auto
         informational: true
