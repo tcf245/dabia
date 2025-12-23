@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import DailyGoalPopup from './DailyGoalPopup';
-import * as statsApi from '../api/stats';
+import * as statsApi from '../services/api';
 
-vi.mock('../api/stats');
+vi.mock('../services/api', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../services/api')>();
+    return {
+        ...actual,
+        getDailySummary: vi.fn(),
+    };
+});
 
 describe('DailyGoalPopup', () => {
     const mockStats: statsApi.DailyStats = {

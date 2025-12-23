@@ -2,15 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import LearningSession from './LearningSession';
 import * as api from '../services/api';
-import * as statsApi from '../api/stats';
 
 // Mock the API
-vi.mock('../services/api', () => ({
-    getNextCard: vi.fn(),
-}));
-vi.mock('../api/stats', () => ({
-    getDailySummary: vi.fn(),
-}));
+vi.mock('../services/api', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../services/api')>();
+    return {
+        ...actual,
+        getNextCard: vi.fn(),
+        getDailySummary: vi.fn(),
+    };
+});
 
 describe('LearningSession', () => {
     beforeEach(() => {
@@ -54,7 +55,7 @@ describe('LearningSession', () => {
 
     it('triggers DailyGoalPopup when goal is reached', async () => {
         // Setup stats mock response
-        (statsApi.getDailySummary as Mock).mockResolvedValue({
+        (api.getDailySummary as Mock).mockResolvedValue({
             to_learn_count: 0,
             learned_count: 50,
             reinforced_count: 10,
