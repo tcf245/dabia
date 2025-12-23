@@ -3,6 +3,14 @@ comment:
   behavior: default
   require_changes: false
 
+flags:
+  python:
+    paths:
+      - backend/
+  typescript:
+    paths:
+      - frontend/
+
 coverage:
   status:
     project:
