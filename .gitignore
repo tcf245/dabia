@@ -4,6 +4,8 @@ nohup.out
 tmp/**
 .coverage
 coverage.xml
+*.log
+junit.xml
 
 # Python
 **/__pycache__/

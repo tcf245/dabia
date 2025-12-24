@@ -34,7 +34,7 @@ jobs:
       - name: Run Tests with Coverage
         run: |
           cd frontend
-          npm run test:coverage
+          npm run test:coverage -- --reporter=default --reporter=junit --outputFile=junit.xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
@@ -43,6 +43,14 @@ jobs:
           directory: ./frontend/coverage
           flags: typescript
           fail_ci_if_error: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: frontend/junit.xml
+          flags: typescript
 
       - name: Upload Frontend Coverage Artifact
         uses: actions/upload-artifact@v4
