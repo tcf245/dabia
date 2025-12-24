@@ -1,4 +1,5 @@
 {
+  "installCommand": "uv sync && uv run alembic upgrade head",
   "builds": [
     {
       "src": "api/index.py",
