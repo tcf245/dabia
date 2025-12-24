@@ -4,8 +4,8 @@ import {
     X, Check, Maximize2, MoveVertical, ArrowUp,
     Clock, Star, CheckCircle2
 } from 'lucide-react';
-import { getDailySummary } from '../api/stats';
-import type { DailyStats } from '../api/stats';
+import { getDailySummary } from '../services/api';
+import type { DailyStats } from '../services/api';
 
 interface DailyGoalPopupProps {
     isOpen: boolean;

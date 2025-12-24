@@ -87,6 +87,16 @@ export interface NextCardResponse {
   previous_card_id: string | null;
 }
 
+export interface DailyStats {
+  to_learn_count: number;
+  learned_count: number;
+  reinforced_count: number;
+  total_answered: number;
+  total_time_seconds: number;
+  new_words_count: number;
+  accuracy: number;
+}
+
 export const getNextCard = async (answer?: PreviousAnswer): Promise<NextCardResponse> => {
   const response = await api.post<NextCardResponse>('/api/v1/session/next-card', answer);
   return response.data;
@@ -119,3 +129,8 @@ export const getProfileGarden = async (): Promise<GardenWord[]> => {
   const response = await api.get<GardenWord[]>('/api/v1/profile/garden');
   return response.data;
 }
+
+export const getDailySummary = async (): Promise<DailyStats> => {
+  const response = await api.get<DailyStats>('/api/v1/stats/daily-summary');
+  return response.data;
+};

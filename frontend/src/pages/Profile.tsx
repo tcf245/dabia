@@ -3,8 +3,8 @@ import * as api from '../services/api';
 
 const Profile = () => {
 
-    const [heatmapData, setHeatmapData] = useState<any[]>([]);
-    const [gardenWords, setGardenWords] = useState<any[]>([]);
+    const [heatmapData, setHeatmapData] = useState<{ date: string; colorClass: string; count: number }[][]>([]);
+    const [gardenWords, setGardenWords] = useState<(api.GardenWord & { x: string; y: string; size: string })[]>([]);
     const [activeDays, setActiveDays] = useState(0);
 
     useEffect(() => {
@@ -21,7 +21,6 @@ const Profile = () => {
                 const today = new Date();
 
                 // Calculate start date: Exactly 32 weeks ago (reduced from 34 to fix overflow)
-                // User requested removing about 2 columns.
                 const startDate = new Date(today);
                 startDate.setDate(today.getDate() - (32 * 7));
 
@@ -30,18 +29,15 @@ const Profile = () => {
                 startDate.setDate(startDate.getDate() - dayOfWeek);
 
                 // Initialize Days Grid
-                const daysMap = new Map();
+                const daysMap = new Map<string, api.HeatmapDay>();
                 heatmap.forEach((d) => daysMap.set(d.date, d));
 
                 let activeDaysCount = 0;
                 let iterDate = new Date(startDate);
 
                 // Group by weeks for better layout control
-                const weeks: any[][] = [];
-                let currentWeek: any[] = [];
-
-                // The month label logic is now handled in the render section for simplicity
-                // as it doesn't require a separate state and can be derived from existing data.
+                const weeks: { date: string; colorClass: string; count: number }[][] = [];
+                let currentWeek: { date: string; colorClass: string; count: number }[] = [];
 
                 while (iterDate <= today) {
                     const dateStr = iterDate.toISOString().split('T')[0];
@@ -54,7 +50,7 @@ const Profile = () => {
                         activeDaysCount++;
                         if (count >= 50) colorClass = 'bg-[#B05030]';      // 50+ (Full Dark)
                         else if (count >= 30) colorClass = 'bg-[#D97757]'; // 30-49 (Medium)
-                        else if (count >= 10) colorClass = 'bg-[#E5A087]'; // 10-29 (Medium-Light) - Custom Mix
+                        else if (count >= 10) colorClass = 'bg-[#E5A087]'; // 10-29 (Medium-Light)
                         else colorClass = 'bg-[#F2DCD6]';                  // 1-9 (Light)
                     }
 
@@ -86,53 +82,39 @@ const Profile = () => {
                 // -------------------------------------------------------------
                 // 2. Process Garden Grid (Clean Layout)
                 // -------------------------------------------------------------
-                // ... (Existing Garden Logic - Keeping mostly same but checking styles)
-
-                // Exclude only top-left corner (Row 0, Col 0) to keep title clear
-                // Use a 3x3 grid for 8 words to be more centered
                 const COLS = 3;
                 const ROWS = 3;
                 const validSlots: { r: number, c: number }[] = [];
 
                 for (let r = 0; r < ROWS; r++) {
                     for (let c = 0; c < COLS; c++) {
-                        // Exclude only top-left corner for title
                         if (r === 0 && c === 0) continue;
                         validSlots.push({ r, c });
                     }
                 }
 
-                // Shuffle slots to randomize position assignments
                 const shuffledSlots = validSlots.sort(() => 0.5 - Math.random());
-
-                // Limit to 8 words max per design specification
                 const gardenSubset = garden.slice(0, 8);
 
                 const newWords = gardenSubset.map((w, i) => {
                     const slot = shuffledSlots[i];
-
-                    // Asymmetric padding: less horizontal, more top vertical
                     const PADDING_LEFT = 10;
                     const PADDING_RIGHT = 10;
-                    const PADDING_TOP = 30;    // More space from top (title area)
-                    const PADDING_BOTTOM = 10; // Less from bottom
+                    const PADDING_TOP = 30;
+                    const PADDING_BOTTOM = 10;
 
                     const safeWidth = 100 - PADDING_LEFT - PADDING_RIGHT;
                     const safeHeight = 100 - PADDING_TOP - PADDING_BOTTOM;
 
-                    // Cell dimensions within safe area
                     const cellWidth = safeWidth / COLS;
                     const cellHeight = safeHeight / ROWS;
 
-                    // Center of the cell (offset by padding)
                     const centerX = PADDING_LEFT + slot.c * cellWidth + cellWidth / 2;
                     const centerY = PADDING_TOP + slot.r * cellHeight + cellHeight / 2;
 
-                    // Jitter: Allow moderate movement (40% of cell) but clamp to safe bounds
                     const jitterX = (Math.random() - 0.5) * (cellWidth * 0.4);
                     const jitterY = (Math.random() - 0.5) * (cellHeight * 0.4);
 
-                    // Clamp to safe area
                     const x = Math.max(PADDING_LEFT, Math.min(100 - PADDING_RIGHT, centerX + jitterX));
                     const y = Math.max(PADDING_TOP, Math.min(100 - PADDING_BOTTOM, centerY + jitterY));
 
@@ -151,9 +133,6 @@ const Profile = () => {
         fetchData();
     }, []);
 
-
-
-
     return (
         <div className="flex flex-col items-center w-full max-w-3xl animate-fade-in">
             <header className="text-center mb-12">
@@ -167,7 +146,6 @@ const Profile = () => {
                 <div className="flex justify-between items-baseline mb-6">
                     <h2 className="font-serif text-2xl text-[#333333]">Study Streak</h2>
 
-                    {/* Legend */}
                     <div className="flex items-center gap-2 text-xs text-[#888888] font-light">
                         <span>Less</span>
                         <div className="flex gap-1">
@@ -181,15 +159,11 @@ const Profile = () => {
                     </div>
                 </div>
 
-                {/* Heatmap Container with Axes */}
                 <div className="flex flex-col w-full">
-
-                    {/* Month Labels Row */}
                     <div className="flex flex-row ml-8 mb-2 gap-1 text-xs text-[#888] h-4">
                         {heatmapData.map((week, i) => {
                             if (!week || week.length === 0) return <div key={i} className="w-3 sm:w-4"></div>;
                             const firstDayDate = new Date(week[0].date);
-                            // Simple logic: Label if it's the first week of a month OR index 0
                             const isNewMonth = i === 0 || new Date(heatmapData[i - 1][0].date).getMonth() !== firstDayDate.getMonth();
                             return (
                                 <div key={i} className="w-3 sm:w-4 text-[10px] overflow-visible whitespace-nowrap relative">
@@ -202,37 +176,24 @@ const Profile = () => {
                     </div>
 
                     <div className="flex flex-row w-full">
-                        {/* Day Labels Column */}
                         <div className="flex flex-col gap-1 mr-2 mt-[0px] text-[10px] text-[#888] h-full justify-start pt-[0px] leading-4">
-                            {/* Days are 0-6.  0=Sun, 1=Mon, 3=Wed, 5=Fri */}
-                            {/* Row heights are 4 (16px) + gap 1 (4px) = 20px. */}
-                            {/* We just need to place 'Mon', 'Wed', 'Fri' at correct vertical positions. */}
-                            {/* Instead of absolute, just render 7 rows? Or just 3 specific ones? */}
-                            {/* Standard Grid approach: Render 7 rows, leave empty ones empty. */}
-                            {/* Row 0 (Sun) */} <div className="h-3 sm:h-4"></div>
-                            {/* Row 1 (Mon) */} <div className="h-3 sm:h-4 flex items-center">Mon</div>
-                            {/* Row 2 (Tue) */} <div className="h-3 sm:h-4"></div>
-                            {/* Row 3 (Wed) */} <div className="h-3 sm:h-4 flex items-center">Wed</div>
-                            {/* Row 4 (Thu) */} <div className="h-3 sm:h-4"></div>
-                            {/* Row 5 (Fri) */} <div className="h-3 sm:h-4 flex items-center">Fri</div>
-                            {/* Row 6 (Sat) */} <div className="h-3 sm:h-4"></div>
+                            <div className="h-3 sm:h-4"></div>
+                            <div className="h-3 sm:h-4 flex items-center">Mon</div>
+                            <div className="h-3 sm:h-4"></div>
+                            <div className="h-3 sm:h-4 flex items-center">Wed</div>
+                            <div className="h-3 sm:h-4"></div>
+                            <div className="h-3 sm:h-4 flex items-center">Fri</div>
+                            <div className="h-3 sm:h-4"></div>
                         </div>
 
-                        {/* Heatmap Grid */}
                         <div className="flex flex-row gap-1 overflow-x-auto no-scrollbar pb-2">
                             {heatmapData.map((week, weekIndex) => (
                                 <div key={weekIndex} className="flex flex-col gap-1">
-                                    {week.map((day: any) => (
+                                    {week.map((day) => (
                                         <div
                                             key={day.date}
                                             className={`w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] transition-all duration-300 hover:scale-125 cursor-pointer group relative ${day.colorClass} z-0 hover:z-20`}
                                         >
-                                            {/* Tooltip - Smart Positioning */}
-                                            {/* 
-                                                Left side: left-0
-                                                Right side: right-0
-                                                Middle: left-1/2 -translate-x-1/2
-                                            */}
                                             <div className={`absolute bottom-full mb-2 px-2 py-1 bg-[#2A2A29] text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-sm
                                                 ${weekIndex < 2 ? 'left-0' : (weekIndex >= heatmapData.length - 4 ? 'right-0' : 'left-1/2 -translate-x-1/2')}
                                             `}>
@@ -263,7 +224,6 @@ const Profile = () => {
 
                 <div className="absolute inset-0">
                     {gardenWords.map((word, i) => {
-                        // Animation: float with random duration between 3s and 7s
                         const duration = 3 + Math.random() * 4;
                         return (
                             <div

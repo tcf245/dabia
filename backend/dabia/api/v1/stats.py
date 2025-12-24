@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 import uuid
 from datetime import datetime, UTC
 from typing import Optional
@@ -52,23 +52,30 @@ def get_daily_summary(
         models.UserCardAssociation.created_at >= today_start
     ).scalar()
 
-    # 4. Learned vs Reinforced
-    # This is ambiguous in the request, but let's approximate:
-    # Learned: Distinct cards reviewed today? or distinct cards in 'Learning' phase?
-    # Reinforced: Distinct cards in 'Review' phase?
-    # For now, let's map:
-    # "Learned" -> "Studied" (Distinct cards reviewed today)
-    # "Reinforced" -> "Review" (Distinct cards reviewed today that were NOT new?)
-    
-    # Simpler mapping for V1 based on typical stats:
-    # Learned Info ~ Total Distinct Cards Reviewed
-    distinct_cards_reviewed = db.query(func.count(func.distinct(models.ReviewLog.card_id))).filter(
+    # 4. Learned (New words Studied Today) vs Reinforced (Old words Reviewed Today)
+    # We use conditional aggregation to get both in a single query for better performance
+    stats_query = db.query(
+        func.count(func.distinct(
+            case(
+                (models.UserCardAssociation.created_at >= today_start, models.ReviewLog.card_id)
+            )
+        )).label("learned"),
+        func.count(func.distinct(
+            case(
+                (models.UserCardAssociation.created_at < today_start, models.ReviewLog.card_id)
+            )
+        )).label("reinforced")
+    ).select_from(models.ReviewLog).join(
+        models.UserCardAssociation,
+        (models.ReviewLog.card_id == models.UserCardAssociation.card_id) & 
+        (models.ReviewLog.user_id == models.UserCardAssociation.user_id)
+    ).filter(
         models.ReviewLog.user_id == current_user_id,
         models.ReviewLog.reviewed_at >= today_start
-    ).scalar()
-    
-    learned_count = distinct_cards_reviewed # Placeholder alignment
-    reinforced_count = 0 # Placeholder for now, maybe calculate if needed
+    ).first()
+
+    learned_count = stats_query.learned or 0
+    reinforced_count = stats_query.reinforced or 0
 
     return schemas.DailyStats(
         to_learn_count=to_learn_count,
