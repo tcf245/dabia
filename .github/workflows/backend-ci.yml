@@ -67,7 +67,7 @@ jobs:
           USE_SERVICE_CONTAINER: "true" 
         run: |
           cd backend
-          uv run pytest --cov=dabia --cov-report=xml tests/
+          uv run pytest --cov=dabia --cov-report=xml --junitxml=junit.xml tests/
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
@@ -76,6 +76,14 @@ jobs:
           files: backend/coverage.xml
           flags: python
           fail_ci_if_error: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: backend/junit.xml
+          flags: python
 
       - name: Upload Backend Coverage Artifact
         uses: actions/upload-artifact@v4
