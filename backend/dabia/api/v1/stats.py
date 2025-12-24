@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 import uuid
 from datetime import datetime, UTC
 from typing import Optional
@@ -56,16 +56,16 @@ def get_daily_summary(
     # We use conditional aggregation to get both in a single query for better performance
     stats_query = db.query(
         func.count(func.distinct(
-            func.case(
-                (models.UserCardAssociation.created_at >= today_start, models.ReviewLog.card_id)
+            case(
+                [(models.UserCardAssociation.created_at >= today_start, models.ReviewLog.card_id)]
             )
         )).label("learned"),
         func.count(func.distinct(
-            func.case(
-                (models.UserCardAssociation.created_at < today_start, models.ReviewLog.card_id)
+            case(
+                [(models.UserCardAssociation.created_at < today_start, models.ReviewLog.card_id)]
             )
         )).label("reinforced")
-    ).join(
+    ).select_from(models.ReviewLog).join(
         models.UserCardAssociation,
         (models.ReviewLog.card_id == models.UserCardAssociation.card_id) & 
         (models.ReviewLog.user_id == models.UserCardAssociation.user_id)

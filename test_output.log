@@ -1,0 +1,3179 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.0, pytest-9.0.1, pluggy-1.6.0 -- /Users/eric/.asdf/installs/python/3.14.0/bin/python3.14
+cachedir: .pytest_cache
+rootdir: /Users/eric/workspace/dabia
+configfile: pytest.ini
+plugins: anyio-4.11.0, cov-7.0.0
+collecting ... collected 1 item
+
+backend/tests/api/test_stats_it.py::test_get_daily_summary_returns_stats FAILED [100%]
+
+=================================== FAILURES ===================================
+_____________________ test_get_daily_summary_returns_stats _____________________
+
+self = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+dialect = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x10e2216a0>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2'>>
+statement = 'SELECT count(distinct(case())) AS learned, count(distinct(case())) AS reinforced \nFROM review_logs JOIN user_card_as...r_id \nWHERE review_logs.user_id = %(user_id_1)s AND review_logs.reviewed_at >= %(reviewed_at_1)s \n LIMIT %(param_1)s'
+parameters = {'param_1': 1, 'reviewed_at_1': datetime.datetime(2025, 12, 24, 0, 0), 'user_id_1': UUID('085592ff-d218-4de4-858a-6b3a1041a000')}
+execution_options = immutabledict({'_sa_orm_load_options': default_load_options(_legacy_uniquing=True), '_result_disable_adapt_to_context': True, 'future_result': True})
+args = (<sqlalchemy.dialects.postgresql.psycopg2.PGCompiler_psycopg2 object at 0x10f035ba0>, [{}], <sqlalchemy.sql.selectable...tetime.datetime(2025, 12, 24, 0, 0), type_=DateTime()), _OffsetLimitParam('%(4546965392 param)s', 1, type_=Integer())])
+kw = {'cache_hit': symbol('CACHE_MISS')}
+branched = <sqlalchemy.engine.base.Connection object at 0x10e247b10>, yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x10e9ec550>
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x10f035cd0>
+cursor = <cursor object at 0x10f047d30; closed: -1>, evt_handled = False
+
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1910: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x10e2216a0>
+cursor = <cursor object at 0x10f047d30; closed: -1>
+statement = 'SELECT count(distinct(case())) AS learned, count(distinct(case())) AS reinforced \nFROM review_logs JOIN user_card_as...r_id \nWHERE review_logs.user_id = %(user_id_1)s AND review_logs.reviewed_at >= %(reviewed_at_1)s \n LIMIT %(param_1)s'
+parameters = {'param_1': 1, 'reviewed_at_1': datetime.datetime(2025, 12, 24, 0, 0), 'user_id_1': UUID('085592ff-d218-4de4-858a-6b3a1041a000')}
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x10f035cd0>
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       psycopg2.errors.SyntaxError: syntax error at or near ")"
+E       LINE 1: SELECT count(distinct(case())) AS learned, count(distinct(ca...
+E                                          ^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/default.py:736: SyntaxError
+
+The above exception was the direct cause of the following exception:
+
+db_session = <sqlalchemy.orm.session.Session object at 0x10e9a41a0>
+override_get_db = None
+test_user = <dabia.models.user.User object at 0x10e9a4440>
+
+    def test_get_daily_summary_returns_stats(db_session: Session, override_get_db, test_user):
+        # Act
+        # We expect this endpoint to return stats for the *current* day
+>       response = client.get("/api/v1/stats/daily-summary")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/api/test_stats_it.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>
+url = '/api/v1/stats/daily-summary'
+
+    def get(  # type: ignore[override]
+        self,
+        url: httpx._types.URLTypes,
+        *,
+        params: httpx._types.QueryParamTypes | None = None,
+        headers: httpx._types.HeaderTypes | None = None,
+        cookies: httpx._types.CookieTypes | None = None,
+        auth: httpx._types.AuthTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        follow_redirects: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        timeout: httpx._types.TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        extensions: dict[str, Any] | None = None,
+    ) -> httpx.Response:
+>       return super().get(
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            timeout=timeout,
+            extensions=extensions,
+        )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/testclient.py:473: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>
+url = '/api/v1/stats/daily-summary'
+
+    def get(
+        self,
+        url: URL | str,
+        *,
+        params: QueryParamTypes | None = None,
+        headers: HeaderTypes | None = None,
+        cookies: CookieTypes | None = None,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
+        follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
+        timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
+        extensions: RequestExtensions | None = None,
+    ) -> Response:
+        """
+        Send a `GET` request.
+    
+        **Parameters**: See `httpx.request`.
+        """
+>       return self.request(
+            "GET",
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            timeout=timeout,
+            extensions=extensions,
+        )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/httpx/_client.py:1053: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>, method = 'GET'
+url = URL('http://testserver/api/v1/stats/daily-summary')
+
+    def request(  # type: ignore[override]
+        self,
+        method: str,
+        url: httpx._types.URLTypes,
+        *,
+        content: httpx._types.RequestContent | None = None,
+        data: _RequestData | None = None,
+        files: httpx._types.RequestFiles | None = None,
+        json: Any = None,
+        params: httpx._types.QueryParamTypes | None = None,
+        headers: httpx._types.HeaderTypes | None = None,
+        cookies: httpx._types.CookieTypes | None = None,
+        auth: httpx._types.AuthTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        follow_redirects: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        timeout: httpx._types.TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        extensions: dict[str, Any] | None = None,
+    ) -> httpx.Response:
+        if timeout is not httpx.USE_CLIENT_DEFAULT:
+            warnings.warn(
+                "You should not use the 'timeout' argument with the TestClient. "
+                "See https://github.com/Kludex/starlette/issues/1108 for more information.",
+                DeprecationWarning,
+            )
+        url = self._merge_url(url)
+>       return super().request(
+            method,
+            url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            timeout=timeout,
+            extensions=extensions,
+        )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/testclient.py:445: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>, method = 'GET'
+url = URL('http://testserver/api/v1/stats/daily-summary')
+
+    def request(
+        self,
+        method: str,
+        url: URL | str,
+        *,
+        content: RequestContent | None = None,
+        data: RequestData | None = None,
+        files: RequestFiles | None = None,
+        json: typing.Any | None = None,
+        params: QueryParamTypes | None = None,
+        headers: HeaderTypes | None = None,
+        cookies: CookieTypes | None = None,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
+        follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
+        timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
+        extensions: RequestExtensions | None = None,
+    ) -> Response:
+        """
+        Build and send a request.
+    
+        Equivalent to:
+    
+        ```python
+        request = client.build_request(...)
+        response = client.send(request, ...)
+        ```
+    
+        See `Client.build_request()`, `Client.send()` and
+        [Merging of configuration][0] for how the various parameters
+        are merged with client-level configuration.
+    
+        [0]: /advanced/clients/#merging-of-configuration
+        """
+        if cookies is not None:
+            message = (
+                "Setting per-request cookies=<...> is being deprecated, because "
+                "the expected behaviour on cookie persistence is ambiguous. Set "
+                "cookies directly on the client instance instead."
+            )
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+    
+        request = self.build_request(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            extensions=extensions,
+        )
+>       return self.send(request, auth=auth, follow_redirects=follow_redirects)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/httpx/_client.py:825: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>
+request = <Request('GET', 'http://testserver/api/v1/stats/daily-summary')>
+
+    def send(
+        self,
+        request: Request,
+        *,
+        stream: bool = False,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
+        follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
+    ) -> Response:
+        """
+        Send a request.
+    
+        The request is sent as-is, unmodified.
+    
+        Typically you'll want to build one with `Client.build_request()`
+        so that any client-level configuration is merged into the request,
+        but passing an explicit `httpx.Request()` is supported as well.
+    
+        See also: [Request instances][0]
+    
+        [0]: /advanced/clients/#request-instances
+        """
+        if self._state == ClientState.CLOSED:
+            raise RuntimeError("Cannot send a request, as the client has been closed.")
+    
+        self._state = ClientState.OPENED
+        follow_redirects = (
+            self.follow_redirects
+            if isinstance(follow_redirects, UseClientDefault)
+            else follow_redirects
+        )
+    
+        self._set_timeout(request)
+    
+        auth = self._build_request_auth(request, auth)
+    
+>       response = self._send_handling_auth(
+            request,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            history=[],
+        )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/httpx/_client.py:914: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>
+request = <Request('GET', 'http://testserver/api/v1/stats/daily-summary')>
+auth = <httpx.Auth object at 0x10e9a6660>, follow_redirects = True, history = []
+
+    def _send_handling_auth(
+        self,
+        request: Request,
+        auth: Auth,
+        follow_redirects: bool,
+        history: list[Response],
+    ) -> Response:
+        auth_flow = auth.sync_auth_flow(request)
+        try:
+            request = next(auth_flow)
+    
+            while True:
+>               response = self._send_handling_redirects(
+                    request,
+                    follow_redirects=follow_redirects,
+                    history=history,
+                )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/httpx/_client.py:942: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>
+request = <Request('GET', 'http://testserver/api/v1/stats/daily-summary')>
+follow_redirects = True, history = []
+
+    def _send_handling_redirects(
+        self,
+        request: Request,
+        follow_redirects: bool,
+        history: list[Response],
+    ) -> Response:
+        while True:
+            if len(history) > self.max_redirects:
+                raise TooManyRedirects(
+                    "Exceeded maximum allowed redirects.", request=request
+                )
+    
+            for hook in self._event_hooks["request"]:
+                hook(request)
+    
+>           response = self._send_single_request(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/httpx/_client.py:979: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x10e0e30e0>
+request = <Request('GET', 'http://testserver/api/v1/stats/daily-summary')>
+
+    def _send_single_request(self, request: Request) -> Response:
+        """
+        Sends a single request, without handling any redirections.
+        """
+        transport = self._transport_for_url(request.url)
+        start = time.perf_counter()
+    
+        if not isinstance(request.stream, SyncByteStream):
+            raise RuntimeError(
+                "Attempted to send an async request with a sync Client instance."
+            )
+    
+        with request_context(request=request):
+>           response = transport.handle_request(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/httpx/_client.py:1014: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x10e0e3230>
+request = <Request('GET', 'http://testserver/api/v1/stats/daily-summary')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+            port = int(port_string)
+        else:
+            host = netloc
+            port = default_port
+    
+        # Include the 'host' header.
+        if "host" in request.headers:
+            headers: list[tuple[bytes, bytes]] = []
+        elif port == default_port:  # pragma: no cover
+            headers = [(b"host", host.encode())]
+        else:  # pragma: no cover
+            headers = [(b"host", (f"{host}:{port}").encode())]
+    
+        # Include other request headers.
+        headers += [(key.lower().encode(), value.encode()) for key, value in request.headers.multi_items()]
+    
+        scope: dict[str, Any]
+    
+        if scheme in {"ws", "wss"}:
+            subprotocol = request.headers.get("sec-websocket-protocol", None)
+            if subprotocol is None:
+                subprotocols: Sequence[str] = []
+            else:
+                subprotocols = [value.strip() for value in subprotocol.split(",")]
+            scope = {
+                "type": "websocket",
+                "path": unquote(path),
+                "raw_path": raw_path.split(b"?", 1)[0],
+                "root_path": self.root_path,
+                "scheme": scheme,
+                "query_string": query.encode(),
+                "headers": headers,
+                "client": self.client,
+                "server": [host, port],
+                "subprotocols": subprotocols,
+                "state": self.app_state.copy(),
+                "extensions": {"websocket.http.response": {}},
+            }
+            session = WebSocketTestSession(self.app, scope, self.portal_factory)
+            raise _Upgrade(session)
+    
+        scope = {
+            "type": "http",
+            "http_version": "1.1",
+            "method": request.method,
+            "path": unquote(path),
+            "raw_path": raw_path.split(b"?", 1)[0],
+            "root_path": self.root_path,
+            "scheme": scheme,
+            "query_string": query.encode(),
+            "headers": headers,
+            "client": self.client,
+            "server": [host, port],
+            "extensions": {"http.response.debug": {}},
+            "state": self.app_state.copy(),
+        }
+    
+        request_complete = False
+        response_started = False
+        response_complete: anyio.Event
+        raw_kwargs: dict[str, Any] = {"stream": io.BytesIO()}
+        template = None
+        context = None
+    
+        async def receive() -> Message:
+            nonlocal request_complete
+    
+            if request_complete:
+                if not response_complete.is_set():
+                    await response_complete.wait()
+                return {"type": "http.disconnect"}
+    
+            body = request.read()
+            if isinstance(body, str):
+                body_bytes: bytes = body.encode("utf-8")  # pragma: no cover
+            elif body is None:
+                body_bytes = b""  # pragma: no cover
+            elif isinstance(body, GeneratorType):
+                try:  # pragma: no cover
+                    chunk = body.send(None)
+                    if isinstance(chunk, str):
+                        chunk = chunk.encode("utf-8")
+                    return {"type": "http.request", "body": chunk, "more_body": True}
+                except StopIteration:  # pragma: no cover
+                    request_complete = True
+                    return {"type": "http.request", "body": b""}
+            else:
+                body_bytes = body
+    
+            request_complete = True
+            return {"type": "http.request", "body": body_bytes}
+    
+        async def send(message: Message) -> None:
+            nonlocal raw_kwargs, response_started, template, context
+    
+            if message["type"] == "http.response.start":
+                assert not response_started, 'Received multiple "http.response.start" messages.'
+                raw_kwargs["status_code"] = message["status"]
+                raw_kwargs["headers"] = [(key.decode(), value.decode()) for key, value in message.get("headers", [])]
+                response_started = True
+            elif message["type"] == "http.response.body":
+                assert response_started, 'Received "http.response.body" without "http.response.start".'
+                assert not response_complete.is_set(), 'Received "http.response.body" after response completed.'
+                body = message.get("body", b"")
+                more_body = message.get("more_body", False)
+                if request.method != "HEAD":
+                    raw_kwargs["stream"].write(body)
+                if not more_body:
+                    raw_kwargs["stream"].seek(0)
+                    response_complete.set()
+            elif message["type"] == "http.response.debug":
+                template = message["info"]["template"]
+                context = message["info"]["context"]
+    
+        try:
+            with self.portal_factory() as portal:
+                response_complete = portal.call(anyio.Event)
+                portal.call(self.app, scope, receive, send)
+        except BaseException as exc:
+            if self.raise_server_exceptions:
+>               raise exc
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/testclient.py:348: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x10e0e3230>
+request = <Request('GET', 'http://testserver/api/v1/stats/daily-summary')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+            port = int(port_string)
+        else:
+            host = netloc
+            port = default_port
+    
+        # Include the 'host' header.
+        if "host" in request.headers:
+            headers: list[tuple[bytes, bytes]] = []
+        elif port == default_port:  # pragma: no cover
+            headers = [(b"host", host.encode())]
+        else:  # pragma: no cover
+            headers = [(b"host", (f"{host}:{port}").encode())]
+    
+        # Include other request headers.
+        headers += [(key.lower().encode(), value.encode()) for key, value in request.headers.multi_items()]
+    
+        scope: dict[str, Any]
+    
+        if scheme in {"ws", "wss"}:
+            subprotocol = request.headers.get("sec-websocket-protocol", None)
+            if subprotocol is None:
+                subprotocols: Sequence[str] = []
+            else:
+                subprotocols = [value.strip() for value in subprotocol.split(",")]
+            scope = {
+                "type": "websocket",
+                "path": unquote(path),
+                "raw_path": raw_path.split(b"?", 1)[0],
+                "root_path": self.root_path,
+                "scheme": scheme,
+                "query_string": query.encode(),
+                "headers": headers,
+                "client": self.client,
+                "server": [host, port],
+                "subprotocols": subprotocols,
+                "state": self.app_state.copy(),
+                "extensions": {"websocket.http.response": {}},
+            }
+            session = WebSocketTestSession(self.app, scope, self.portal_factory)
+            raise _Upgrade(session)
+    
+        scope = {
+            "type": "http",
+            "http_version": "1.1",
+            "method": request.method,
+            "path": unquote(path),
+            "raw_path": raw_path.split(b"?", 1)[0],
+            "root_path": self.root_path,
+            "scheme": scheme,
+            "query_string": query.encode(),
+            "headers": headers,
+            "client": self.client,
+            "server": [host, port],
+            "extensions": {"http.response.debug": {}},
+            "state": self.app_state.copy(),
+        }
+    
+        request_complete = False
+        response_started = False
+        response_complete: anyio.Event
+        raw_kwargs: dict[str, Any] = {"stream": io.BytesIO()}
+        template = None
+        context = None
+    
+        async def receive() -> Message:
+            nonlocal request_complete
+    
+            if request_complete:
+                if not response_complete.is_set():
+                    await response_complete.wait()
+                return {"type": "http.disconnect"}
+    
+            body = request.read()
+            if isinstance(body, str):
+                body_bytes: bytes = body.encode("utf-8")  # pragma: no cover
+            elif body is None:
+                body_bytes = b""  # pragma: no cover
+            elif isinstance(body, GeneratorType):
+                try:  # pragma: no cover
+                    chunk = body.send(None)
+                    if isinstance(chunk, str):
+                        chunk = chunk.encode("utf-8")
+                    return {"type": "http.request", "body": chunk, "more_body": True}
+                except StopIteration:  # pragma: no cover
+                    request_complete = True
+                    return {"type": "http.request", "body": b""}
+            else:
+                body_bytes = body
+    
+            request_complete = True
+            return {"type": "http.request", "body": body_bytes}
+    
+        async def send(message: Message) -> None:
+            nonlocal raw_kwargs, response_started, template, context
+    
+            if message["type"] == "http.response.start":
+                assert not response_started, 'Received multiple "http.response.start" messages.'
+                raw_kwargs["status_code"] = message["status"]
+                raw_kwargs["headers"] = [(key.decode(), value.decode()) for key, value in message.get("headers", [])]
+                response_started = True
+            elif message["type"] == "http.response.body":
+                assert response_started, 'Received "http.response.body" without "http.response.start".'
+                assert not response_complete.is_set(), 'Received "http.response.body" after response completed.'
+                body = message.get("body", b"")
+                more_body = message.get("more_body", False)
+                if request.method != "HEAD":
+                    raw_kwargs["stream"].write(body)
+                if not more_body:
+                    raw_kwargs["stream"].seek(0)
+                    response_complete.set()
+            elif message["type"] == "http.response.debug":
+                template = message["info"]["template"]
+                context = message["info"]["context"]
+    
+        try:
+            with self.portal_factory() as portal:
+                response_complete = portal.call(anyio.Event)
+>               portal.call(self.app, scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/testclient.py:345: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <anyio._backends._asyncio.BlockingPortal object at 0x10e9a7380>
+func = <fastapi.applications.FastAPI object at 0x10e0e1e80>
+args = ({'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function ..._request.<locals>.receive at 0x10e9fe560>, <function _TestClientTransport.handle_request.<locals>.send at 0x10e9fd7a0>)
+
+    def call(
+        self,
+        func: Callable[[Unpack[PosArgsT]], Awaitable[T_Retval] | T_Retval],
+        *args: Unpack[PosArgsT],
+    ) -> T_Retval:
+        """
+        Call the given function in the event loop thread.
+    
+        If the callable returns a coroutine object, it is awaited on.
+    
+        :param func: any callable
+        :raises RuntimeError: if the portal is not running or if this method is called
+            from within the event loop thread
+    
+        """
+>       return cast(T_Retval, self.start_task_soon(func, *args).result())
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/anyio/from_thread.py:321: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = None, timeout = None
+
+    def result(self, timeout=None):
+        """Return the result of the call that the future represents.
+    
+        Args:
+            timeout: The number of seconds to wait for the result if the future
+                isn't done. If None, then there is no limit on the wait time.
+    
+        Returns:
+            The result of the call that the future represents.
+    
+        Raises:
+            CancelledError: If the future was cancelled.
+            TimeoutError: If the future didn't finish executing before the given
+                timeout.
+            Exception: If the call raised then that exception will be raised.
+        """
+        try:
+            with self._condition:
+                if self._state in [CANCELLED, CANCELLED_AND_NOTIFIED]:
+                    raise CancelledError()
+                elif self._state == FINISHED:
+                    return self.__get_result()
+    
+                self._condition.wait(timeout)
+    
+                if self._state in [CANCELLED, CANCELLED_AND_NOTIFIED]:
+                    raise CancelledError()
+                elif self._state == FINISHED:
+>                   return self.__get_result()
+                           ^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/concurrent/futures/_base.py:450: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = None
+
+    def __get_result(self):
+        if self._exception is not None:
+            try:
+>               raise self._exception
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/concurrent/futures/_base.py:395: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <anyio._backends._asyncio.BlockingPortal object at 0x10e9a7380>
+func = <fastapi.applications.FastAPI object at 0x10e0e1e80>
+args = ({'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function ..._request.<locals>.receive at 0x10e9fe560>, <function _TestClientTransport.handle_request.<locals>.send at 0x10e9fd7a0>)
+kwargs = {}
+future = <Future at 0x10e9d3ce0 state=finished raised ProgrammingError>
+
+    async def _call_func(
+        self,
+        func: Callable[[Unpack[PosArgsT]], Awaitable[T_Retval] | T_Retval],
+        args: tuple[Unpack[PosArgsT]],
+        kwargs: dict[str, Any],
+        future: Future[T_Retval],
+    ) -> None:
+        def callback(f: Future[T_Retval]) -> None:
+            if f.cancelled() and self._event_loop_thread_id not in (
+                None,
+                get_ident(),
+            ):
+                self.call(scope.cancel, "the future was cancelled")
+    
+        try:
+            retval_or_awaitable = func(*args, **kwargs)
+            if isawaitable(retval_or_awaitable):
+                with CancelScope() as scope:
+                    if future.cancelled():
+                        scope.cancel("the future was cancelled")
+                    else:
+                        future.add_done_callback(callback)
+    
+>                   retval = await retval_or_awaitable
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/anyio/from_thread.py:252: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <fastapi.applications.FastAPI object at 0x10e0e1e80>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function _TestClientTransport.handle_request.<locals>.receive at 0x10e9fe560>
+send = <function _TestClientTransport.handle_request.<locals>.send at 0x10e9fd7a0>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if self.root_path:
+            scope["root_path"] = self.root_path
+>       await super().__call__(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/fastapi/applications.py:1134: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <fastapi.applications.FastAPI object at 0x10e0e1e80>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function _TestClientTransport.handle_request.<locals>.receive at 0x10e9fe560>
+send = <function _TestClientTransport.handle_request.<locals>.send at 0x10e9fd7a0>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        scope["app"] = self
+        if self.middleware_stack is None:
+            self.middleware_stack = self.build_middleware_stack()
+>       await self.middleware_stack(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/applications.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.middleware.errors.ServerErrorMiddleware object at 0x10f050980>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function _TestClientTransport.handle_request.<locals>.receive at 0x10e9fe560>
+send = <function _TestClientTransport.handle_request.<locals>.send at 0x10e9fd7a0>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+    
+        response_started = False
+    
+        async def _send(message: Message) -> None:
+            nonlocal response_started, send
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+            await self.app(scope, receive, _send)
+        except Exception as exc:
+            request = Request(scope)
+            if self.debug:
+                # In debug mode, return traceback responses.
+                response = self.debug_response(request, exc)
+            elif self.handler is None:
+                # Use our default 500 error handler.
+                response = self.error_response(request, exc)
+            else:
+                # Use an installed 500 error handler.
+                if is_async_callable(self.handler):
+                    response = await self.handler(request, exc)
+                else:
+                    response = await run_in_threadpool(self.handler, request, exc)
+    
+            if not response_started:
+                await response(scope, receive, send)
+    
+            # We always continue to raise the exception.
+            # This allows servers to log the error, or allows test clients
+            # to optionally raise the error within the test case.
+>           raise exc
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/errors.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.middleware.errors.ServerErrorMiddleware object at 0x10f050980>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function _TestClientTransport.handle_request.<locals>.receive at 0x10e9fe560>
+send = <function _TestClientTransport.handle_request.<locals>.send at 0x10e9fd7a0>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+    
+        response_started = False
+    
+        async def _send(message: Message) -> None:
+            nonlocal response_started, send
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+>           await self.app(scope, receive, _send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/errors.py:164: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <dabia.core.token_refresh_middleware.TokenRefreshMiddleware object at 0x10f050830>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function _TestClientTransport.handle_request.<locals>.receive at 0x10e9fe560>
+send = <function ServerErrorMiddleware.__call__.<locals>._send at 0x10f06fe20>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+    
+        request = _CachedRequest(scope, receive)
+        wrapped_receive = request.wrapped_receive
+        response_sent = anyio.Event()
+        app_exc: Exception | None = None
+        exception_already_raised = False
+    
+        async def call_next(request: Request) -> Response:
+            async def receive_or_disconnect() -> Message:
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                async with anyio.create_task_group() as task_group:
+    
+                    async def wrap(func: Callable[[], Awaitable[T]]) -> T:
+                        result = await func()
+                        task_group.cancel_scope.cancel()
+                        return result
+    
+                    task_group.start_soon(wrap, response_sent.wait)
+                    message = await wrap(wrapped_receive)
+    
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                return message
+    
+            async def send_no_error(message: Message) -> None:
+                try:
+                    await send_stream.send(message)
+                except anyio.BrokenResourceError:
+                    # recv_stream has been closed, i.e. response_sent has been set.
+                    return
+    
+            async def coro() -> None:
+                nonlocal app_exc
+    
+                with send_stream:
+                    try:
+                        await self.app(scope, receive_or_disconnect, send_no_error)
+                    except Exception as exc:
+                        app_exc = exc
+    
+            task_group.start_soon(coro)
+    
+            try:
+                message = await recv_stream.receive()
+                info = message.get("info", None)
+                if message["type"] == "http.response.debug" and info is not None:
+                    message = await recv_stream.receive()
+            except anyio.EndOfStream:
+                if app_exc is not None:
+                    nonlocal exception_already_raised
+                    exception_already_raised = True
+                    # Prevent `anyio.EndOfStream` from polluting app exception context.
+                    # If both cause and context are None then the context is suppressed
+                    # and `anyio.EndOfStream` is not present in the exception traceback.
+                    # If exception cause is not None then it is propagated with
+                    # reraising here.
+                    # If exception has no cause but has context set then the context is
+                    # propagated as a cause with the reraise. This is necessary in order
+                    # to prevent `anyio.EndOfStream` from polluting the exception
+                    # context.
+                    raise app_exc from app_exc.__cause__ or app_exc.__context__
+                raise RuntimeError("No response returned.")
+    
+            assert message["type"] == "http.response.start"
+    
+            async def body_stream() -> BodyStreamGenerator:
+                async for message in recv_stream:
+                    if message["type"] == "http.response.pathsend":
+                        yield message
+                        break
+                    assert message["type"] == "http.response.body", f"Unexpected message: {message}"
+                    body = message.get("body", b"")
+                    if body:
+                        yield body
+                    if not message.get("more_body", False):
+                        break
+    
+            response = _StreamingResponse(status_code=message["status"], content=body_stream(), info=info)
+            response.raw_headers = message["headers"]
+            return response
+    
+        streams: anyio.create_memory_object_stream[Message] = anyio.create_memory_object_stream()
+        send_stream, recv_stream = streams
+>       with recv_stream, send_stream, collapse_excgroups():
+                                       ^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:191: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <contextlib._GeneratorContextManager object at 0x10efbf700>
+typ = <class 'ExceptionGroup'>
+value = ExceptionGroup('unhandled errors in a TaskGroup', [ProgrammingError('(psycopg2.errors.SyntaxError) syntax error at or ...)"\nLINE 1: SELECT count(distinct(case())) AS learned, count(distinct(ca...\n                                   ^\n')])
+traceback = <traceback object at 0x10f09a780>
+
+    def __exit__(self, typ, value, traceback):
+        if typ is None:
+            try:
+                next(self.gen)
+            except StopIteration:
+                return False
+            else:
+                try:
+                    raise RuntimeError("generator didn't stop")
+                finally:
+                    self.gen.close()
+        else:
+            if value is None:
+                # Need to force instantiation so we can reliably
+                # tell if we get the same exception back
+                value = typ()
+            try:
+>               self.gen.throw(value)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/contextlib.py:162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def collapse_excgroups() -> Generator[None, None, None]:
+        try:
+            yield
+        except BaseException as exc:
+            if has_exceptiongroups:  # pragma: no cover
+                while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
+                    exc = exc.exceptions[0]
+    
+>           raise exc
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/_utils.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <dabia.core.token_refresh_middleware.TokenRefreshMiddleware object at 0x10f050830>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function _TestClientTransport.handle_request.<locals>.receive at 0x10e9fe560>
+send = <function ServerErrorMiddleware.__call__.<locals>._send at 0x10f06fe20>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+    
+        request = _CachedRequest(scope, receive)
+        wrapped_receive = request.wrapped_receive
+        response_sent = anyio.Event()
+        app_exc: Exception | None = None
+        exception_already_raised = False
+    
+        async def call_next(request: Request) -> Response:
+            async def receive_or_disconnect() -> Message:
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                async with anyio.create_task_group() as task_group:
+    
+                    async def wrap(func: Callable[[], Awaitable[T]]) -> T:
+                        result = await func()
+                        task_group.cancel_scope.cancel()
+                        return result
+    
+                    task_group.start_soon(wrap, response_sent.wait)
+                    message = await wrap(wrapped_receive)
+    
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                return message
+    
+            async def send_no_error(message: Message) -> None:
+                try:
+                    await send_stream.send(message)
+                except anyio.BrokenResourceError:
+                    # recv_stream has been closed, i.e. response_sent has been set.
+                    return
+    
+            async def coro() -> None:
+                nonlocal app_exc
+    
+                with send_stream:
+                    try:
+                        await self.app(scope, receive_or_disconnect, send_no_error)
+                    except Exception as exc:
+                        app_exc = exc
+    
+            task_group.start_soon(coro)
+    
+            try:
+                message = await recv_stream.receive()
+                info = message.get("info", None)
+                if message["type"] == "http.response.debug" and info is not None:
+                    message = await recv_stream.receive()
+            except anyio.EndOfStream:
+                if app_exc is not None:
+                    nonlocal exception_already_raised
+                    exception_already_raised = True
+                    # Prevent `anyio.EndOfStream` from polluting app exception context.
+                    # If both cause and context are None then the context is suppressed
+                    # and `anyio.EndOfStream` is not present in the exception traceback.
+                    # If exception cause is not None then it is propagated with
+                    # reraising here.
+                    # If exception has no cause but has context set then the context is
+                    # propagated as a cause with the reraise. This is necessary in order
+                    # to prevent `anyio.EndOfStream` from polluting the exception
+                    # context.
+                    raise app_exc from app_exc.__cause__ or app_exc.__context__
+                raise RuntimeError("No response returned.")
+    
+            assert message["type"] == "http.response.start"
+    
+            async def body_stream() -> BodyStreamGenerator:
+                async for message in recv_stream:
+                    if message["type"] == "http.response.pathsend":
+                        yield message
+                        break
+                    assert message["type"] == "http.response.body", f"Unexpected message: {message}"
+                    body = message.get("body", b"")
+                    if body:
+                        yield body
+                    if not message.get("more_body", False):
+                        break
+    
+            response = _StreamingResponse(status_code=message["status"], content=body_stream(), info=info)
+            response.raw_headers = message["headers"]
+            return response
+    
+        streams: anyio.create_memory_object_stream[Message] = anyio.create_memory_object_stream()
+        send_stream, recv_stream = streams
+        with recv_stream, send_stream, collapse_excgroups():
+            async with anyio.create_task_group() as task_group:
+>               response = await self.dispatch_func(request, call_next)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:193: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <dabia.core.token_refresh_middleware.TokenRefreshMiddleware object at 0x10f050830>
+request = <starlette.middleware.base._CachedRequest object at 0x10f050ad0>
+call_next = <function BaseHTTPMiddleware.__call__.<locals>.call_next at 0x10f070040>
+
+    async def dispatch(self, request: Request, call_next):
+>       response = await call_next(request)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/dabia/core/token_refresh_middleware.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = <starlette.middleware.base._CachedRequest object at 0x10f050ad0>
+
+    async def call_next(request: Request) -> Response:
+        async def receive_or_disconnect() -> Message:
+            if response_sent.is_set():
+                return {"type": "http.disconnect"}
+    
+            async with anyio.create_task_group() as task_group:
+    
+                async def wrap(func: Callable[[], Awaitable[T]]) -> T:
+                    result = await func()
+                    task_group.cancel_scope.cancel()
+                    return result
+    
+                task_group.start_soon(wrap, response_sent.wait)
+                message = await wrap(wrapped_receive)
+    
+            if response_sent.is_set():
+                return {"type": "http.disconnect"}
+    
+            return message
+    
+        async def send_no_error(message: Message) -> None:
+            try:
+                await send_stream.send(message)
+            except anyio.BrokenResourceError:
+                # recv_stream has been closed, i.e. response_sent has been set.
+                return
+    
+        async def coro() -> None:
+            nonlocal app_exc
+    
+            with send_stream:
+                try:
+                    await self.app(scope, receive_or_disconnect, send_no_error)
+                except Exception as exc:
+                    app_exc = exc
+    
+        task_group.start_soon(coro)
+    
+        try:
+            message = await recv_stream.receive()
+            info = message.get("info", None)
+            if message["type"] == "http.response.debug" and info is not None:
+                message = await recv_stream.receive()
+        except anyio.EndOfStream:
+            if app_exc is not None:
+                nonlocal exception_already_raised
+                exception_already_raised = True
+                # Prevent `anyio.EndOfStream` from polluting app exception context.
+                # If both cause and context are None then the context is suppressed
+                # and `anyio.EndOfStream` is not present in the exception traceback.
+                # If exception cause is not None then it is propagated with
+                # reraising here.
+                # If exception has no cause but has context set then the context is
+                # propagated as a cause with the reraise. This is necessary in order
+                # to prevent `anyio.EndOfStream` from polluting the exception
+                # context.
+>               raise app_exc from app_exc.__cause__ or app_exc.__context__
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:168: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def coro() -> None:
+        nonlocal app_exc
+    
+        with send_stream:
+            try:
+>               await self.app(scope, receive_or_disconnect, send_no_error)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <dabia.core.middleware.LoggingMiddleware object at 0x10f0506e0>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f0701a0>
+send = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x10f070300>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+    
+        request = _CachedRequest(scope, receive)
+        wrapped_receive = request.wrapped_receive
+        response_sent = anyio.Event()
+        app_exc: Exception | None = None
+        exception_already_raised = False
+    
+        async def call_next(request: Request) -> Response:
+            async def receive_or_disconnect() -> Message:
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                async with anyio.create_task_group() as task_group:
+    
+                    async def wrap(func: Callable[[], Awaitable[T]]) -> T:
+                        result = await func()
+                        task_group.cancel_scope.cancel()
+                        return result
+    
+                    task_group.start_soon(wrap, response_sent.wait)
+                    message = await wrap(wrapped_receive)
+    
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                return message
+    
+            async def send_no_error(message: Message) -> None:
+                try:
+                    await send_stream.send(message)
+                except anyio.BrokenResourceError:
+                    # recv_stream has been closed, i.e. response_sent has been set.
+                    return
+    
+            async def coro() -> None:
+                nonlocal app_exc
+    
+                with send_stream:
+                    try:
+                        await self.app(scope, receive_or_disconnect, send_no_error)
+                    except Exception as exc:
+                        app_exc = exc
+    
+            task_group.start_soon(coro)
+    
+            try:
+                message = await recv_stream.receive()
+                info = message.get("info", None)
+                if message["type"] == "http.response.debug" and info is not None:
+                    message = await recv_stream.receive()
+            except anyio.EndOfStream:
+                if app_exc is not None:
+                    nonlocal exception_already_raised
+                    exception_already_raised = True
+                    # Prevent `anyio.EndOfStream` from polluting app exception context.
+                    # If both cause and context are None then the context is suppressed
+                    # and `anyio.EndOfStream` is not present in the exception traceback.
+                    # If exception cause is not None then it is propagated with
+                    # reraising here.
+                    # If exception has no cause but has context set then the context is
+                    # propagated as a cause with the reraise. This is necessary in order
+                    # to prevent `anyio.EndOfStream` from polluting the exception
+                    # context.
+                    raise app_exc from app_exc.__cause__ or app_exc.__context__
+                raise RuntimeError("No response returned.")
+    
+            assert message["type"] == "http.response.start"
+    
+            async def body_stream() -> BodyStreamGenerator:
+                async for message in recv_stream:
+                    if message["type"] == "http.response.pathsend":
+                        yield message
+                        break
+                    assert message["type"] == "http.response.body", f"Unexpected message: {message}"
+                    body = message.get("body", b"")
+                    if body:
+                        yield body
+                    if not message.get("more_body", False):
+                        break
+    
+            response = _StreamingResponse(status_code=message["status"], content=body_stream(), info=info)
+            response.raw_headers = message["headers"]
+            return response
+    
+        streams: anyio.create_memory_object_stream[Message] = anyio.create_memory_object_stream()
+        send_stream, recv_stream = streams
+>       with recv_stream, send_stream, collapse_excgroups():
+                                       ^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:191: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <contextlib._GeneratorContextManager object at 0x10efbfc40>
+typ = <class 'ExceptionGroup'>
+value = ExceptionGroup('unhandled errors in a TaskGroup', [ProgrammingError('(psycopg2.errors.SyntaxError) syntax error at or ...)"\nLINE 1: SELECT count(distinct(case())) AS learned, count(distinct(ca...\n                                   ^\n')])
+traceback = <traceback object at 0x10e9fa640>
+
+    def __exit__(self, typ, value, traceback):
+        if typ is None:
+            try:
+                next(self.gen)
+            except StopIteration:
+                return False
+            else:
+                try:
+                    raise RuntimeError("generator didn't stop")
+                finally:
+                    self.gen.close()
+        else:
+            if value is None:
+                # Need to force instantiation so we can reliably
+                # tell if we get the same exception back
+                value = typ()
+            try:
+>               self.gen.throw(value)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/contextlib.py:162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def collapse_excgroups() -> Generator[None, None, None]:
+        try:
+            yield
+        except BaseException as exc:
+            if has_exceptiongroups:  # pragma: no cover
+                while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
+                    exc = exc.exceptions[0]
+    
+>           raise exc
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/_utils.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <dabia.core.middleware.LoggingMiddleware object at 0x10f0506e0>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f0701a0>
+send = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x10f070300>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+    
+        request = _CachedRequest(scope, receive)
+        wrapped_receive = request.wrapped_receive
+        response_sent = anyio.Event()
+        app_exc: Exception | None = None
+        exception_already_raised = False
+    
+        async def call_next(request: Request) -> Response:
+            async def receive_or_disconnect() -> Message:
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                async with anyio.create_task_group() as task_group:
+    
+                    async def wrap(func: Callable[[], Awaitable[T]]) -> T:
+                        result = await func()
+                        task_group.cancel_scope.cancel()
+                        return result
+    
+                    task_group.start_soon(wrap, response_sent.wait)
+                    message = await wrap(wrapped_receive)
+    
+                if response_sent.is_set():
+                    return {"type": "http.disconnect"}
+    
+                return message
+    
+            async def send_no_error(message: Message) -> None:
+                try:
+                    await send_stream.send(message)
+                except anyio.BrokenResourceError:
+                    # recv_stream has been closed, i.e. response_sent has been set.
+                    return
+    
+            async def coro() -> None:
+                nonlocal app_exc
+    
+                with send_stream:
+                    try:
+                        await self.app(scope, receive_or_disconnect, send_no_error)
+                    except Exception as exc:
+                        app_exc = exc
+    
+            task_group.start_soon(coro)
+    
+            try:
+                message = await recv_stream.receive()
+                info = message.get("info", None)
+                if message["type"] == "http.response.debug" and info is not None:
+                    message = await recv_stream.receive()
+            except anyio.EndOfStream:
+                if app_exc is not None:
+                    nonlocal exception_already_raised
+                    exception_already_raised = True
+                    # Prevent `anyio.EndOfStream` from polluting app exception context.
+                    # If both cause and context are None then the context is suppressed
+                    # and `anyio.EndOfStream` is not present in the exception traceback.
+                    # If exception cause is not None then it is propagated with
+                    # reraising here.
+                    # If exception has no cause but has context set then the context is
+                    # propagated as a cause with the reraise. This is necessary in order
+                    # to prevent `anyio.EndOfStream` from polluting the exception
+                    # context.
+                    raise app_exc from app_exc.__cause__ or app_exc.__context__
+                raise RuntimeError("No response returned.")
+    
+            assert message["type"] == "http.response.start"
+    
+            async def body_stream() -> BodyStreamGenerator:
+                async for message in recv_stream:
+                    if message["type"] == "http.response.pathsend":
+                        yield message
+                        break
+                    assert message["type"] == "http.response.body", f"Unexpected message: {message}"
+                    body = message.get("body", b"")
+                    if body:
+                        yield body
+                    if not message.get("more_body", False):
+                        break
+    
+            response = _StreamingResponse(status_code=message["status"], content=body_stream(), info=info)
+            response.raw_headers = message["headers"]
+            return response
+    
+        streams: anyio.create_memory_object_stream[Message] = anyio.create_memory_object_stream()
+        send_stream, recv_stream = streams
+        with recv_stream, send_stream, collapse_excgroups():
+            async with anyio.create_task_group() as task_group:
+>               response = await self.dispatch_func(request, call_next)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:193: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <dabia.core.middleware.LoggingMiddleware object at 0x10f0506e0>
+request = <starlette.middleware.base._CachedRequest object at 0x10e9ef250>
+call_next = <function BaseHTTPMiddleware.__call__.<locals>.call_next at 0x10eff80f0>
+
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+    
+        # 1. Generate and set Trace ID
+        trace_id = str(uuid.uuid4())
+        trace_token = trace_id_ctx.set(trace_id)
+    
+        # Reset User ID to anonymous for new request scope
+        user_token = user_id_ctx.set("anonymous")
+    
+        # 2. Log Request Start
+        # We try to get client host, but in prod behind proxy it might be forwarded.
+        client_host = request.client.host if request.client else "unknown"
+    
+        logger.info(
+            f"[START] Method: {request.method} Path: {request.url.path} "
+            f"Client: {client_host} Query: {request.query_params}"
+        )
+    
+        try:
+            response = await call_next(request)
+    
+            # 3. Log Response (Success/Error handled by app, but middleware sees status)
+            process_time = (time.time() - start_time) * 1000
+    
+            logger.info(
+                f"[END] Status: {response.status_code} "
+                f"Cost: {process_time:.2f}ms"
+            )
+    
+            return response
+    
+        except Exception as e:
+            # Fallback for unhandled exceptions (though app exception handlers usually catch them)
+            process_time = (time.time() - start_time) * 1000
+            logger.error(
+                f"[ERROR] Unhandled Exception: {str(e)} "
+                f"Cost: {process_time:.2f}ms",
+                exc_info=True
+            )
+>           raise e
+
+backend/dabia/core/middleware.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <dabia.core.middleware.LoggingMiddleware object at 0x10f0506e0>
+request = <starlette.middleware.base._CachedRequest object at 0x10e9ef250>
+call_next = <function BaseHTTPMiddleware.__call__.<locals>.call_next at 0x10eff80f0>
+
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+    
+        # 1. Generate and set Trace ID
+        trace_id = str(uuid.uuid4())
+        trace_token = trace_id_ctx.set(trace_id)
+    
+        # Reset User ID to anonymous for new request scope
+        user_token = user_id_ctx.set("anonymous")
+    
+        # 2. Log Request Start
+        # We try to get client host, but in prod behind proxy it might be forwarded.
+        client_host = request.client.host if request.client else "unknown"
+    
+        logger.info(
+            f"[START] Method: {request.method} Path: {request.url.path} "
+            f"Client: {client_host} Query: {request.query_params}"
+        )
+    
+        try:
+>           response = await call_next(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/dabia/core/middleware.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = <starlette.middleware.base._CachedRequest object at 0x10e9ef250>
+
+    async def call_next(request: Request) -> Response:
+        async def receive_or_disconnect() -> Message:
+            if response_sent.is_set():
+                return {"type": "http.disconnect"}
+    
+            async with anyio.create_task_group() as task_group:
+    
+                async def wrap(func: Callable[[], Awaitable[T]]) -> T:
+                    result = await func()
+                    task_group.cancel_scope.cancel()
+                    return result
+    
+                task_group.start_soon(wrap, response_sent.wait)
+                message = await wrap(wrapped_receive)
+    
+            if response_sent.is_set():
+                return {"type": "http.disconnect"}
+    
+            return message
+    
+        async def send_no_error(message: Message) -> None:
+            try:
+                await send_stream.send(message)
+            except anyio.BrokenResourceError:
+                # recv_stream has been closed, i.e. response_sent has been set.
+                return
+    
+        async def coro() -> None:
+            nonlocal app_exc
+    
+            with send_stream:
+                try:
+                    await self.app(scope, receive_or_disconnect, send_no_error)
+                except Exception as exc:
+                    app_exc = exc
+    
+        task_group.start_soon(coro)
+    
+        try:
+            message = await recv_stream.receive()
+            info = message.get("info", None)
+            if message["type"] == "http.response.debug" and info is not None:
+                message = await recv_stream.receive()
+        except anyio.EndOfStream:
+            if app_exc is not None:
+                nonlocal exception_already_raised
+                exception_already_raised = True
+                # Prevent `anyio.EndOfStream` from polluting app exception context.
+                # If both cause and context are None then the context is suppressed
+                # and `anyio.EndOfStream` is not present in the exception traceback.
+                # If exception cause is not None then it is propagated with
+                # reraising here.
+                # If exception has no cause but has context set then the context is
+                # propagated as a cause with the reraise. This is necessary in order
+                # to prevent `anyio.EndOfStream` from polluting the exception
+                # context.
+>               raise app_exc from app_exc.__cause__ or app_exc.__context__
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:168: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def coro() -> None:
+        nonlocal app_exc
+    
+        with send_stream:
+            try:
+>               await self.app(scope, receive_or_disconnect, send_no_error)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/base.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.middleware.cors.CORSMiddleware object at 0x10e9a78c0>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x10f070880>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":  # pragma: no cover
+            await self.app(scope, receive, send)
+            return
+    
+        method = scope["method"]
+        headers = Headers(scope=scope)
+        origin = headers.get("origin")
+    
+        if origin is None:
+>           await self.app(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/cors.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.middleware.exceptions.ExceptionMiddleware object at 0x10e9a7cb0>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x10f070880>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+    
+        scope["starlette.exception_handlers"] = (
+            self._exception_handlers,
+            self._status_handlers,
+        )
+    
+        conn: Request | WebSocket
+        if scope["type"] == "http":
+            conn = Request(scope, receive, send)
+        else:
+            conn = WebSocket(scope, receive, send)
+    
+>       await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/middleware/exceptions.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x10f070880>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+            await app(scope, receive, sender)
+        except Exception as exc:
+            handler = None
+    
+            if isinstance(exc, HTTPException):
+                handler = status_handlers.get(exc.status_code)
+    
+            if handler is None:
+                handler = _lookup_exception_handler(exception_handlers, exc)
+    
+            if handler is None:
+>               raise exc
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/_exception_handler.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.send_no_error at 0x10f070880>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+>           await app(scope, receive, sender)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/_exception_handler.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x10e9a7b60>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f070e00>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        async with AsyncExitStack() as stack:
+            scope[self.context_name] = stack
+>           await self.app(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <fastapi.routing.APIRouter object at 0x10e1d0af0>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f070e00>
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        The main entry point to the Router class.
+        """
+>       await self.middleware_stack(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/routing.py:716: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <fastapi.routing.APIRouter object at 0x10e1d0af0>
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f070e00>
+
+    async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
+        assert scope["type"] in ("http", "websocket", "lifespan")
+    
+        if "router" not in scope:
+            scope["router"] = self
+    
+        if scope["type"] == "lifespan":
+            await self.lifespan(scope, receive, send)
+            return
+    
+        partial = None
+    
+        for route in self.routes:
+            # Determine if any route matches the incoming scope,
+            # and hand over to the matching route if found.
+            match, child_scope = route.matches(scope)
+            if match == Match.FULL:
+                scope.update(child_scope)
+>               await route.handle(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/routing.py:736: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = APIRoute(path='/api/v1/stats/daily-summary', name='get_daily_summary', methods=['GET'])
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f070e00>
+
+    async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if self.methods and scope["method"] not in self.methods:
+            headers = {"Allow": ", ".join(self.methods)}
+            if "app" in scope:
+                raise HTTPException(status_code=405, headers=headers)
+            else:
+                response = PlainTextResponse("Method Not Allowed", status_code=405, headers=headers)
+            await response(scope, receive, send)
+        else:
+>           await self.app(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/routing.py:290: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f070e00>
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        request = Request(scope, receive, send)
+    
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            # Starts customization
+            response_awaited = False
+            async with AsyncExitStack() as request_stack:
+                scope["fastapi_inner_astack"] = request_stack
+                async with AsyncExitStack() as function_stack:
+                    scope["fastapi_function_astack"] = function_stack
+                    response = await f(request)
+                await response(scope, receive, send)
+                # Continues customization
+                response_awaited = True
+            if not response_awaited:
+                raise FastAPIError(
+                    "Response not awaited. There's a high chance that the "
+                    "application code is raising an exception and a dependency with yield "
+                    "has a block with a bare except, or a block with except Exception, "
+                    "and is not raising the exception again. Read more about it in the "
+                    "docs: https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/#dependencies-with-yield-and-except"
+                )
+    
+        # Same as in Starlette
+>       await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/fastapi/routing.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f070e00>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+            await app(scope, receive, sender)
+        except Exception as exc:
+            handler = None
+    
+            if isinstance(exc, HTTPException):
+                handler = status_handlers.get(exc.status_code)
+    
+            if handler is None:
+                handler = _lookup_exception_handler(exception_handlers, exc)
+    
+            if handler is None:
+>               raise exc
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/_exception_handler.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f070e00>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+>           await app(scope, receive, sender)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/_exception_handler.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x10e0e1e80>, 'client': ('testclient', 50000), 'endpoint': <function get_daily_summary at 0x10e1bba00>, 'extensions': {'http.response.debug': {}}, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x10f070720>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x10f071220>
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        # Starts customization
+        response_awaited = False
+        async with AsyncExitStack() as request_stack:
+            scope["fastapi_inner_astack"] = request_stack
+            async with AsyncExitStack() as function_stack:
+                scope["fastapi_function_astack"] = function_stack
+>               response = await f(request)
+                           ^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/fastapi/routing.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = <starlette.requests.Request object at 0x10e9ef9d0>
+
+    async def app(request: Request) -> Response:
+        response: Union[Response, None] = None
+        file_stack = request.scope.get("fastapi_middleware_astack")
+        assert isinstance(file_stack, AsyncExitStack), (
+            "fastapi_middleware_astack not found in request scope"
+        )
+    
+        # Read body and auto-close files
+        try:
+            body: Any = None
+            if body_field:
+                if is_body_form:
+                    body = await request.form()
+                    file_stack.push_async_callback(body.close)
+                else:
+                    body_bytes = await request.body()
+                    if body_bytes:
+                        json_body: Any = Undefined
+                        content_type_value = request.headers.get("content-type")
+                        if not content_type_value:
+                            json_body = await request.json()
+                        else:
+                            message = email.message.Message()
+                            message["content-type"] = content_type_value
+                            if message.get_content_maintype() == "application":
+                                subtype = message.get_content_subtype()
+                                if subtype == "json" or subtype.endswith("+json"):
+                                    json_body = await request.json()
+                        if json_body != Undefined:
+                            body = json_body
+                        else:
+                            body = body_bytes
+        except json.JSONDecodeError as e:
+            validation_error = RequestValidationError(
+                [
+                    {
+                        "type": "json_invalid",
+                        "loc": ("body", e.pos),
+                        "msg": "JSON decode error",
+                        "input": {},
+                        "ctx": {"error": e.msg},
+                    }
+                ],
+                body=e.doc,
+            )
+            raise validation_error from e
+        except HTTPException:
+            # If a middleware raises an HTTPException, it should be raised again
+            raise
+        except Exception as e:
+            http_error = HTTPException(
+                status_code=400, detail="There was an error parsing the body"
+            )
+            raise http_error from e
+    
+        # Solve dependencies and run path operation function, auto-closing dependencies
+        errors: List[Any] = []
+        async_exit_stack = request.scope.get("fastapi_inner_astack")
+        assert isinstance(async_exit_stack, AsyncExitStack), (
+            "fastapi_inner_astack not found in request scope"
+        )
+        solved_result = await solve_dependencies(
+            request=request,
+            dependant=dependant,
+            body=body,
+            dependency_overrides_provider=dependency_overrides_provider,
+            async_exit_stack=async_exit_stack,
+            embed_body_fields=embed_body_fields,
+        )
+        errors = solved_result.errors
+        if not errors:
+>           raw_response = await run_endpoint_function(
+                dependant=dependant,
+                values=solved_result.values,
+                is_coroutine=is_coroutine,
+            )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/fastapi/routing.py:391: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run_endpoint_function(
+        *, dependant: Dependant, values: Dict[str, Any], is_coroutine: bool
+    ) -> Any:
+        # Only called by get_request_handler. Has been split into its own function to
+        # facilitate profiling endpoints, since inner functions are harder to profile.
+        assert dependant.call is not None, "dependant.call must be a function"
+    
+        if is_coroutine:
+            return await dependant.call(**values)
+        else:
+>           return await run_in_threadpool(dependant.call, **values)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/fastapi/routing.py:292: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+func = functools.partial(<function get_daily_summary at 0x10e1bba00>, db=<sqlalchemy.orm.session.Session object at 0x10e9a41a0>, current_user_id=UUID('085592ff-d218-4de4-858a-6b3a1041a000'))
+args = ()
+kwargs = {'current_user_id': UUID('085592ff-d218-4de4-858a-6b3a1041a000'), 'db': <sqlalchemy.orm.session.Session object at 0x10e9a41a0>}
+
+    async def run_in_threadpool(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+        func = functools.partial(func, *args, **kwargs)
+>       return await anyio.to_thread.run_sync(func)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/starlette/concurrency.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+func = functools.partial(<function get_daily_summary at 0x10e1bba00>, db=<sqlalchemy.orm.session.Session object at 0x10e9a41a0>, current_user_id=UUID('085592ff-d218-4de4-858a-6b3a1041a000'))
+abandon_on_cancel = False, cancellable = None, limiter = None, args = ()
+
+    async def run_sync(
+        func: Callable[[Unpack[PosArgsT]], T_Retval],
+        *args: Unpack[PosArgsT],
+        abandon_on_cancel: bool = False,
+        cancellable: bool | None = None,
+        limiter: CapacityLimiter | None = None,
+    ) -> T_Retval:
+        """
+        Call the given function with the given arguments in a worker thread.
+    
+        If the ``cancellable`` option is enabled and the task waiting for its completion is
+        cancelled, the thread will still run its course but its return value (or any raised
+        exception) will be ignored.
+    
+        :param func: a callable
+        :param args: positional arguments for the callable
+        :param abandon_on_cancel: ``True`` to abandon the thread (leaving it to run
+            unchecked on own) if the host task is cancelled, ``False`` to ignore
+            cancellations in the host task until the operation has completed in the worker
+            thread
+        :param cancellable: deprecated alias of ``abandon_on_cancel``; will override
+            ``abandon_on_cancel`` if both parameters are passed
+        :param limiter: capacity limiter to use to limit the total amount of threads running
+            (if omitted, the default limiter is used)
+        :return: an awaitable that yields the return value of the function.
+    
+        """
+        if cancellable is not None:
+            abandon_on_cancel = cancellable
+            warn(
+                "The `cancellable=` keyword argument to `anyio.to_thread.run_sync` is "
+                "deprecated since AnyIO 4.1.0; use `abandon_on_cancel=` instead",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+    
+>       return await get_async_backend().run_sync_in_worker_thread(
+            func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/anyio/to_thread.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'anyio._backends._asyncio.AsyncIOBackend'>
+func = functools.partial(<function get_daily_summary at 0x10e1bba00>, db=<sqlalchemy.orm.session.Session object at 0x10e9a41a0>, current_user_id=UUID('085592ff-d218-4de4-858a-6b3a1041a000'))
+args = (), abandon_on_cancel = False, limiter = None
+
+    @classmethod
+    async def run_sync_in_worker_thread(  # type: ignore[return]
+        cls,
+        func: Callable[[Unpack[PosArgsT]], T_Retval],
+        args: tuple[Unpack[PosArgsT]],
+        abandon_on_cancel: bool = False,
+        limiter: abc.CapacityLimiter | None = None,
+    ) -> T_Retval:
+        await cls.checkpoint()
+    
+        # If this is the first run in this event loop thread, set up the necessary
+        # variables
+        try:
+            idle_workers = _threadpool_idle_workers.get()
+            workers = _threadpool_workers.get()
+        except LookupError:
+            idle_workers = deque()
+            workers = set()
+            _threadpool_idle_workers.set(idle_workers)
+            _threadpool_workers.set(workers)
+    
+        async with limiter or cls.current_default_thread_limiter():
+            with CancelScope(shield=not abandon_on_cancel) as scope:
+                future = asyncio.Future[T_Retval]()
+                root_task = find_root_task()
+                if not idle_workers:
+                    worker = WorkerThread(root_task, workers, idle_workers)
+                    worker.start()
+                    workers.add(worker)
+                    root_task.add_done_callback(
+                        worker.stop, context=contextvars.Context()
+                    )
+                else:
+                    worker = idle_workers.pop()
+    
+                    # Prune any other workers that have been idle for MAX_IDLE_TIME
+                    # seconds or longer
+                    now = cls.current_time()
+                    while idle_workers:
+                        if (
+                            now - idle_workers[0].idle_since
+                            < WorkerThread.MAX_IDLE_TIME
+                        ):
+                            break
+    
+                        expired_worker = idle_workers.popleft()
+                        expired_worker.root_task.remove_done_callback(
+                            expired_worker.stop
+                        )
+                        expired_worker.stop()
+    
+                context = copy_context()
+                context.run(sniffio.current_async_library_cvar.set, None)
+                if abandon_on_cancel or scope._parent_scope is None:
+                    worker_scope = scope
+                else:
+                    worker_scope = scope._parent_scope
+    
+                worker.queue.put_nowait((context, func, args, future, worker_scope))
+>               return await future
+                       ^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/anyio/_backends/_asyncio.py:2485: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <WorkerThread(AnyIO worker thread, stopped daemon 6126776320)>
+
+    def run(self) -> None:
+        with claim_worker_thread(AsyncIOBackend, self.loop):
+            while True:
+                item = self.queue.get()
+                if item is None:
+                    # Shutdown command received
+                    return
+    
+                context, func, args, future, cancel_scope = item
+                if not future.cancelled():
+                    result = None
+                    exception: BaseException | None = None
+                    threadlocals.current_cancel_scope = cancel_scope
+                    try:
+>                       result = context.run(func, *args)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/anyio/_backends/_asyncio.py:976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+db = <sqlalchemy.orm.session.Session object at 0x10e9a41a0>
+current_user_id = UUID('085592ff-d218-4de4-858a-6b3a1041a000')
+
+    @router.get("/daily-summary", response_model=schemas.DailyStats)
+    def get_daily_summary(
+        db: Session = Depends(get_db),
+        current_user_id: uuid.UUID = Depends(get_current_user_id)
+    ):
+        # Calculate today's start time (consistent with session.py)
+        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
+    
+        # 1. Total Answered & Time & Accuracy from ReviewLog
+        logs_query = db.query(
+            models.ReviewLog.is_correct,
+            models.ReviewLog.response_time_ms
+        ).filter(
+            models.ReviewLog.user_id == current_user_id,
+            models.ReviewLog.reviewed_at >= today_start
+        )
+    
+        logs = logs_query.all()
+    
+        total_answered = len(logs)
+        total_correct = sum(1 for log in logs if log.is_correct)
+        total_time_ms = sum(log.response_time_ms for log in logs)
+    
+        accuracy = (total_correct / total_answered * 100) if total_answered > 0 else 0.0
+        total_time_seconds = int(total_time_ms / 1000)
+    
+        # 2. To Learn Count (Due Cards)
+        # Count user cards where next_review_at <= now
+        to_learn_count = db.query(func.count(models.UserCardAssociation.card_id)).filter(
+            models.UserCardAssociation.user_id == current_user_id,
+            models.UserCardAssociation.next_review_at <= now
+        ).scalar()
+    
+        # 3. New Words Count (Created Today)
+        # Assuming UserCardAssociation creation means "New Word learned/started"
+        new_words_count = db.query(func.count(models.UserCardAssociation.card_id)).filter(
+            models.UserCardAssociation.user_id == current_user_id,
+            models.UserCardAssociation.created_at >= today_start
+        ).scalar()
+    
+        # 4. Learned (New words Studied Today) vs Reinforced (Old words Reviewed Today)
+        # We use conditional aggregation to get both in a single query for better performance
+        stats_query = db.query(
+            func.count(func.distinct(
+                func.case(
+                    whens=[(models.UserCardAssociation.created_at >= today_start, models.ReviewLog.card_id)]
+                )
+            )).label("learned"),
+            func.count(func.distinct(
+                func.case(
+                    whens=[(models.UserCardAssociation.created_at < today_start, models.ReviewLog.card_id)]
+                )
+            )).label("reinforced")
+        ).select_from(models.ReviewLog).join(
+            models.UserCardAssociation,
+            (models.ReviewLog.card_id == models.UserCardAssociation.card_id) &
+            (models.ReviewLog.user_id == models.UserCardAssociation.user_id)
+        ).filter(
+            models.ReviewLog.user_id == current_user_id,
+            models.ReviewLog.reviewed_at >= today_start
+>       ).first()
+          ^^^^^^^
+
+backend/dabia/api/v1/stats.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.orm.query.Query object at 0x10f035810>
+
+    def first(self):
+        """Return the first result of this ``Query`` or
+        None if the result doesn't contain any row.
+    
+        first() applies a limit of one within the generated SQL, so that
+        only one primary entity row is generated on the server side
+        (note this may consist of multiple result rows if join-loaded
+        collections are present).
+    
+        Calling :meth:`_query.Query.first`
+        results in an execution of the underlying
+        query.
+    
+        .. seealso::
+    
+            :meth:`_query.Query.one`
+    
+            :meth:`_query.Query.one_or_none`
+    
+        """
+        # replicates limit(1) behavior
+        if self._statement is not None:
+            return self._iter().first()
+        else:
+>           return self.limit(1)._iter().first()
+                   ^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/orm/query.py:2824: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.orm.query.Query object at 0x10f035940>
+
+    def _iter(self):
+        # new style execution.
+        params = self._params
+    
+        statement = self._statement_20()
+>       result = self.session.execute(
+            statement,
+            params,
+            execution_options={"_sa_orm_load_options": self.load_options},
+        )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/orm/query.py:2916: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.orm.session.Session object at 0x10e9a41a0>
+statement = <sqlalchemy.sql.selectable.Select object at 0x10f039bf0>
+params = immutabledict({})
+execution_options = immutabledict({'_sa_orm_load_options': default_load_options(_legacy_uniquing=True), '_result_disable_adapt_to_context': True, 'future_result': True})
+bind_arguments = {'clause': <sqlalchemy.sql.selectable.Select object at 0x10f039bf0>, 'mapper': <Mapper at 0x10dd35be0; ReviewLog>}
+_parent_execute_state = None, _add_event = None, kw = {}
+compile_state_cls = <class 'sqlalchemy.orm.context.ORMSelectCompileState'>
+events_todo = <sqlalchemy.event.attr._EmptyListener object at 0x10e9f8d40>
+bind = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+
+    def execute(
+        self,
+        statement,
+        params=None,
+        execution_options=util.EMPTY_DICT,
+        bind_arguments=None,
+        _parent_execute_state=None,
+        _add_event=None,
+        **kw
+    ):
+        r"""Execute a SQL expression construct.
+    
+        Returns a :class:`_engine.Result` object representing
+        results of the statement execution.
+    
+        E.g.::
+    
+            from sqlalchemy import select
+            result = session.execute(
+                select(User).where(User.id == 5)
+            )
+    
+        The API contract of :meth:`_orm.Session.execute` is similar to that
+        of :meth:`_future.Connection.execute`, the :term:`2.0 style` version
+        of :class:`_future.Connection`.
+    
+        .. versionchanged:: 1.4 the :meth:`_orm.Session.execute` method is
+           now the primary point of ORM statement execution when using
+           :term:`2.0 style` ORM usage.
+    
+        :param statement:
+            An executable statement (i.e. an :class:`.Executable` expression
+            such as :func:`_expression.select`).
+    
+        :param params:
+            Optional dictionary, or list of dictionaries, containing
+            bound parameter values.   If a single dictionary, single-row
+            execution occurs; if a list of dictionaries, an
+            "executemany" will be invoked.  The keys in each dictionary
+            must correspond to parameter names present in the statement.
+    
+        :param execution_options: optional dictionary of execution options,
+         which will be associated with the statement execution.  This
+         dictionary can provide a subset of the options that are accepted
+         by :meth:`_engine.Connection.execution_options`, and may also
+         provide additional options understood only in an ORM context.
+    
+        :param bind_arguments: dictionary of additional arguments to determine
+         the bind.  May include "mapper", "bind", or other custom arguments.
+         Contents of this dictionary are passed to the
+         :meth:`.Session.get_bind` method.
+    
+        :param mapper:
+          deprecated; use the bind_arguments dictionary
+    
+        :param bind:
+          deprecated; use the bind_arguments dictionary
+    
+        :param \**kw:
+          deprecated; use the bind_arguments dictionary
+    
+        :return: a :class:`_engine.Result` object.
+    
+    
+        """
+        statement = coercions.expect(roles.StatementRole, statement)
+    
+        if kw:
+            util.warn_deprecated_20(
+                "Passing bind arguments to Session.execute() as keyword "
+                "arguments is deprecated and will be removed SQLAlchemy 2.0. "
+                "Please use the bind_arguments parameter."
+            )
+            if not bind_arguments:
+                bind_arguments = kw
+            else:
+                bind_arguments.update(kw)
+        elif not bind_arguments:
+            bind_arguments = {}
+        else:
+            bind_arguments = dict(bind_arguments)
+    
+        if (
+            statement._propagate_attrs.get("compile_state_plugin", None)
+            == "orm"
+        ):
+            # note that even without "future" mode, we need
+            compile_state_cls = CompileState._get_plugin_class_for_plugin(
+                statement, "orm"
+            )
+        else:
+            compile_state_cls = None
+    
+        execution_options = util.coerce_to_immutabledict(execution_options)
+    
+        if compile_state_cls is not None:
+            (
+                statement,
+                execution_options,
+            ) = compile_state_cls.orm_pre_session_exec(
+                self,
+                statement,
+                params,
+                execution_options,
+                bind_arguments,
+                _parent_execute_state is not None,
+            )
+        else:
+            bind_arguments.setdefault("clause", statement)
+            execution_options = execution_options.union(
+                {"future_result": True}
+            )
+    
+        if _parent_execute_state:
+            events_todo = _parent_execute_state._remaining_events()
+        else:
+            events_todo = self.dispatch.do_orm_execute
+            if _add_event:
+                events_todo = list(events_todo) + [_add_event]
+    
+        if events_todo:
+            orm_exec_state = ORMExecuteState(
+                self,
+                statement,
+                params,
+                execution_options,
+                bind_arguments,
+                compile_state_cls,
+                events_todo,
+            )
+            for idx, fn in enumerate(events_todo):
+                orm_exec_state._starting_event_idx = idx
+                result = fn(orm_exec_state)
+                if result:
+                    return result
+    
+            statement = orm_exec_state.statement
+            execution_options = orm_exec_state.local_execution_options
+    
+        bind = self.get_bind(**bind_arguments)
+    
+        if self.autocommit:
+            # legacy stuff, we can't use future_result w/ autocommit because
+            # we rely upon close_with_result, also legacy.  it's all
+            # interrelated
+            conn = self._connection_for_bind(bind, close_with_result=True)
+            execution_options = execution_options.union(
+                dict(future_result=False)
+            )
+        else:
+            conn = self._connection_for_bind(bind)
+>       result = conn._execute_20(statement, params or {}, execution_options)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/orm/session.py:1717: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+statement = <sqlalchemy.sql.selectable.Select object at 0x10f039bf0>
+parameters = {}
+execution_options = immutabledict({'_sa_orm_load_options': default_load_options(_legacy_uniquing=True), '_result_disable_adapt_to_context': True, 'future_result': True})
+
+    def _execute_20(
+        self,
+        statement,
+        parameters=None,
+        execution_options=_EMPTY_EXECUTION_OPTS,
+    ):
+        args_10style, kwargs_10style = _distill_params_20(parameters)
+        try:
+            meth = statement._execute_on_connection
+        except AttributeError as err:
+            util.raise_(
+                exc.ObjectNotExecutableError(statement), replace_context=err
+            )
+        else:
+>           return meth(self, args_10style, kwargs_10style, execution_options)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1710: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.sql.selectable.Select object at 0x10f039bf0>
+connection = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+multiparams = ({},), params = immutabledict({})
+execution_options = immutabledict({'_sa_orm_load_options': default_load_options(_legacy_uniquing=True), '_result_disable_adapt_to_context': True, 'future_result': True})
+_force = False
+
+    def _execute_on_connection(
+        self, connection, multiparams, params, execution_options, _force=False
+    ):
+        if _force or self.supports_execution:
+>           return connection._execute_clauseelement(
+                self, multiparams, params, execution_options
+            )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/sql/elements.py:334: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+elem = <sqlalchemy.sql.selectable.Select object at 0x10f039bf0>
+multiparams = ({},), params = immutabledict({})
+execution_options = immutabledict({'_sa_orm_load_options': default_load_options(_legacy_uniquing=True), '_result_disable_adapt_to_context': True, 'future_result': True})
+
+    def _execute_clauseelement(
+        self, elem, multiparams, params, execution_options
+    ):
+        """Execute a sql.ClauseElement object."""
+    
+        execution_options = elem._execution_options.merge_with(
+            self._execution_options, execution_options
+        )
+    
+        distilled_params = _distill_params(self, multiparams, params)
+    
+        has_events = self._has_events or self.engine._has_events
+        if has_events:
+            (
+                elem,
+                distilled_params,
+                event_multiparams,
+                event_params,
+            ) = self._invoke_before_exec_event(
+                elem, distilled_params, execution_options
+            )
+    
+        if distilled_params:
+            # ensure we don't retain a link to the view object for keys()
+            # which links to the values, which we don't want to cache
+            keys = sorted(distilled_params[0])
+            for_executemany = len(distilled_params) > 1
+        else:
+            keys = []
+            for_executemany = False
+    
+        dialect = self.dialect
+    
+        schema_translate_map = execution_options.get(
+            "schema_translate_map", None
+        )
+    
+        compiled_cache = execution_options.get(
+            "compiled_cache", self.engine._compiled_cache
+        )
+    
+        compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+            dialect=dialect,
+            compiled_cache=compiled_cache,
+            column_keys=keys,
+            for_executemany=for_executemany,
+            schema_translate_map=schema_translate_map,
+            linting=self.dialect.compiler_linting | compiler.WARN_LINTING,
+        )
+>       ret = self._execute_context(
+            dialect,
+            dialect.execution_ctx_cls._init_compiled,
+            compiled_sql,
+            distilled_params,
+            execution_options,
+            compiled_sql,
+            distilled_params,
+            elem,
+            extracted_params,
+            cache_hit=cache_hit,
+        )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1577: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+dialect = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x10e2216a0>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2'>>
+statement = 'SELECT count(distinct(case())) AS learned, count(distinct(case())) AS reinforced \nFROM review_logs JOIN user_card_as...r_id \nWHERE review_logs.user_id = %(user_id_1)s AND review_logs.reviewed_at >= %(reviewed_at_1)s \n LIMIT %(param_1)s'
+parameters = {'param_1': 1, 'reviewed_at_1': datetime.datetime(2025, 12, 24, 0, 0), 'user_id_1': UUID('085592ff-d218-4de4-858a-6b3a1041a000')}
+execution_options = immutabledict({'_sa_orm_load_options': default_load_options(_legacy_uniquing=True), '_result_disable_adapt_to_context': True, 'future_result': True})
+args = (<sqlalchemy.dialects.postgresql.psycopg2.PGCompiler_psycopg2 object at 0x10f035ba0>, [{}], <sqlalchemy.sql.selectable...tetime.datetime(2025, 12, 24, 0, 0), type_=DateTime()), _OffsetLimitParam('%(4546965392 param)s', 1, type_=Integer())])
+kw = {'cache_hit': symbol('CACHE_MISS')}
+branched = <sqlalchemy.engine.base.Connection object at 0x10e247b10>, yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x10e9ec550>
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x10f035cd0>
+cursor = <cursor object at 0x10f047d30; closed: -1>, evt_handled = False
+
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+    
+            if self._has_events or self.engine._has_events:
+                self.dispatch.after_cursor_execute(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+            context.post_exec()
+    
+            result = context._setup_result_proxy()
+    
+            if not self._is_future:
+                should_close_with_result = branched.should_close_with_result
+    
+                if not result._soft_closed and should_close_with_result:
+                    result._autoclose_connection = True
+    
+                if (
+                    # usually we're in a transaction so avoid relatively
+                    # expensive / legacy should_autocommit call
+                    self._transaction is None
+                    and context.should_autocommit
+                ):
+                    self._commit_impl(autocommit=True)
+    
+                # for "connectionless" execution, we have to close this
+                # Connection after the statement is complete.
+                # legacy stuff.
+                if should_close_with_result and context._soft_closed:
+                    assert not self._is_future
+    
+                    # CursorResult already exhausted rows / has no rows.
+                    # close us now
+                    branched.close()
+    
+        except BaseException as e:
+>           self._handle_dbapi_exception(
+                e, statement, parameters, cursor, context
+            )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1953: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+e = SyntaxError('syntax error at or near ")"\nLINE 1: SELECT count(distinct(case())) AS learned, count(distinct(ca...\n                                   ^\n')
+statement = 'SELECT count(distinct(case())) AS learned, count(distinct(case())) AS reinforced \nFROM review_logs JOIN user_card_as...r_id \nWHERE review_logs.user_id = %(user_id_1)s AND review_logs.reviewed_at >= %(reviewed_at_1)s \n LIMIT %(param_1)s'
+parameters = {'param_1': 1, 'reviewed_at_1': datetime.datetime(2025, 12, 24, 0, 0), 'user_id_1': UUID('085592ff-d218-4de4-858a-6b3a1041a000')}
+cursor = <cursor object at 0x10f047d30; closed: -1>
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x10f035cd0>
+
+    def _handle_dbapi_exception(
+        self, e, statement, parameters, cursor, context
+    ):
+        exc_info = sys.exc_info()
+    
+        is_exit_exception = util.is_exit_exception(e)
+    
+        if not self._is_disconnect:
+            self._is_disconnect = (
+                isinstance(e, self.dialect.dbapi.Error)
+                and not self.closed
+                and self.dialect.is_disconnect(
+                    e,
+                    self._dbapi_connection if not self.invalidated else None,
+                    cursor,
+                )
+            ) or (is_exit_exception and not self.closed)
+    
+        invalidate_pool_on_disconnect = not is_exit_exception
+    
+        if self._reentrant_error:
+            util.raise_(
+                exc.DBAPIError.instance(
+                    statement,
+                    parameters,
+                    e,
+                    self.dialect.dbapi.Error,
+                    hide_parameters=self.engine.hide_parameters,
+                    dialect=self.dialect,
+                    ismulti=context.executemany
+                    if context is not None
+                    else None,
+                ),
+                with_traceback=exc_info[2],
+                from_=e,
+            )
+        self._reentrant_error = True
+        try:
+            # non-DBAPI error - if we already got a context,
+            # or there's no string statement, don't wrap it
+            should_wrap = isinstance(e, self.dialect.dbapi.Error) or (
+                statement is not None
+                and context is None
+                and not is_exit_exception
+            )
+    
+            if should_wrap:
+                sqlalchemy_exception = exc.DBAPIError.instance(
+                    statement,
+                    parameters,
+                    e,
+                    self.dialect.dbapi.Error,
+                    hide_parameters=self.engine.hide_parameters,
+                    connection_invalidated=self._is_disconnect,
+                    dialect=self.dialect,
+                    ismulti=context.executemany
+                    if context is not None
+                    else None,
+                )
+            else:
+                sqlalchemy_exception = None
+    
+            newraise = None
+    
+            if (
+                self._has_events or self.engine._has_events
+            ) and not self._execution_options.get(
+                "skip_user_error_events", False
+            ):
+                ctx = ExceptionContextImpl(
+                    e,
+                    sqlalchemy_exception,
+                    self.engine,
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    self._is_disconnect,
+                    invalidate_pool_on_disconnect,
+                )
+    
+                for fn in self.dispatch.handle_error:
+                    try:
+                        # handler returns an exception;
+                        # call next handler in a chain
+                        per_fn = fn(ctx)
+                        if per_fn is not None:
+                            ctx.chained_exception = newraise = per_fn
+                    except Exception as _raised:
+                        # handler raises an exception - stop processing
+                        newraise = _raised
+                        break
+    
+                if self._is_disconnect != ctx.is_disconnect:
+                    self._is_disconnect = ctx.is_disconnect
+                    if sqlalchemy_exception:
+                        sqlalchemy_exception.connection_invalidated = (
+                            ctx.is_disconnect
+                        )
+    
+                # set up potentially user-defined value for
+                # invalidate pool.
+                invalidate_pool_on_disconnect = (
+                    ctx.invalidate_pool_on_disconnect
+                )
+    
+            if should_wrap and context:
+                context.handle_dbapi_exception(e)
+    
+            if not self._is_disconnect:
+                if cursor:
+                    self._safe_close_cursor(cursor)
+                with util.safe_reraise(warn_only=True):
+                    self._autorollback()
+    
+            if newraise:
+                util.raise_(newraise, with_traceback=exc_info[2], from_=e)
+            elif should_wrap:
+>               util.raise_(
+                    sqlalchemy_exception, with_traceback=exc_info[2], from_=e
+                )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/base.py:2134: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def raise_(
+        exception, with_traceback=None, replace_context=None, from_=False
+    ):
+        r"""implement "raise" with cause support.
+    
+        :param exception: exception to raise
+        :param with_traceback: will call exception.with_traceback()
+        :param replace_context: an as-yet-unsupported feature.  This is
+         an exception object which we are "replacing", e.g., it's our
+         "cause" but we don't want it printed.    Basically just what
+         ``__suppress_context__`` does but we don't want to suppress
+         the enclosing context, if any.  So for now we make it the
+         cause.
+        :param from\_: the cause.  this actually sets the cause and doesn't
+         hope to hide it someday.
+    
+        """
+        if with_traceback is not None:
+            exception = exception.with_traceback(with_traceback)
+    
+        if from_ is not False:
+            exception.__cause__ = from_
+        elif replace_context is not None:
+            # no good solution here, we would like to have the exception
+            # have only the context of replace_context.__context__ so that the
+            # intermediary exception does not change, but we can't figure
+            # that out.
+            exception.__cause__ = replace_context
+    
+        try:
+>           raise exception
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/util/compat.py:211: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.engine.base.Connection object at 0x10e247b10>
+dialect = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x10e2216a0>
+constructor = <bound method DefaultExecutionContext._init_compiled of <class 'sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2'>>
+statement = 'SELECT count(distinct(case())) AS learned, count(distinct(case())) AS reinforced \nFROM review_logs JOIN user_card_as...r_id \nWHERE review_logs.user_id = %(user_id_1)s AND review_logs.reviewed_at >= %(reviewed_at_1)s \n LIMIT %(param_1)s'
+parameters = {'param_1': 1, 'reviewed_at_1': datetime.datetime(2025, 12, 24, 0, 0), 'user_id_1': UUID('085592ff-d218-4de4-858a-6b3a1041a000')}
+execution_options = immutabledict({'_sa_orm_load_options': default_load_options(_legacy_uniquing=True), '_result_disable_adapt_to_context': True, 'future_result': True})
+args = (<sqlalchemy.dialects.postgresql.psycopg2.PGCompiler_psycopg2 object at 0x10f035ba0>, [{}], <sqlalchemy.sql.selectable...tetime.datetime(2025, 12, 24, 0, 0), type_=DateTime()), _OffsetLimitParam('%(4546965392 param)s', 1, type_=Integer())])
+kw = {'cache_hit': symbol('CACHE_MISS')}
+branched = <sqlalchemy.engine.base.Connection object at 0x10e247b10>, yp = None
+conn = <sqlalchemy.pool.base._ConnectionFairy object at 0x10e9ec550>
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x10f035cd0>
+cursor = <cursor object at 0x10f047d30; closed: -1>, evt_handled = False
+
+    def _execute_context(
+        self,
+        dialect,
+        constructor,
+        statement,
+        parameters,
+        execution_options,
+        *args,
+        **kw
+    ):
+        """Create an :class:`.ExecutionContext` and execute, returning
+        a :class:`_engine.CursorResult`."""
+    
+        branched = self
+        if self.__branch_from:
+            # if this is a "branched" connection, do everything in terms
+            # of the "root" connection, *except* for .close(), which is
+            # the only feature that branching provides
+            self = self.__branch_from
+    
+        if execution_options:
+            yp = execution_options.get("yield_per", None)
+            if yp:
+                execution_options = execution_options.union(
+                    {"stream_results": True, "max_row_buffer": yp}
+                )
+    
+        try:
+            conn = self._dbapi_connection
+            if conn is None:
+                conn = self._revalidate_connection()
+    
+            context = constructor(
+                dialect, self, conn, execution_options, *args, **kw
+            )
+        except (exc.PendingRollbackError, exc.ResourceClosedError):
+            raise
+        except BaseException as e:
+            self._handle_dbapi_exception(
+                e, util.text_type(statement), parameters, None, None
+            )
+    
+        if (
+            self._transaction
+            and not self._transaction.is_active
+            or (
+                self._nested_transaction
+                and not self._nested_transaction.is_active
+            )
+        ):
+            self._invalid_transaction()
+    
+        elif self._trans_context_manager:
+            TransactionalContext._trans_ctx_check(self)
+    
+        if self._is_future and self._transaction is None:
+            self._autobegin()
+    
+        context.pre_exec()
+    
+        if dialect.use_setinputsizes:
+            context._set_input_sizes()
+    
+        cursor, statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        if not context.executemany:
+            parameters = parameters[0]
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                statement, parameters = fn(
+                    self,
+                    cursor,
+                    statement,
+                    parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+    
+            self._log_info(statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        parameters, batches=10, ismulti=context.executemany
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]"
+                    % (stats,)
+                )
+    
+        evt_handled = False
+        try:
+            if context.executemany:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor, statement, parameters, context
+                    )
+            elif not parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, statement, context
+                    )
+            else:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(cursor, statement, parameters, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, statement, parameters, context
+                    )
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/base.py:1910: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x10e2216a0>
+cursor = <cursor object at 0x10f047d30; closed: -1>
+statement = 'SELECT count(distinct(case())) AS learned, count(distinct(case())) AS reinforced \nFROM review_logs JOIN user_card_as...r_id \nWHERE review_logs.user_id = %(user_id_1)s AND review_logs.reviewed_at >= %(reviewed_at_1)s \n LIMIT %(param_1)s'
+parameters = {'param_1': 1, 'reviewed_at_1': datetime.datetime(2025, 12, 24, 0, 0), 'user_id_1': UUID('085592ff-d218-4de4-858a-6b3a1041a000')}
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x10f035cd0>
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.ProgrammingError: (psycopg2.errors.SyntaxError) syntax error at or near ")"
+E       LINE 1: SELECT count(distinct(case())) AS learned, count(distinct(ca...
+E                                          ^
+E       
+E       [SQL: SELECT count(distinct(case())) AS learned, count(distinct(case())) AS reinforced 
+E       FROM review_logs JOIN user_card_associations ON review_logs.card_id = user_card_associations.card_id AND review_logs.user_id = user_card_associations.user_id 
+E       WHERE review_logs.user_id = %(user_id_1)s AND review_logs.reviewed_at >= %(reviewed_at_1)s 
+E        LIMIT %(param_1)s]
+E       [parameters: {'user_id_1': UUID('085592ff-d218-4de4-858a-6b3a1041a000'), 'reviewed_at_1': datetime.datetime(2025, 12, 24, 0, 0), 'param_1': 1}]
+E       (Background on this error at: https://sqlalche.me/e/14/f405)
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/sqlalchemy/engine/default.py:736: ProgrammingError
+---------------------------- Captured stderr setup -----------------------------
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 925386a31194, Initial migration
+INFO  [alembic.runtime.migration] Running upgrade 925386a31194 -> 09f79367ff3e, seed_default_user
+INFO  [alembic.runtime.migration] Running upgrade 09f79367ff3e -> 9bfa2422445f, manual: add sentence details to card model
+INFO  [alembic.runtime.migration] Running upgrade 9bfa2422445f -> d8fba10e8363, Add nullable guid to card model
+INFO  [alembic.runtime.migration] Running upgrade 9bfa2422445f -> 9d0995b907da, Seed initial deck data
+INFO  [alembic.runtime.migration] Running upgrade 9d0995b907da, d8fba10e8363 -> 0f56efae7d2b, empty message
+INFO  [alembic.runtime.migration] Running upgrade 0f56efae7d2b -> c48103ddeb17, add srs fields to user card association
+INFO  [alembic.runtime.migration] Running upgrade 0f56efae7d2b -> a495263f4bf5, Remove initial seed data from database
+INFO  [alembic.runtime.migration] Running upgrade a495263f4bf5, c48103ddeb17 -> 27d64fde1afa, empty message
+INFO  [alembic.runtime.migration] Running upgrade 27d64fde1afa -> ed103b27e3e8, add srs fields to user_card_associations
+INFO  [alembic.runtime.migration] Running upgrade ed103b27e3e8 -> 2643e4bd7ddb, add stability to user_card_associations
+INFO  [alembic.runtime.migration] Running upgrade 2643e4bd7ddb -> 3827163d4321, make next_review_at not null
+INFO  [alembic.runtime.migration] Running upgrade 3827163d4321 -> 4a1b2c3d4e5f, backfill stability
+INFO  [alembic.runtime.migration] Running upgrade 4a1b2c3d4e5f -> 57bef366bbb5, add google auth fields to user
+=============================== warnings summary ===============================
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/testcontainers/core/waiting_utils.py:215
+  /Users/eric/.asdf/installs/python/3.14.0/lib/python3.14/site-packages/testcontainers/core/waiting_utils.py:215: DeprecationWarning: The @wait_container_is_ready decorator is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(HttpWaitStrategy(8080).for_status_code(200)) or container.waiting_for(LogMessageWaitStrategy('ready'))
+    @wait_container_is_ready()
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/testcontainers/postgres/__init__.py:90
+  /Users/eric/.asdf/installs/python/3.14.0/lib/python3.14/site-packages/testcontainers/postgres/__init__.py:90: DeprecationWarning: The @wait_container_is_ready decorator is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(HttpWaitStrategy(8080).for_status_code(200)) or container.waiting_for(LogMessageWaitStrategy('ready'))
+    @wait_container_is_ready()
+
+../../.asdf/installs/python/3.14.0/lib/python3.14/site-packages/_pytest/config/__init__.py:1397
+  /Users/eric/.asdf/installs/python/3.14.0/lib/python3.14/site-packages/_pytest/config/__init__.py:1397: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/api/test_stats_it.py::test_get_daily_summary_returns_stats
+======================== 1 failed, 3 warnings in 3.83s =========================
