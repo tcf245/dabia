@@ -53,27 +53,29 @@ def get_daily_summary(
     ).scalar()
 
     # 4. Learned (New words Studied Today) vs Reinforced (Old words Reviewed Today)
-    # Learned: Distinct cards reviewed today that were also created today
-    learned_count = db.query(func.count(func.distinct(models.ReviewLog.card_id))).join(
+    # We use conditional aggregation to get both in a single query for better performance
+    stats_query = db.query(
+        func.count(func.distinct(
+            func.case(
+                (models.UserCardAssociation.created_at >= today_start, models.ReviewLog.card_id)
+            )
+        )).label("learned"),
+        func.count(func.distinct(
+            func.case(
+                (models.UserCardAssociation.created_at < today_start, models.ReviewLog.card_id)
+            )
+        )).label("reinforced")
+    ).join(
         models.UserCardAssociation,
         (models.ReviewLog.card_id == models.UserCardAssociation.card_id) & 
         (models.ReviewLog.user_id == models.UserCardAssociation.user_id)
     ).filter(
         models.ReviewLog.user_id == current_user_id,
-        models.ReviewLog.reviewed_at >= today_start,
-        models.UserCardAssociation.created_at >= today_start
-    ).scalar()
+        models.ReviewLog.reviewed_at >= today_start
+    ).first()
 
-    # Reinforced: Distinct cards reviewed today that were created before today
-    reinforced_count = db.query(func.count(func.distinct(models.ReviewLog.card_id))).join(
-        models.UserCardAssociation,
-        (models.ReviewLog.card_id == models.UserCardAssociation.card_id) & 
-        (models.ReviewLog.user_id == models.UserCardAssociation.user_id)
-    ).filter(
-        models.ReviewLog.user_id == current_user_id,
-        models.ReviewLog.reviewed_at >= today_start,
-        models.UserCardAssociation.created_at < today_start
-    ).scalar()
+    learned_count = stats_query.learned or 0
+    reinforced_count = stats_query.reinforced or 0
 
     return schemas.DailyStats(
         to_learn_count=to_learn_count,
