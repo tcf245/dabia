@@ -3,7 +3,6 @@ from starlette.requests import Request
 from jose import jwt, JWTError
 from datetime import datetime, timezone, timedelta
 from dabia.core.config import settings
-from dabia.api.v1.auth import ALGORITHM, create_access_token
 import time
 
 class TokenRefreshMiddleware(BaseHTTPMiddleware):
@@ -15,6 +14,7 @@ class TokenRefreshMiddleware(BaseHTTPMiddleware):
         if not auth_header or not auth_header.startswith("Bearer "):
             return response
 
+        from dabia.api.v1.auth import ALGORITHM, create_access_token
         token = auth_header.split(" ")[1]
         
         try:

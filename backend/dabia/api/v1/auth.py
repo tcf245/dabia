@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
-import requests
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from typing import Optional
@@ -40,6 +37,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 @router.post("/login/google", response_model=Token)
 def login_google(request: GoogleLoginRequest, db: Session = Depends(get_db)):
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
+    import requests
+    
     try:
         # Exchange authorization code for tokens
         token_url = "https://oauth2.googleapis.com/token"
