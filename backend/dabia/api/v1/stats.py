@@ -57,12 +57,12 @@ def get_daily_summary(
     stats_query = db.query(
         func.count(func.distinct(
             case(
-                [(models.UserCardAssociation.created_at >= today_start, models.ReviewLog.card_id)]
+                (models.UserCardAssociation.created_at >= today_start, models.ReviewLog.card_id)
             )
         )).label("learned"),
         func.count(func.distinct(
             case(
-                [(models.UserCardAssociation.created_at < today_start, models.ReviewLog.card_id)]
+                (models.UserCardAssociation.created_at < today_start, models.ReviewLog.card_id)
             )
         )).label("reinforced")
     ).select_from(models.ReviewLog).join(
