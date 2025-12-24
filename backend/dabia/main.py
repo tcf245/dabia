@@ -2,31 +2,18 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from alembic.config import Config
-from alembic import command
-import os
-
 from dabia.database import get_db
 from dabia.api.v1 import session as session_router
 from dabia.api.v1 import cards as cards_router
 from dabia.api.v1 import auth as auth_router
 from dabia.api.v1 import profile as profile_router
 from dabia.api.v1 import stats as stats_router
-
-from contextlib import asynccontextmanager
 from dabia.core.logging import logger
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Database migrations are now handled during the Vercel Build Phase
-    # (see backend/vercel.json installCommand)
-    yield
 
 app = FastAPI(
     title="Dabia API",
     description="API for the Dabia language learning platform.",
-    version="0.1.0",
-    lifespan=lifespan
+    version="0.1.0"
 )
 
 # Set up CORS
