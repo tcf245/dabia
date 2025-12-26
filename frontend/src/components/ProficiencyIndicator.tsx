@@ -26,7 +26,7 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
             onClick={onClick}
         >
             {/* 5-segment bar */}
-            <div className="flex gap-1.5">
+            <div className="flex" style={{ gap: '6px' }}>
                 {[1, 2, 3, 4, 5].map((idx) => {
                     const isFilled = idx <= level;
                     const colors: Record<number, string> = {
@@ -39,10 +39,11 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
                     return (
                         <div
                             key={idx}
-                            className={`proficiency-segment w-5 h-1.5 rounded-full transition-all duration-300 ${isFilled
+                            className={`proficiency-segment rounded-full transition-all duration-300 ${isFilled
                                     ? `proficiency-segment-filled ${colors[idx]}`
                                     : 'bg-[#F2F0EF]'
                                 }`}
+                            style={{ width: '16px', height: '4px' }}
                         />
                     );
                 })}

@@ -53,13 +53,15 @@ const ProficiencyLevelModal: React.FC<ProficiencyLevelModalProps> = ({ isOpen, o
                             <div key={item.level} className="flex items-center gap-6">
                                 <div
                                     data-testid="modal-proficiency-segments"
-                                    className="flex gap-1 items-center w-24"
+                                    className="flex"
+                                    style={{ gap: '6px' }}
                                 >
                                     {[1, 2, 3, 4, 5].map((s) => (
                                         <div
                                             key={s}
-                                            className={`w-4 h-1.5 rounded-full ${s <= item.level ? item.color : 'bg-[#F2F0EF]'
+                                            className={`rounded-full ${s <= item.level ? item.color : 'bg-[#F2F0EF]'
                                                 }`}
+                                            style={{ width: '16px', height: '4px' }}
                                         />
                                     ))}
                                 </div>
