@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import type { Card as FlashcardDataType } from '../services/api';
+import ProficiencyIndicator from './ProficiencyIndicator';
+import ProficiencyLevelModal from './ProficiencyLevelModal';
 
 interface FlashcardProps {
   card: FlashcardDataType;
@@ -16,6 +18,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'incorrect'>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -115,13 +118,19 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
   return (
     <div className="w-full max-w-2xl">
       <div className="bg-white rounded-2xl border border-[#E6E6E3] shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-8 mb-4">
-        {/* Hint */}
+        {/* Hint and Proficiency Indicator */}
         <div className="flex items-start justify-between mb-8">
-          <div className="flex items-center gap-3 text-[#74746E]">
-            <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-base">
-              <span>💬</span>
+          <div className="flex flex-col gap-4">
+            <ProficiencyIndicator
+              level={card.proficiency_level || 1}
+              onClick={() => setIsModalOpen(true)}
+            />
+            <div className="flex items-center gap-3 text-[#2A2A29]">
+              <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-base">
+                <span>💬</span>
+              </div>
+              <span className="text-sm font-light">{card.target.hint}</span>
             </div>
-            <span className="text-sm font-light">{card.target.hint}</span>
           </div>
         </div>
 
@@ -214,6 +223,11 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
           )}
         </div>
       </div>
+
+      <ProficiencyLevelModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
