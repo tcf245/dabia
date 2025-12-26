@@ -62,6 +62,24 @@ describe('Flashcard component', () => {
     expect(mockOnSubmit).toHaveBeenCalledWith('1', true, expect.any(Number));
   });
 
+  test('opens and closes proficiency level modal', async () => {
+    render(<Flashcard card={mockCard} onSubmit={vi.fn()} />);
+
+    // Find the proficiency indicator by its testId
+    const indicator = screen.getByTestId('proficiency-indicator-container');
+    fireEvent.click(indicator);
+
+    // Verify modal is open (checks title text)
+    expect(screen.getByText('掌握你的每日词汇')).toBeInTheDocument();
+
+    // Close the modal
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeButton);
+
+    // Verify modal is closed
+    expect(screen.queryByText('掌握你的每日词汇')).not.toBeInTheDocument();
+  });
+
   test('handles incorrect answer and shows reading hint', async () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
 

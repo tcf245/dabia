@@ -14,6 +14,16 @@ const PROFICIENCY_TEXTS: Record<number, string> = {
     5: '记忆满点！',
 };
 
+const PROFICIENCY_COLORS: Record<number, string> = {
+    1: 'bg-[#F2DCD6]',
+    2: 'bg-[#E5A087]',
+    3: 'bg-[#D97757]',
+    4: 'bg-[#D97757]',
+    5: 'bg-[#D97757]',
+};
+
+const PROFICIENCY_SEGMENTS = [1, 2, 3, 4, 5];
+
 const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onClick }) => {
     const [isHovered, setIsHovered] = useState(false);
 
@@ -27,20 +37,13 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
         >
             {/* 5-segment bar */}
             <div className="flex" style={{ gap: '6px' }}>
-                {[1, 2, 3, 4, 5].map((idx) => {
+                {PROFICIENCY_SEGMENTS.map((idx) => {
                     const isFilled = idx <= level;
-                    const colors: Record<number, string> = {
-                        1: 'bg-[#F2DCD6]',
-                        2: 'bg-[#E5A087]',
-                        3: 'bg-[#D97757]',
-                        4: 'bg-[#D97757]',
-                        5: 'bg-[#D97757]',
-                    };
                     return (
                         <div
                             key={idx}
                             className={`proficiency-segment rounded-full transition-all duration-300 ${isFilled
-                                ? `proficiency-segment-filled ${colors[idx]}`
+                                ? `proficiency-segment-filled ${PROFICIENCY_COLORS[idx]}`
                                 : 'bg-[#F2F0EF]'
                                 }`}
                             style={{ width: '16px', height: '4px' }}

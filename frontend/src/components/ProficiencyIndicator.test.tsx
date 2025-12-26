@@ -11,16 +11,17 @@ vi.mock('framer-motion', () => ({
     },
 }));
 
-describe('ProficiencyIndicator', () => {
-    const levels = [
-        { level: 1, text: '没见过的新单词！' },
-        { level: 2, text: '这个单词需要多练练！' },
-        { level: 3, text: '就要学起来了！' },
-        { level: 4, text: '唾手可得！' },
-        { level: 5, text: '记忆满点！' },
-    ];
+const PROFICIENCY_LEVELS = [
+    { level: 1, text: '没见过的新单词！' },
+    { level: 2, text: '这个单词需要多练练！' },
+    { level: 3, text: '就要学起来了！' },
+    { level: 4, text: '唾手可得！' },
+    { level: 5, text: '记忆满点！' },
+];
 
-    test.each(levels)('renders segments correctly for level $level', ({ level }) => {
+describe('ProficiencyIndicator', () => {
+
+    test.each(PROFICIENCY_LEVELS)('renders segments correctly for level $level', ({ level }) => {
         const { container } = render(<ProficiencyIndicator level={level} onClick={vi.fn()} />);
 
         // Check for 5 segments
@@ -32,7 +33,7 @@ describe('ProficiencyIndicator', () => {
         expect(filledSegments).toHaveLength(level);
     });
 
-    test('shows text and "看更多" on hover', async () => {
+    test('shows proficiency level text on hover', async () => {
         render(<ProficiencyIndicator level={3} onClick={vi.fn()} />);
 
         const container = screen.getByTestId('proficiency-indicator-container');
