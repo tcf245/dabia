@@ -40,8 +40,8 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
                         <div
                             key={idx}
                             className={`proficiency-segment rounded-full transition-all duration-300 ${isFilled
-                                    ? `proficiency-segment-filled ${colors[idx]}`
-                                    : 'bg-[#F2F0EF]'
+                                ? `proficiency-segment-filled ${colors[idx]}`
+                                : 'bg-[#F2F0EF]'
                                 }`}
                             style={{ width: '16px', height: '4px' }}
                         />
@@ -58,7 +58,7 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
                         exit={{ opacity: 0, x: -5 }}
                         className="flex items-center gap-2"
                     >
-                        <span className="text-xs font-sans text-[#2A2A29] font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)]">
+                        <span className="text-xs font-sans text-[#74746E] font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)]">
                             {PROFICIENCY_TEXTS[level]}
                         </span>
                     </motion.div>

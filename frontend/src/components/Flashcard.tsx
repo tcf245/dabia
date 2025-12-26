@@ -125,7 +125,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
               level={card.proficiency_level || 1}
               onClick={() => setIsModalOpen(true)}
             />
-            <div className="flex items-center gap-3 text-[#74746E]">
+            <div className="flex items-center gap-3 text-[#2A2A29]">
               <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-base">
                 <span>💬</span>
               </div>
