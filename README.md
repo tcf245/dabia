@@ -4,6 +4,8 @@ An intelligent language learning application inspired by a three-year-old's love
 
 This project aims to build a smart vocabulary learning tool, starting with Japanese, based on scientific principles of memory and AI-driven personalization.
 
+Please refer to the **[Contribution Guidelines](CONTRIBUTING.md)** for development standards and commit message conventions.
+
 This project is a monorepo containing the frontend and backend for the Dabia application.
 
 
