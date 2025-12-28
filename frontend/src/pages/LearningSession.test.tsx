@@ -118,4 +118,51 @@ describe('LearningSession', () => {
             expect(screen.getByText(/完成\s*50\s*张词卡/i)).toBeInTheDocument();
         });
     });
+    it('supports multi-level undo/redo with history and future stacks', async () => {
+        const { fireEvent } = await import('@testing-library/react');
+        const cards = [
+            { card_id: '1', target: { word: 'one', hint: 'h1' }, sentence_template: 'is __', reading: 'one', sentence_translation: 't1', deck: { id: 'd1', name: 'D1' } },
+            { card_id: '2', target: { word: 'two', hint: 'h2' }, sentence_template: 'is __', reading: 'two', sentence_translation: 't2', deck: { id: 'd2', name: 'D2' } },
+            { card_id: '3', target: { word: 'three', hint: 'h3' }, sentence_template: 'is __', reading: 'three', sentence_translation: 't3', deck: { id: 'd3', name: 'D3' } },
+        ];
+
+        (api.getNextCard as Mock)
+            .mockResolvedValueOnce({ card: cards[0], session_progress: { completed_today: 0, goal_today: 50 } })
+            .mockResolvedValueOnce({ card: cards[1], session_progress: { completed_today: 1, goal_today: 50 } })
+            .mockResolvedValueOnce({ card: cards[2], session_progress: { completed_today: 2, goal_today: 50 } });
+
+        render(<LearningSession />);
+
+        // 1. Initial card 'one'
+        await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
+
+        // 2. Answer 'one' -> get 'two'
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'one' } });
+        fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+        await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
+
+        // 3. Answer 'two' -> get 'three'
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'two' } });
+        fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+        await waitFor(() => expect(screen.getByText('h3')).toBeInTheDocument());
+
+        // 4. Press Back -> get 'two'
+        fireEvent.click(screen.getByTitle('Previous Card'));
+        await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
+
+        // 5. Press Back again -> get 'one'
+        fireEvent.click(screen.getByTitle('Previous Card'));
+        await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
+
+        // 6. Press Continue -> get 'two'
+        fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+        await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
+
+        // 7. Press Continue again -> get 'three'
+        fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+        await waitFor(() => expect(screen.getByText('h3')).toBeInTheDocument());
+
+        // 8. Back button should still work
+        expect(screen.getByTitle('Previous Card')).toBeInTheDocument();
+    });
 });
