@@ -45,7 +45,7 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
                         <h2 className="font-serif text-2xl text-[#333333]">
                             {todayStr}
                         </h2>
-                        <button onClick={onClose} className="text-[#888888] hover:text-[#2A2A29] transition-colors p-1">
+                        <button onClick={onClose} aria-label="Close" className="text-[#888888] hover:text-[#2A2A29] transition-colors p-1">
                             <X size={20} strokeWidth={1.5} />
                         </button>
                     </div>

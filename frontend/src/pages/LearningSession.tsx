@@ -67,14 +67,6 @@ const LearningSession: React.FC = () => {
   }, [loading, history]);
 
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
-    if (isViewingPrevious) {
-      // If viewing previous, just go back to current (or fetch next if we don't have a current buffered)
-      // Actually, if we are viewing previous, we probably want to return to the *next* card we were supposed to do.
-      // But for simplicity, let's just fetch next card as if we skipped.
-      // OR, better: Disable answering on previous card.
-      return;
-    }
-
     if (currentCard) {
       setHistory(prev => [...prev, currentCard]);
     }
@@ -93,37 +85,31 @@ const LearningSession: React.FC = () => {
   const handlePreviousClick = () => {
     if (history.length === 0) return;
 
-    const newHistory = [...history];
-    const prevCard = newHistory.pop()!;
+    const prevCard = history[history.length - 1];
 
     if (currentCard) {
       setFuture(prev => [currentCard, ...prev]);
     }
 
-    setHistory(newHistory);
+    setHistory(prev => prev.slice(0, -1));
     setCurrentCard(prevCard);
     setIsViewingPrevious(true);
   };
 
   const handleContinue = () => {
-    if (future.length > 0) {
-      const newFuture = [...future];
-      const nextCard = newFuture.shift()!;
+    const nextCard = future[0];
+    if (!nextCard) return;
 
-      if (currentCard) {
-        setHistory(prev => [...prev, currentCard]);
-      }
+    if (currentCard) {
+      setHistory(prev => [...prev, currentCard]);
+    }
 
-      setFuture(newFuture);
-      setCurrentCard(nextCard);
+    setFuture(prev => prev.slice(1));
+    setCurrentCard(nextCard);
 
-      // If no more future cards, we are back to the "head" (quiz mode)
-      if (newFuture.length === 0) {
-        setIsViewingPrevious(false);
-      }
-    } else {
+    // If this was the last card in the future stack, we return to quiz mode
+    if (future.length === 1) {
       setIsViewingPrevious(false);
-      fetchNextCard();
     }
   };
 
