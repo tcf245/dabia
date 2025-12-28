@@ -4,14 +4,15 @@ import Flashcard from '../components/Flashcard';
 import SkeletonFlashcard from '../components/SkeletonFlashcard';
 import SessionProgress from '../components/SessionProgress';
 import DailyGoalPopup from '../components/DailyGoalPopup';
-import { getNextCard, getCard } from '../services/api';
+import { getNextCard } from '../services/api';
 import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
 import { ArrowLeft } from 'lucide-react';
 
 const LearningSession: React.FC = () => {
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [sessionProgress, setSessionProgress] = useState<SessionProgressType>({ completed_today: 0, goal_today: 50 });
-  const [previousCardId, setPreviousCardId] = useState<string | null>(null);
+  const [history, setHistory] = useState<Card[]>([]);
+  const [future, setFuture] = useState<Card[]>([]);
   const [isViewingPrevious, setIsViewingPrevious] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +27,8 @@ const LearningSession: React.FC = () => {
       const response = await getNextCard(previousAnswer);
       setCurrentCard(response.card);
       setSessionProgress(response.session_progress);
-      setPreviousCardId(response.previous_card_id);
       setIsViewingPrevious(false);
+      setFuture([]); // Clear future stack when a new card is fetched
 
       // Check for daily goal completion
       if (
@@ -55,7 +56,7 @@ const LearningSession: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
-        if (!loading && !isViewingPrevious && previousCardId) {
+        if (!loading && history.length > 0) {
           handlePreviousClick();
         }
       }
@@ -63,15 +64,11 @@ const LearningSession: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [loading, isViewingPrevious, previousCardId]);
+  }, [loading, history]);
 
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
-    if (isViewingPrevious) {
-      // If viewing previous, just go back to current (or fetch next if we don't have a current buffered)
-      // Actually, if we are viewing previous, we probably want to return to the *next* card we were supposed to do.
-      // But for simplicity, let's just fetch next card as if we skipped.
-      // OR, better: Disable answering on previous card.
-      return;
+    if (currentCard) {
+      setHistory(prev => [...prev, currentCard]);
     }
 
     const previousAnswer: PreviousAnswer = {
@@ -85,24 +82,35 @@ const LearningSession: React.FC = () => {
     fetchNextCard(previousAnswer);
   };
 
-  const handlePreviousClick = async () => {
-    if (!previousCardId) return;
+  const handlePreviousClick = () => {
+    if (history.length === 0) return;
 
-    setLoading(true);
-    try {
-      const card = await getCard(previousCardId);
-      setCurrentCard(card);
-      setIsViewingPrevious(true);
-    } catch (err) {
-      console.error("Failed to fetch previous card", err);
-    } finally {
-      setLoading(false);
+    const prevCard = history[history.length - 1];
+
+    if (currentCard) {
+      setFuture(prev => [currentCard, ...prev]);
     }
+
+    setHistory(prev => prev.slice(0, -1));
+    setCurrentCard(prevCard);
+    setIsViewingPrevious(true);
   };
 
   const handleContinue = () => {
-    setIsViewingPrevious(false);
-    fetchNextCard();
+    const nextCard = future[0];
+    if (!nextCard) return;
+
+    if (currentCard) {
+      setHistory(prev => [...prev, currentCard]);
+    }
+
+    setFuture(prev => prev.slice(1));
+    setCurrentCard(nextCard);
+
+    // If this was the last card in the future stack, we return to quiz mode
+    if (future.length === 1) {
+      setIsViewingPrevious(false);
+    }
   };
 
   const MessageCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode; }> = ({ icon, title, children }) => (
@@ -152,7 +160,7 @@ const LearningSession: React.FC = () => {
         <SessionProgress
           progress={sessionProgress}
           headerLeft={
-            !loading && !isViewingPrevious && previousCardId ? (
+            !loading && history.length > 0 ? (
               <button
                 onClick={handlePreviousClick}
                 className="text-muted-foreground hover:text-foreground transition-colors p-0 flex items-center"
