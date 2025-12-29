@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
-import { useFlashcardLogic, UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
+import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
+import type { UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
 
 // Re-export or use the type from the hook to ensure consistency
 type FlashcardProps = UseFlashcardLogicProps;
