@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
-import type { Card as FlashcardDataType } from '../services/api';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
-import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
+import { useFlashcardLogic, UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
 
-interface FlashcardProps {
-  card: FlashcardDataType;
-  onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
-  mode?: 'quiz' | 'review';
-  onContinue?: () => void;
-}
+// Re-export or use the type from the hook to ensure consistency
+type FlashcardProps = UseFlashcardLogicProps;
 
-const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', onContinue }) => {
+const Flashcard: React.FC<FlashcardProps> = (props) => {
+  const { card, mode = 'quiz' } = props;
+  // Safely access onContinue only when needed, but TS will enforce it via props
+  const onContinue = (props as any).onContinue;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const {
@@ -23,7 +22,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
     inputRef,
     handleCheck,
     handleKeyPress
-  } = useFlashcardLogic({ card, mode, onSubmit, onContinue });
+  } = useFlashcardLogic(props);
 
   const sentenceParts = card.sentence_template.split('__');
 
@@ -136,7 +135,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ card, onSubmit, mode = 'quiz', on
           )}
           {mode === 'review' && (
             <button
-              onClick={onContinue || (() => {})}
+              onClick={onContinue}
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
             >
               Continue

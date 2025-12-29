@@ -4,14 +4,23 @@ import { validateAnswer } from '../utils/validation';
 
 export type AnswerState = 'unanswered' | 'correct' | 'incorrect';
 
-interface UseFlashcardLogicProps {
-  card: FlashcardDataType;
-  mode: 'quiz' | 'review';
-  onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
-  onContinue?: () => void;
-}
+type FlashcardModeProps = 
+  | { mode?: 'quiz'; onContinue?: never }
+  | { mode: 'review'; onContinue: () => void };
 
-export const useFlashcardLogic = ({ card, mode, onSubmit, onContinue }: UseFlashcardLogicProps) => {
+type BaseProps = {
+  card: FlashcardDataType;
+  onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
+};
+
+export type UseFlashcardLogicProps = BaseProps & FlashcardModeProps;
+
+export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
+  const { card, mode = 'quiz', onSubmit } = props;
+  // We cast onContinue to ensure TS understands it might exist, 
+  // but logically it is only used when mode === 'review'
+  const onContinue = (props as any).onContinue;
+
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
@@ -76,8 +85,6 @@ export const useFlashcardLogic = ({ card, mode, onSubmit, onContinue }: UseFlash
       // Allow retry or correction
       if (validateAnswer(userInput, card.target.word, card.reading)) {
         setAnswerState('correct');
-        // If they corrected it, we count it as false (or logic specific to retries, 
-        // currently implementation passed false for retry correction)
         playAudioAndAdvance(false); 
       } else {
         setUserInput('');
