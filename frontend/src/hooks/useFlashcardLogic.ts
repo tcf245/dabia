@@ -85,6 +85,8 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
       // Allow retry or correction
       if (validateAnswer(userInput, card.target.word, card.reading)) {
         setAnswerState('correct');
+        // If they corrected it, we count it as false (or logic specific to retries, 
+        // currently implementation passed false for retry correction)
         playAudioAndAdvance(false); 
       } else {
         setUserInput('');

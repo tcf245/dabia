@@ -136,7 +136,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
           )}
           {mode === 'review' && (
             <button
-              onClick={onContinue}
+              onClick={onContinue || (() => {})}
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
             >
               Continue
