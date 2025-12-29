@@ -4,11 +4,16 @@ import { X, Check } from 'lucide-react';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
 import type { UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
 =======
 import { useFlashcardLogic, UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
 >>>>>>> b618921 (fix(frontend): enforce discriminated union for flashcard props to safely handle onContinue)
+=======
+import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
+import type { UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
+>>>>>>> a21a5c8 (fix(frontend): resolve TS build errors with discriminated unions)
 
 // Re-export or use the type from the hook to ensure consistency
 type FlashcardProps = UseFlashcardLogicProps;
