@@ -172,4 +172,43 @@ describe('Flashcard component', () => {
 
     expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
   });
+
+  test('audio button behavior: disabled initially, enabled after submit', async () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    const audioBtn = screen.getByRole('button', { name: /play audio/i });
+    
+    // Initially disabled in quiz mode (unanswered)
+    expect(audioBtn).toBeDisabled();
+
+    // Submit correct answer
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'test' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+
+    // Should be enabled now (state is correct)
+    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    expect(audioBtn).not.toBeDisabled();
+
+    // Clicking it should play audio
+    fireEvent.click(audioBtn);
+    expect(globalThis.playMock).toHaveBeenCalled();
+  });
+
+  test('handles empty input submission as incorrect', async () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: '' } });
+    
+    // Press Enter
+    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+    // Should show reading hint (incorrect state)
+    const feedback = await screen.findByText(mockCard.reading!);
+    expect(feedback).toBeInTheDocument();
+    
+    // Should NOT submit to backend yet
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
 });
