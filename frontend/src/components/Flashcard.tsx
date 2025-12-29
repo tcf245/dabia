@@ -3,8 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
+<<<<<<< HEAD
 import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
 import type { UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
+=======
+import { useFlashcardLogic, UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
+>>>>>>> b618921 (fix(frontend): enforce discriminated union for flashcard props to safely handle onContinue)
 
 // Re-export or use the type from the hook to ensure consistency
 type FlashcardProps = UseFlashcardLogicProps;
@@ -136,7 +140,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
           )}
           {mode === 'review' && (
             <button
-              onClick={onContinue || (() => {})}
+              onClick={onContinue}
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
             >
               Continue
