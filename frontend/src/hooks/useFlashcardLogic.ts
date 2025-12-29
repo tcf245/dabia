@@ -1,0 +1,114 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { Card as FlashcardDataType } from '../services/api';
+import { validateAnswer } from '../utils/validation';
+
+export type AnswerState = 'unanswered' | 'correct' | 'incorrect';
+
+interface UseFlashcardLogicProps {
+  card: FlashcardDataType;
+  mode: 'quiz' | 'review';
+  onSubmit: (cardId: string, isCorrect: boolean, responseTime: number) => void;
+  onContinue?: () => void;
+}
+
+export const useFlashcardLogic = ({ card, mode, onSubmit, onContinue }: UseFlashcardLogicProps) => {
+  const [userInput, setUserInput] = useState('');
+  const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
+  const [startTime, setStartTime] = useState(Date.now());
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reset state when card changes
+  useEffect(() => {
+    setUserInput('');
+    setAnswerState('unanswered');
+    setStartTime(Date.now());
+    // Auto-focus input
+    inputRef.current?.focus();
+
+    // Cleanup audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+  }, [card]);
+
+  const handleSubmission = useCallback((isCorrect: boolean) => {
+    const responseTime = Date.now() - startTime;
+    onSubmit(card.card_id, isCorrect, responseTime);
+  }, [card.card_id, startTime, onSubmit]);
+
+  const playAudioAndAdvance = useCallback(async (isCorrect: boolean) => {
+    if (card.sentence_audio_url) {
+      const audio = new Audio(card.sentence_audio_url);
+      audioRef.current = audio;
+      audio.onended = () => handleSubmission(isCorrect);
+      try {
+        await audio.play();
+      } catch (err) {
+        console.error("Audio play failed:", err);
+        handleSubmission(isCorrect);
+      }
+    } else {
+      setTimeout(() => handleSubmission(isCorrect), 800);
+    }
+  }, [card.sentence_audio_url, handleSubmission]);
+
+  const handleCheck = useCallback(() => {
+    if (!userInput.trim()) return;
+
+    const isCorrect = validateAnswer(userInput, card.target.word, card.reading);
+    if (isCorrect) {
+      setAnswerState('correct');
+      playAudioAndAdvance(true);
+    } else {
+      setAnswerState('incorrect');
+      setUserInput(''); // Clear input on retry
+    }
+  }, [userInput, card.target.word, card.reading, playAudioAndAdvance]);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+
+    if (answerState === 'unanswered') {
+      handleCheck();
+    } else if (answerState === 'incorrect') {
+      // Allow retry or correction
+      if (validateAnswer(userInput, card.target.word, card.reading)) {
+        setAnswerState('correct');
+        // If they corrected it, we count it as false (or logic specific to retries, 
+        // currently implementation passed false for retry correction)
+        playAudioAndAdvance(false); 
+      } else {
+        setUserInput('');
+      }
+    }
+  }, [answerState, handleCheck, userInput, card.target.word, card.reading, playAudioAndAdvance]);
+
+  // Global shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        if (mode === 'review' && onContinue) {
+          onContinue();
+        } else if (mode === 'quiz' && answerState === 'unanswered') {
+           if (userInput.trim()) {
+             handleCheck();
+           }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode, onContinue, answerState, userInput, handleCheck]);
+
+  return {
+    userInput,
+    setUserInput,
+    answerState,
+    inputRef,
+    handleCheck,
+    handleKeyPress
+  };
+};
