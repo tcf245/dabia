@@ -7,6 +7,12 @@ The core of Dabia is the Spaced Repetition System.
     - Short-term: Seconds/Minutes (for levels 1-3).
     - Long-term: Days/Weeks (for levels 4-5).
 - **Session Logic**: The `/api/v1/session/next-card` endpoint drives the entire flow. It accepts the previous card's result and returns the next card.
+- **State Machine Synchronization**: 
+    > [!IMPORTANT]
+    > The proficiency state machine logic is **mirrored** in both layers:
+    > 1. **Backend** ([scheduler.py](file:///Users/eric/workspace/dabia/backend/dabia/core/scheduler.py)): The source of truth for persistent data.
+    > 2. **Frontend** ([srs.ts](file:///Users/eric/workspace/dabia/frontend/src/utils/srs.ts)): Used for instant UI feedback and session history display.
+    > **Any change to the SRS logic MUST be applied to both files simultaneously.**
 
 ## 2. Database Schema (Key Models)
 - **User**: ID (UUID), Email, Google_ID, Review Logs (One-to-Many).
