@@ -3,18 +3,17 @@
 ## Current Context (Updated: 2025-12-29)
 
 ### 1. Status
-- **Branch**: `feat/learning-session-undo` (Current)
+- **Branch**: `feat/audio-button` (Pending Creation)
 - **Phase**: Feature Development / TDD
-- **Recent Milestones**:
-    - Complete UI overhaul to Terracotta Theme (Tailwind CSS).
-    - Data Import Pipeline (Script + MP3 Upload + Migration) fully completed.
+- **Goal**: Add an audio playback button for the sentence audio in Flashcard component.
 
-### 2. Immediate Focus
-- **Feature**: Implement "Undo" functionality for Learning Session.
-    - *Goal*: Allow users to revert their last answer (update DB + UI state).
-    - *Method*: TDD (Red -> Green -> Refactor).
+### 2. Design Spec
+- **Style**: Minimalist, inline or floating near sentence.
+- **Color**: Idle `#999999`, Active/Hover `#D97757`.
+- **Icon**: Lucide `Volume2`.
 
-### 3. Implementation Details
-- **TDD Enforcement**: Ensure all new features have accompanying unit/integration tests.
-- **CORS**: Configured in `main.py` with flexible regex.
-- **Privacy**: No real user data in seeds.
+### 3. Implementation Steps
+1. Create branch `feat/audio-button`.
+2. Write test case in `Flashcard.test.tsx` (Expect audio button present).
+3. Implement button in `Flashcard.tsx`.
+4. Verify & Commit.
