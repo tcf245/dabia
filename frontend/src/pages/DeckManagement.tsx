@@ -43,6 +43,7 @@ const DeckManagement = () => {
     }, []);
 
     const handleToggle = async (deckId: string) => {
+        const originalSelectedIds = [...selectedDeckIds];
         // Optimistic update
         const newSelected = selectedDeckIds.includes(deckId)
             ? selectedDeckIds.filter(id => id !== deckId)
@@ -54,7 +55,9 @@ const DeckManagement = () => {
             await api.updateDeckSettings({ active_deck_ids: newSelected });
         } catch (error) {
             console.error("Failed to save deck settings:", error);
-            // Revert logic could go here
+            // Revert the optimistic update on failure and notify the user
+            setSelectedDeckIds(originalSelectedIds);
+            // TODO: Show an error toast/message to the user
         } finally {
             setSaving(false);
         }

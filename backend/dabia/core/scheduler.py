@@ -12,6 +12,12 @@ class Scheduler:
     def __init__(self, db: Session):
         self.db = db
 
+    def _apply_deck_filter(self, query, active_deck_ids):
+        if active_deck_ids:
+            deck_ids = [str(uid) for uid in active_deck_ids]
+            return query.filter(Card.deck_id.in_(deck_ids))
+        return query
+
     def get_next_card(self, user_id: str) -> Tuple[Optional[Card], Optional[UserCardAssociation], dict]:
         """
         Selects the next card for the user based on the SRS algorithm.
@@ -56,11 +62,7 @@ class Scheduler:
             )
         )
         
-        if active_deck_ids:
-            # SQLAlchemy handling of JSON list in .in_ might be tricky if types mismatch
-            # Convert to strings to be safe
-            deck_ids = [str(uid) for uid in active_deck_ids]
-            overdue_query = overdue_query.filter(Card.deck_id.in_(deck_ids))
+        overdue_query = self._apply_deck_filter(overdue_query, active_deck_ids)
 
         overdue_card_assoc = overdue_query.order_by(UserCardAssociation.next_review_at.asc()).first()
 
@@ -102,9 +104,7 @@ class Scheduler:
             .filter(UserCardAssociation.card_id == None)
         )
         
-        if active_deck_ids:
-            deck_ids = [str(uid) for uid in active_deck_ids]
-            new_card_query = new_card_query.filter(Card.deck_id.in_(deck_ids))
+        new_card_query = self._apply_deck_filter(new_card_query, active_deck_ids)
             
         new_card = new_card_query.order_by(func.random()).limit(1).first()
 

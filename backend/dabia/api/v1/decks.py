@@ -4,6 +4,7 @@ from sqlalchemy import func
 from typing import List
 import uuid
 import re
+import logging
 
 from dabia.database import get_db
 from dabia.api.deps import get_current_user
@@ -21,11 +22,14 @@ def infer_metadata(name: str):
     if jlpt_match:
         level = jlpt_match.group(0).upper()
         tags.append(f"JLPT {level}")
-        if level == "N5": difficulty = "Basic"
-        elif level == "N4": difficulty = "Beginner"
-        elif level == "N3": difficulty = "Intermediate"
-        elif level == "N2": difficulty = "Advanced"
-        elif level == "N1": difficulty = "Expert"
+        difficulty_map = {
+            "N5": "Basic",
+            "N4": "Beginner",
+            "N3": "Intermediate",
+            "N2": "Advanced",
+            "N1": "Expert",
+        }
+        difficulty = difficulty_map.get(level, difficulty)
     
     # Common keywords
     if "daily" in name.lower(): tags.append("Daily")
@@ -55,8 +59,8 @@ def list_decks(db: Session = Depends(get_db)):
         
         if not difficulty or not tags:
              inferred_diff, inferred_tags = infer_metadata(deck.name)
-             if not difficulty: difficulty = inferred_diff
-             if not tags: tags = inferred_tags
+             difficulty = difficulty or inferred_diff
+             tags = tags or inferred_tags
              
         # Construct schema
         deck_data = schemas.Deck(
@@ -89,6 +93,7 @@ def get_deck_settings(current_user: models.User = Depends(get_current_user)):
             elif isinstance(uid, uuid.UUID):
                 safe_ids.append(uid)
         except ValueError:
+            logging.getLogger(__name__).warning(f"Invalid UUID string for user {current_user.id}: {uid}")
             pass
             
     return schemas.DeckSettings(active_deck_ids=safe_ids)
