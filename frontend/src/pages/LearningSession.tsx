@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, PartyPopper } from 'lucide-react';
+import { AlertTriangle, PartyPopper, ArrowLeft } from 'lucide-react';
 import Flashcard from '../components/Flashcard';
 import SkeletonFlashcard from '../components/SkeletonFlashcard';
 import SessionProgress from '../components/SessionProgress';
 import DailyGoalPopup from '../components/DailyGoalPopup';
 import { getNextCard } from '../services/api';
 import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
-import { ArrowLeft } from 'lucide-react';
 
 const LearningSession: React.FC = () => {
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
@@ -39,8 +38,6 @@ const LearningSession: React.FC = () => {
         hasShownDailyGoal.current = true;
       }
     } catch (err) {
-      // A real app should have better error handling (e.g., check for 401, 500)
-      // For now, we assume a network or CORS issue.
       setError('Could not connect to the server. Please check your connection or try again later.');
       console.error(err);
     } finally {
@@ -49,10 +46,9 @@ const LearningSession: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchNextCard(); // Fetch the first card when the component mounts
+    fetchNextCard();
   }, []);
 
-  // Handle global keyboard shortcuts for session
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
@@ -86,11 +82,9 @@ const LearningSession: React.FC = () => {
     if (history.length === 0) return;
 
     const prevCard = history[history.length - 1];
-
     if (currentCard) {
       setFuture(prev => [currentCard, ...prev]);
     }
-
     setHistory(prev => prev.slice(0, -1));
     setCurrentCard(prevCard);
     setIsViewingPrevious(true);
@@ -107,7 +101,6 @@ const LearningSession: React.FC = () => {
     setFuture(prev => prev.slice(1));
     setCurrentCard(nextCard);
 
-    // If this was the last card in the future stack, we return to quiz mode
     if (future.length === 1) {
       setIsViewingPrevious(false);
     }
@@ -120,8 +113,6 @@ const LearningSession: React.FC = () => {
       <div className="text-[#74746E] font-light">{children}</div>
     </div>
   );
-
-
 
   if (error) {
     return (
@@ -154,6 +145,11 @@ const LearningSession: React.FC = () => {
     );
   }
 
+  // Define props conditionally to satisfy discriminated union
+  const flashcardProps = isViewingPrevious
+    ? { mode: 'review' as const, onContinue: handleContinue }
+    : { mode: 'quiz' as const };
+
   return (
     <div className="w-full flex flex-col items-center relative">
       <div className="w-full max-w-2xl px-5">
@@ -181,8 +177,7 @@ const LearningSession: React.FC = () => {
         <Flashcard
           card={currentCard!}
           onSubmit={handleSubmitAnswer}
-          mode={isViewingPrevious ? 'review' : 'quiz'}
-          onContinue={handleContinue}
+          {...flashcardProps}
         />
       )}
 
