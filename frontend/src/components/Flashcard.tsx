@@ -14,7 +14,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
   const onContinue = (props as any).onContinue;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const {
     userInput,
     setUserInput,
@@ -127,20 +127,19 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
         {/* Action Bar */}
         <div className="mt-6 pt-6 border-t border-dashed border-[#E6E6E3] flex justify-between items-center">
           <span className="text-base font-light text-[#74746E] text-left">{card.sentence_translation}</span>
-          
+
           <div className="flex items-center gap-3">
             {/* Audio Button */}
             {card.sentence_audio_url && (
               <button
                 onClick={playSentenceAudio}
                 disabled={!canPlayAudio}
-                className={`p-2 rounded-full transition-colors flex-shrink-0 ${
-                  !canPlayAudio 
-                    ? 'text-gray-300 cursor-not-allowed bg-transparent'
-                    : isPlayingAudio 
-                      ? 'text-[#D97757] bg-[#D97757]/10' 
-                      : 'text-[#999999] hover:text-[#D97757] hover:bg-[#F2DCD6]/20'
-                }`}
+                className={`p-2 rounded-full transition-colors flex-shrink-0 ${!canPlayAudio
+                  ? 'text-gray-300 cursor-not-allowed bg-transparent'
+                  : isPlayingAudio
+                    ? 'text-[#D97757] bg-[#D97757]/10'
+                    : 'text-[#999999] hover:text-[#D97757] hover:bg-[#F2DCD6]/20'
+                  }`}
                 aria-label="Play audio"
                 title="Play audio"
               >

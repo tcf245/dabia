@@ -4,7 +4,7 @@ import { validateAnswer } from '../utils/validation';
 
 export type AnswerState = 'unanswered' | 'correct' | 'incorrect';
 
-type FlashcardModeProps = 
+type FlashcardModeProps =
   | { mode?: 'quiz'; onContinue?: never }
   | { mode: 'review'; onContinue: () => void };
 
@@ -31,7 +31,7 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
     setUserInput('');
     setAnswerState('unanswered');
     setStartTime(Date.now());
-    setIsPlayingAudio(false);
+    // Auto-focus input
     inputRef.current?.focus();
 
     // Cleanup audio
@@ -52,7 +52,6 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
       if (audioRef.current) {
         audioRef.current.pause();
       }
-
       const audio = new Audio(card.sentence_audio_url);
       audioRef.current = audio;
       audio.onended = () => handleSubmission(isCorrect);
@@ -76,13 +75,13 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
       }
 
       const audio = new Audio(card.sentence_audio_url);
-      audioRef.current = audio; 
+      audioRef.current = audio;
       setIsPlayingAudio(true);
-      
+
       audio.onended = () => {
         setIsPlayingAudio(false);
       };
-      
+
       audio.play().catch(err => {
         console.error("Manual audio play failed:", err);
         setIsPlayingAudio(false);
@@ -98,7 +97,7 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
       playAudioAndAdvance(true);
     } else {
       setAnswerState('incorrect');
-      setUserInput('');
+      setUserInput(''); // Clear input on retry
     }
   }, [userInput, card.target.word, card.reading, playAudioAndAdvance]);
 
@@ -108,9 +107,10 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
     if (answerState === 'unanswered') {
       handleCheck();
     } else if (answerState === 'incorrect') {
+      // Allow retry or correction
       if (validateAnswer(userInput, card.target.word, card.reading)) {
         setAnswerState('correct');
-        playAudioAndAdvance(false); 
+        playAudioAndAdvance(false);
       } else {
         setUserInput('');
       }
@@ -123,8 +123,8 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
         if (mode === 'review' && onContinue) {
           onContinue();
         } else if (mode === 'quiz' && answerState === 'unanswered') {
-           // Removed userInput.trim() check here too
-           handleCheck();
+          // Removed userInput.trim() check here too
+          handleCheck();
         }
       }
     };
