@@ -57,3 +57,12 @@ async def get_current_user_id(
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+def get_current_user(
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+) -> User:
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
