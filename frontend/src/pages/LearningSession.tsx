@@ -6,6 +6,7 @@ import SessionProgress from '../components/SessionProgress';
 import DailyGoalPopup from '../components/DailyGoalPopup';
 import { getNextCard } from '../services/api';
 import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
+import { calculateNextProficiency } from '../utils/srs';
 
 const LearningSession: React.FC = () => {
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
@@ -64,7 +65,9 @@ const LearningSession: React.FC = () => {
 
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
     if (currentCard) {
-      setHistory(prev => [...prev, currentCard]);
+      const nextProficiency = calculateNextProficiency(currentCard.proficiency_level || 1, isCorrect);
+      const historyCard = { ...currentCard, proficiency_level: nextProficiency };
+      setHistory(prev => [...prev, historyCard]);
     }
 
     const previousAnswer: PreviousAnswer = {
