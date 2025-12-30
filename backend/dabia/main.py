@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -10,11 +11,51 @@ from dabia.api.v1 import profile as profile_router
 from dabia.api.v1 import stats as stats_router
 from dabia.api.v1 import decks as decks_router
 from dabia.core.logging import logger
+import os
+from alembic.config import Config
+from alembic import command
+
+from alembic import command
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan manager that handles application startup and shutdown.
+    Automatically runs database migrations on startup.
+    """
+    from dabia.core.config import settings
+    
+    # Path to alembic.ini (working directory should be backend/ for local, or project root for Vercel)
+    ini_path = "alembic.ini"
+    if not os.path.exists(ini_path):
+        ini_path = os.path.join("backend", "alembic.ini")
+
+    if os.path.exists(ini_path):
+        logger.info(f"Running database migrations using {ini_path}...")
+        alembic_cfg = Config(ini_path)
+        
+        # Override the sqlalchemy.url from the environment variable
+        db_url = settings.DATABASE_URL
+        if db_url:
+            alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+        
+        try:
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Database migrations completed successfully.")
+        except Exception as e:
+            logger.error(f"Database migration failed: {e}")
+    else:
+        logger.warning(f"alembic.ini not found (tried {ini_path}). Skipping startup migrations.")
+    
+    yield
+
 
 app = FastAPI(
     title="Dabia API",
     description="API for the Dabia language learning platform.",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan
 )
 
 # Set up CORS
@@ -39,7 +80,6 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(TokenRefreshMiddleware)
 
 
-# Include routers
 # Include routers
 app.include_router(session_router.router, prefix="/api/v1/session", tags=["Session"])
 app.include_router(cards_router.router, prefix="/api/v1/cards", tags=["Cards"])
