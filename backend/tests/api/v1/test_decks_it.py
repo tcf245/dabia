@@ -66,3 +66,40 @@ def test_update_deck_settings(db_session: Session, override_get_db, test_user):
         assert test_user.active_deck_ids == [new_deck_id]
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+def test_deck_metadata_inference(db_session: Session, override_get_db):
+    # Test JLPT inference
+    deck1 = models.Deck(name="JLPT N1 Vocabulary")
+    # Test Business/Daily inference
+    deck2 = models.Deck(name="Daily Business Japanese")
+    db_session.add(deck1)
+    db_session.add(deck2)
+    db_session.commit()
+
+    response = client.get("/api/v1/decks/")
+    assert response.status_code == 200
+    data = response.json()
+    
+    d1 = next(d for d in data if d["name"] == "JLPT N1 Vocabulary")
+    assert d1["difficulty"] == "Expert"
+    assert "JLPT N1" in d1["tags"]
+    
+    d2 = next(d for d in data if d["name"] == "Daily Business Japanese")
+    assert d2["difficulty"] == "Advanced"
+    assert "Business" in d2["tags"]
+    assert "Daily" in d2["tags"]
+
+def test_deck_settings_with_invalid_uuids(db_session: Session, override_get_db, test_user):
+    # active_deck_ids containing invalid strings
+    test_user.active_deck_ids = ["not-a-uuid", str(uuid.uuid4())]
+    db_session.commit()
+    
+    app.dependency_overrides[get_current_user] = lambda: test_user
+    try:
+        response = client.get("/api/v1/decks/settings")
+        assert response.status_code == 200
+        data = response.json()
+        # The invalid one should be skipped, only the valid one returned
+        assert len(data["active_deck_ids"]) == 1
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_, text
 import random
+import uuid
 from typing import Optional, Tuple
 
 from dabia.models.user_card_association import UserCardAssociation

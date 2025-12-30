@@ -177,7 +177,7 @@ describe('Flashcard component', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
 
     const audioBtn = screen.getByRole('button', { name: /play audio/i });
-    
+
     // Initially disabled in quiz mode (unanswered)
     expect(audioBtn).toBeDisabled();
 
@@ -200,15 +200,110 @@ describe('Flashcard component', () => {
 
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: '' } });
-    
+
     // Press Enter
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
     // Should show reading hint (incorrect state)
     const feedback = await screen.findByText(mockCard.reading!);
     expect(feedback).toBeInTheDocument();
-    
+
     // Should NOT submit to backend yet
     expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
+
+  test('handles correction retry with incorrect input', async () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+    const input = screen.getByRole('textbox');
+
+    // First attempt (incorrect)
+    fireEvent.change(input, { target: { value: 'wrong1' } });
+    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+    expect(await screen.findByText(mockCard.reading!)).toBeInTheDocument();
+
+    // Second attempt (incorrect again)
+    // Clear input first as useFlashcardLogic does on incorrect
+    fireEvent.change(input, { target: { value: 'wrong2' } });
+    fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+    // Input should be cleared again (line 115)
+    expect(input).toHaveValue('');
+  });
+
+  test('audio playback: handles end event and manual playback errors', async () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    // Move to state where audio is enabled
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'test' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+
+    const audioBtn = await screen.findByRole('button', { name: /play audio/i });
+
+    // Test end event (line 82)
+    fireEvent.click(audioBtn);
+    expect(globalThis.playMock).toHaveBeenCalled();
+    act(() => {
+      globalThis.triggerOnended();
+    });
+
+    // Test playback error (lines 86-87)
+    globalThis.playMock.mockReturnValueOnce(Promise.resolve().then(() => { throw new Error('Playback failed'); }));
+    fireEvent.click(audioBtn);
+  });
+
+  test('audio cleanup and advance error handling', async () => {
+    const { rerender } = render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    // Test cleanup when card changes (lines 39-40)
+    // First play some audio
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'test' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+
+    const audioBtn = await screen.findByRole('button', { name: /play audio/i });
+    fireEvent.click(audioBtn);
+    expect(globalThis.playMock).toHaveBeenCalled();
+
+    // Now change card
+    const nextCard = { ...mockCard, card_id: '2', target: { word: 'next', hint: 'next' } };
+    rerender(<Flashcard card={nextCard} onSubmit={mockOnSubmit} />);
+    expect(globalThis.pauseMock).toHaveBeenCalled();
+
+    // Test advance audio play error (lines 61-62)
+    const errCard = { ...nextCard, sentence_audio_url: 'http://err.com' };
+    rerender(<Flashcard card={errCard} onSubmit={mockOnSubmit} />);
+
+    globalThis.playMock.mockReturnValueOnce(Promise.reject(new Error('Advance audio failed')));
+
+    const input2 = screen.getByRole('textbox');
+    fireEvent.change(input2, { target: { value: 'next' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+
+    // Should still call onSubmit even if audio fails
+    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    // Wait for the catch block to call handleSubmission
+    await act(async () => {
+      await Promise.resolve(); // flush microtasks
+    });
+    expect(mockOnSubmit).toHaveBeenCalledWith('2', true, expect.any(Number));
+  });
+
+  test('playAudioAndAdvance cleanup previous audio (line 53)', async () => {
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    // We need to trigger playAudioAndAdvance while audioRef.current is already set.
+    // 1. Play manual audio
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'wrong' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+
+    const audioBtn = await screen.findByRole('button', { name: /play audio/i });
+    fireEvent.click(audioBtn);
+
+    // 2. Now submit correctly to trigger playAudioAndAdvance
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+
+    expect(globalThis.pauseMock).toHaveBeenCalled();
   });
 });
