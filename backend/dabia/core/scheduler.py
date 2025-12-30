@@ -57,9 +57,17 @@ class Scheduler:
         )
         
         if active_deck_ids:
-            # SQLAlchemy handling of JSON list in .in_ might be tricky if types mismatch
-            # Convert to strings to be safe
-            deck_ids = [str(uid) for uid in active_deck_ids]
+            # Safely convert to UUID objects for SQL comparison
+            deck_ids = []
+            for uid in active_deck_ids:
+                try:
+                    if isinstance(uid, str):
+                        deck_ids.append(uuid.UUID(uid))
+                    else:
+                        deck_ids.append(uid)
+                except ValueError:
+                    continue
+            
             overdue_query = overdue_query.filter(Card.deck_id.in_(deck_ids))
 
         overdue_card_assoc = overdue_query.order_by(UserCardAssociation.next_review_at.asc()).first()
@@ -103,7 +111,15 @@ class Scheduler:
         )
         
         if active_deck_ids:
-            deck_ids = [str(uid) for uid in active_deck_ids]
+            deck_ids = []
+            for uid in active_deck_ids:
+                try:
+                    if isinstance(uid, str):
+                        deck_ids.append(uuid.UUID(uid))
+                    else:
+                        deck_ids.append(uid)
+                except ValueError:
+                    continue
             new_card_query = new_card_query.filter(Card.deck_id.in_(deck_ids))
             
         new_card = new_card_query.order_by(func.random()).limit(1).first()
