@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_, text
 import random
+import uuid
 from typing import Optional, Tuple
 
 from dabia.models.user_card_association import UserCardAssociation
@@ -31,6 +32,13 @@ class Scheduler:
 
         now = datetime.now(timezone.utc).replace(tzinfo=None) # Ensure naive datetime for comparison if DB is naive
 
+        # Get user settings for deck filtering
+        from dabia.models.user import User
+        user = self.db.query(User).filter(User.id == user_id).first()
+        active_deck_ids = user.active_deck_ids if user else []
+        # Ensure UUIDs are strings for SQL comparison if needed, or rely on SQLAlchemy
+        # active_deck_ids is JSON list of strings/UUIDs.
+        
         # 1. Check for overdue reviews
         # We want to prioritize cards that are most overdue, but also mix in some variety.
         # For V1, we'll just pick the one with the earliest next_review_at.
@@ -38,16 +46,33 @@ class Scheduler:
         import time
         
         overdue_start = time.time()
-        overdue_card_assoc = (
+        
+        overdue_query = (
             self.db.query(UserCardAssociation)
+            .join(UserCardAssociation.card) # Join for deck filtering
             .options(joinedload(UserCardAssociation.card).joinedload(Card.deck))
             .filter(
                 UserCardAssociation.user_id == user_id,
                 UserCardAssociation.next_review_at <= now
             )
-            .order_by(UserCardAssociation.next_review_at.asc())
-            .first()
         )
+        
+        if active_deck_ids:
+            # Safely convert to UUID objects for SQL comparison
+            deck_ids = []
+            for uid in active_deck_ids:
+                try:
+                    if isinstance(uid, str):
+                        deck_ids.append(uuid.UUID(uid))
+                    else:
+                        deck_ids.append(uid)
+                except ValueError:
+                    continue
+            
+            overdue_query = overdue_query.filter(Card.deck_id.in_(deck_ids))
+
+        overdue_card_assoc = overdue_query.order_by(UserCardAssociation.next_review_at.asc()).first()
+
         overdue_time = time.time() - overdue_start
         if overdue_card_assoc:
             logger.info(
@@ -75,7 +100,8 @@ class Scheduler:
         # Optimized: Use ORDER BY random() instead of OFFSET
         # PostgreSQL optimizes "ORDER BY random() LIMIT 1" much better than OFFSET
         new_card_start = time.time()
-        new_card = (
+        
+        new_card_query = (
             self.db.query(Card)
             .options(joinedload(Card.deck))
             .outerjoin(UserCardAssociation, and_(
@@ -83,10 +109,22 @@ class Scheduler:
                 UserCardAssociation.user_id == user_id
             ))
             .filter(UserCardAssociation.card_id == None)
-            .order_by(func.random())
-            .limit(1)
-            .first()
         )
+        
+        if active_deck_ids:
+            deck_ids = []
+            for uid in active_deck_ids:
+                try:
+                    if isinstance(uid, str):
+                        deck_ids.append(uuid.UUID(uid))
+                    else:
+                        deck_ids.append(uid)
+                except ValueError:
+                    continue
+            new_card_query = new_card_query.filter(Card.deck_id.in_(deck_ids))
+            
+        new_card = new_card_query.order_by(func.random()).limit(1).first()
+
         new_card_time = time.time() - new_card_start
         if new_card:
             logger.info(f"SRS Decision [User: {user_id}]: Selected NEW card {new_card.id}.")

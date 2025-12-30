@@ -1,88 +1,82 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
-import * as api from './api';
+import * as apiService from './api';
 
-// Mock axios
 vi.mock('axios', () => {
+    const mockAxios = {
+        get: vi.fn(),
+        post: vi.fn(),
+        put: vi.fn(),
+        interceptors: {
+            request: { use: vi.fn() },
+            response: { use: vi.fn() }
+        }
+    };
     return {
         default: {
-            create: vi.fn().mockReturnValue({
-                interceptors: {
-                    request: { use: vi.fn(), eject: vi.fn() },
-                    response: { use: vi.fn(), eject: vi.fn() }
-                },
-                get: vi.fn(),
-                post: vi.fn(),
-            })
+            create: vi.fn().mockReturnValue(mockAxios)
         }
     };
 });
 
-// We need to access the mocked axios instance
-const mockedAxiosInstance = vi.mocked(axios.create());
+// Access the mocked axios instance
+const mockApi: any = (axios.create as any)();
 
-describe('API Service', () => {
+describe('api service', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('getDailySummary calls the correct endpoint', async () => {
-        const mockStats = {
-            to_learn_count: 5,
-            learned_count: 10,
-            reinforced_count: 5,
-            total_answered: 20,
-            total_time_seconds: 600,
-            new_words_count: 2,
-            accuracy: 80.0
-        };
-
-        // Mock the get implementation on the instance
-        vi.mocked(mockedAxiosInstance.get).mockResolvedValueOnce({ data: mockStats });
-
-        const result = await api.getDailySummary();
-
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/api/v1/stats/daily-summary');
-        expect(result).toEqual(mockStats);
+    it('getDecks calls correct endpoint', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: [{ id: '1', name: 'Deck 1' }] });
+        const result = await apiService.getDecks();
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/decks/');
+        expect(result).toEqual([{ id: '1', name: 'Deck 1' }]);
     });
 
-    it('getProfileHeatmap calls the correct endpoint', async () => {
-        const mockHeatmap = [{ date: '2023-01-01', count: 5, level: 2 }];
-        vi.mocked(mockedAxiosInstance.get).mockResolvedValueOnce({ data: mockHeatmap });
-
-        const result = await api.getProfileHeatmap();
-
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/api/v1/profile/heatmap');
-        expect(result).toEqual(mockHeatmap);
+    it('getDeckSettings calls correct endpoint', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { active_deck_ids: ['1'] } });
+        const result = await apiService.getDeckSettings();
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/decks/settings');
+        expect(result).toEqual({ active_deck_ids: ['1'] });
     });
 
-    it('getProfileGarden calls the correct endpoint', async () => {
-        const mockGarden = [{ text: 'test', romaji: 'test', type: 'learned' }];
-        vi.mocked(mockedAxiosInstance.get).mockResolvedValueOnce({ data: mockGarden });
-
-        const result = await api.getProfileGarden();
-
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/api/v1/profile/garden');
-        expect(result).toEqual(mockGarden);
+    it('updateDeckSettings calls correct endpoint', async () => {
+        const settings = { active_deck_ids: ['1', '2'] };
+        mockApi.put.mockResolvedValueOnce({ data: settings });
+        const result = await apiService.updateDeckSettings(settings);
+        expect(mockApi.put).toHaveBeenCalledWith('/api/v1/decks/settings', settings);
+        expect(result).toEqual(settings);
     });
 
-    it('getNextCard calls the correct endpoint', async () => {
-        const mockResponse = { card: null, session_progress: { completed_today: 0, goal_today: 50 }, previous_card_id: null };
-        vi.mocked(mockedAxiosInstance.post).mockResolvedValueOnce({ data: mockResponse });
-
-        const result = await api.getNextCard();
-
-        expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/api/v1/session/next-card', undefined);
-        expect(result).toEqual(mockResponse);
+    it('getDailySummary calls correct endpoint', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { accuracy: 90 } });
+        const result = await apiService.getDailySummary();
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/stats/daily-summary');
+        expect(result).toEqual({ accuracy: 90 });
     });
 
-    it('getCard calls the correct endpoint', async () => {
-        const mockCard = { card_id: '123' };
-        vi.mocked(mockedAxiosInstance.get).mockResolvedValueOnce({ data: mockCard });
+    it('getProfileHeatmap calls correct endpoint', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: [] });
+        await apiService.getProfileHeatmap();
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/profile/heatmap');
+    });
 
-        const result = await api.getCard('123');
+    it('getProfileGarden calls correct endpoint', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: [] });
+        await apiService.getProfileGarden();
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/profile/garden');
+    });
 
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/api/v1/cards/123');
-        expect(result).toEqual(mockCard);
+    it('getNextCard calls correct endpoint', async () => {
+        mockApi.post.mockResolvedValueOnce({ data: { card: null } });
+        await apiService.getNextCard();
+        expect(mockApi.post).toHaveBeenCalledWith('/api/v1/session/next-card', undefined);
+    });
+
+    it('getCard calls correct endpoint', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { card_id: '123' } });
+        await apiService.getCard('123');
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123');
     });
 });

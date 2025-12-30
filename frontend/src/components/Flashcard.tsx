@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check } from 'lucide-react';
+import { X, Check, Volume2, MessageCircle } from 'lucide-react';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
 import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
@@ -11,18 +11,20 @@ type FlashcardProps = UseFlashcardLogicProps;
 
 const Flashcard: React.FC<FlashcardProps> = (props) => {
   const { card, mode = 'quiz' } = props;
-  // Safely access onContinue only when needed, but TS will enforce it via props
   const onContinue = (props as any).onContinue;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const {
     userInput,
     setUserInput,
     answerState,
     inputRef,
     handleCheck,
-    handleKeyPress
+    handleKeyPress,
+    playSentenceAudio,
+    isPlayingAudio,
+    canPlayAudio
   } = useFlashcardLogic(props);
 
   const sentenceParts = card.sentence_template.split('__');
@@ -47,8 +49,8 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
               onClick={() => setIsModalOpen(true)}
             />
             <div className="flex items-center gap-3 text-[#2A2A29]">
-              <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-base">
-                <span>💬</span>
+              <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-[#999999]">
+                <MessageCircle size={16} strokeWidth={2.5} />
               </div>
               <span className="text-sm font-light">{card.target.hint}</span>
             </div>
@@ -122,26 +124,47 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
           )}
         </div>
 
-        {/* Translation and Submit Button */}
+        {/* Action Bar */}
         <div className="mt-6 pt-6 border-t border-dashed border-[#E6E6E3] flex justify-between items-center">
           <span className="text-base font-light text-[#74746E] text-left">{card.sentence_translation}</span>
-          {mode !== 'review' && (answerState === 'unanswered' || answerState === 'incorrect') && (
-            <button
-              onClick={handleCheck}
-              disabled={!userInput.trim()}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] disabled:bg-[#F2F0EF] disabled:text-[#999] disabled:cursor-not-allowed bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
-            >
-              Submit
-            </button>
-          )}
-          {mode === 'review' && (
-            <button
-              onClick={onContinue}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
-            >
-              Continue
-            </button>
-          )}
+
+          <div className="flex items-center gap-3">
+            {/* Audio Button */}
+            {card.sentence_audio_url && (
+              <button
+                onClick={playSentenceAudio}
+                disabled={!canPlayAudio}
+                className={`p-2 rounded-full transition-colors flex-shrink-0 ${!canPlayAudio
+                  ? 'text-gray-300 cursor-not-allowed bg-transparent'
+                  : isPlayingAudio
+                    ? 'text-[#D97757] bg-[#D97757]/10'
+                    : 'text-[#999999] hover:text-[#D97757] hover:bg-[#F2DCD6]/20'
+                  }`}
+                aria-label="Play audio"
+                title="Play audio"
+              >
+                <Volume2 size={24} strokeWidth={1.5} />
+              </button>
+            )}
+
+            {/* Main Action Button */}
+            {mode !== 'review' && (answerState === 'unanswered' || answerState === 'incorrect') && (
+              <button
+                onClick={handleCheck}
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] disabled:bg-[#F2F0EF] disabled:text-[#999] disabled:cursor-not-allowed bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
+              >
+                Submit
+              </button>
+            )}
+            {mode === 'review' && (
+              <button
+                onClick={onContinue}
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
+              >
+                Continue
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

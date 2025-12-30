@@ -8,6 +8,7 @@ from dabia.api.v1 import cards as cards_router
 from dabia.api.v1 import auth as auth_router
 from dabia.api.v1 import profile as profile_router
 from dabia.api.v1 import stats as stats_router
+from dabia.api.v1 import decks as decks_router
 from dabia.core.logging import logger
 
 app = FastAPI(
@@ -45,6 +46,7 @@ app.include_router(cards_router.router, prefix="/api/v1/cards", tags=["Cards"])
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(profile_router.router, prefix="/api/v1/profile", tags=["Profile"])
 app.include_router(stats_router.router, prefix="/api/v1/stats", tags=["Stats"])
+app.include_router(decks_router.router, prefix="/api/v1/decks", tags=["Decks"])
 
 
 @app.get("/")

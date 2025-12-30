@@ -4,7 +4,7 @@ import { validateAnswer } from '../utils/validation';
 
 export type AnswerState = 'unanswered' | 'correct' | 'incorrect';
 
-type FlashcardModeProps = 
+type FlashcardModeProps =
   | { mode?: 'quiz'; onContinue?: never }
   | { mode: 'review'; onContinue: () => void };
 
@@ -17,13 +17,12 @@ export type UseFlashcardLogicProps = BaseProps & FlashcardModeProps;
 
 export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
   const { card, mode = 'quiz', onSubmit } = props;
-  // We cast onContinue to ensure TS understands it might exist, 
-  // but logically it is only used when mode === 'review'
   const onContinue = (props as any).onContinue;
 
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -49,6 +48,10 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
 
   const playAudioAndAdvance = useCallback(async (isCorrect: boolean) => {
     if (card.sentence_audio_url) {
+      // Stop previous audio if any
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       const audio = new Audio(card.sentence_audio_url);
       audioRef.current = audio;
       audio.onended = () => handleSubmission(isCorrect);
@@ -63,9 +66,31 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
     }
   }, [card.sentence_audio_url, handleSubmission]);
 
-  const handleCheck = useCallback(() => {
-    if (!userInput.trim()) return;
+  const playSentenceAudio = useCallback(() => {
+    if (card.sentence_audio_url) {
+      // Stop overlapping audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
 
+      const audio = new Audio(card.sentence_audio_url);
+      audioRef.current = audio;
+      setIsPlayingAudio(true);
+
+      audio.onended = () => {
+        setIsPlayingAudio(false);
+      };
+
+      audio.play().catch(err => {
+        console.error("Manual audio play failed:", err);
+        setIsPlayingAudio(false);
+      });
+    }
+  }, [card.sentence_audio_url]);
+
+  const handleCheck = useCallback(() => {
+    // Removed !userInput.trim() check to allow empty submission (treated as incorrect)
     const isCorrect = validateAnswer(userInput, card.target.word, card.reading);
     if (isCorrect) {
       setAnswerState('correct');
@@ -85,23 +110,21 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
       // Allow retry or correction
       if (validateAnswer(userInput, card.target.word, card.reading)) {
         setAnswerState('correct');
-        playAudioAndAdvance(false); 
+        playAudioAndAdvance(false);
       } else {
         setUserInput('');
       }
     }
   }, [answerState, handleCheck, userInput, card.target.word, card.reading, playAudioAndAdvance]);
 
-  // Global shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') {
         if (mode === 'review' && onContinue) {
           onContinue();
         } else if (mode === 'quiz' && answerState === 'unanswered') {
-           if (userInput.trim()) {
-             handleCheck();
-           }
+          // Removed userInput.trim() check here too
+          handleCheck();
         }
       }
     };
@@ -110,12 +133,17 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mode, onContinue, answerState, userInput, handleCheck]);
 
+  const canPlayAudio = mode === 'review' || answerState !== 'unanswered';
+
   return {
     userInput,
     setUserInput,
     answerState,
     inputRef,
     handleCheck,
-    handleKeyPress
+    handleKeyPress,
+    playSentenceAudio,
+    isPlayingAudio,
+    canPlayAudio
   };
 };
