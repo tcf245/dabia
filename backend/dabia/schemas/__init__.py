@@ -14,5 +14,8 @@ __all__ = [
     "Card",
     "SessionProgress",
     "NextCardResponse",
+    "Deck",
+    "DeckSettings",
 ]
 from .stats import DailyStats
+from .deck import Deck, DeckSettings

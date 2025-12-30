@@ -97,6 +97,34 @@ export interface DailyStats {
   accuracy: number;
 }
 
+export interface Deck {
+  id: string;
+  name: string;
+  description?: string;
+  count: number;
+  difficulty: string;
+  tags: string[];
+}
+
+export interface DeckSettings {
+  active_deck_ids: string[];
+}
+
+export const getDecks = async (): Promise<Deck[]> => {
+  const response = await api.get<Deck[]>('/api/v1/decks/');
+  return response.data;
+};
+
+export const getDeckSettings = async (): Promise<DeckSettings> => {
+  const response = await api.get<DeckSettings>('/api/v1/decks/settings');
+  return response.data;
+};
+
+export const updateDeckSettings = async (settings: DeckSettings): Promise<DeckSettings> => {
+  const response = await api.put<DeckSettings>('/api/v1/decks/settings', settings);
+  return response.data;
+};
+
 export const getNextCard = async (answer?: PreviousAnswer): Promise<NextCardResponse> => {
   const response = await api.post<NextCardResponse>('/api/v1/session/next-card', answer);
   return response.data;

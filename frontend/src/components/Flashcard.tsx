@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Volume2 } from 'lucide-react';
+import { X, Check, Volume2, MessageCircle } from 'lucide-react';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
 import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
@@ -49,8 +49,8 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
               onClick={() => setIsModalOpen(true)}
             />
             <div className="flex items-center gap-3 text-[#2A2A29]">
-              <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-base">
-                <span>💬</span>
+              <div className="w-8 h-8 rounded-lg bg-[#F2F0EF] flex items-center justify-center text-[#999999]">
+                <MessageCircle size={16} strokeWidth={2.5} />
               </div>
               <span className="text-sm font-light">{card.target.hint}</span>
             </div>

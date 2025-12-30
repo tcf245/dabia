@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { Menu, Transition } from '@headlessui/react';
 import { Routes, Route, Link } from 'react-router-dom';
 import Profile from './pages/Profile';
+import DeckManagement from './pages/DeckManagement';
 
 
 interface User {
@@ -94,11 +95,11 @@ function App() {
       )}
 
       <div className="w-full max-w-4xl">
-        <header className="mb-24 flex justify-between items-center">
+        <header className="mb-24 flex justify-between items-center relative z-50">
           <Link to="/" className="font-serif text-2xl font-bold text-[#D97757] tracking-tight">Dabia.</Link>
           <div className="flex items-center gap-4">
             {token ? (
-              <Menu as="div" className="relative inline-block text-left z-[100]">
+              <Menu as="div" className="relative inline-block text-left">
                 <Menu.Button className="flex items-center gap-2 hover:bg-secondary/50 p-1.5 rounded-lg transition-colors focus:outline-none">
                   {user?.picture ? (
                     <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-border/50" />
@@ -120,6 +121,30 @@ function App() {
                 >
                   <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-border rounded-lg bg-popover shadow-lg ring-1 ring-black/5 focus:outline-none border border-border">
                     <div className="px-1 py-1">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/"
+                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+                            Cards
+                          </Link>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/decks"
+                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>
+                            Decks
+                          </Link>
+                        )}
+                      </Menu.Item>
                       <Menu.Item>
                         {({ active }) => (
                           <Link
@@ -161,6 +186,7 @@ function App() {
         <main className="flex flex-col items-center justify-center w-full">
           <Routes>
             <Route path="/" element={<LearningSession />} />
+            <Route path="/decks" element={<DeckManagement />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>

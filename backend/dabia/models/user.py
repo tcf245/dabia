@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, func
+from sqlalchemy import Column, String, DateTime, func, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -16,6 +16,9 @@ class User(Base):
     google_id = Column(String, unique=True, index=True, nullable=True)
     full_name = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
+    
+    # Settings
+    active_deck_ids = Column(JSON, nullable=True, default=list)
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
