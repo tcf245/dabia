@@ -43,7 +43,7 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
                         <div
                             key={idx}
                             className={`proficiency-segment rounded-full transition-all duration-300 ${isFilled
-                                ? `proficiency-segment-filled ${PROFICIENCY_COLORS[idx]}`
+                                ? `proficiency-segment-filled ${PROFICIENCY_COLORS[idx as keyof typeof PROFICIENCY_COLORS]}`
                                 : 'bg-[#F2F0EF]'
                                 }`}
                             style={{ width: '16px', height: '4px' }}
@@ -51,6 +51,13 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
                     );
                 })}
             </div>
+
+            {/* NEW Tag */}
+            {level === 1 && (
+                <div className="bg-[#D97757]/10 text-[#D97757] text-[10px] px-1.5 py-0.5 rounded-md font-sans font-medium uppercase tracking-wider animate-in fade-in zoom-in duration-500">
+                    NEW
+                </div>
+            )}
 
             {/* Hover text */}
             <AnimatePresence>
@@ -62,7 +69,7 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
                         className="flex items-center gap-2"
                     >
                         <span className="text-xs font-sans text-[#74746E] font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)]">
-                            {PROFICIENCY_TEXTS[level]}
+                            {PROFICIENCY_TEXTS[level as keyof typeof PROFICIENCY_TEXTS]}
                         </span>
                     </motion.div>
                 )}

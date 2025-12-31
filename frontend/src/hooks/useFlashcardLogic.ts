@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Card as FlashcardDataType } from '../services/api';
 import { validateAnswer } from '../utils/validation';
+import { calculateNextProficiency } from '../utils/srs';
 
 export type AnswerState = 'unanswered' | 'correct' | 'incorrect';
 
@@ -23,6 +24,7 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
   const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
   const [startTime, setStartTime] = useState(Date.now());
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [displayedProficiency, setDisplayedProficiency] = useState(card.proficiency_level || 1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,6 +32,7 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
   useEffect(() => {
     setUserInput('');
     setAnswerState('unanswered');
+    setDisplayedProficiency(card.proficiency_level || 1);
     setStartTime(Date.now());
     // Auto-focus input
     inputRef.current?.focus();
@@ -94,12 +97,14 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
     const isCorrect = validateAnswer(userInput, card.target.word, card.reading);
     if (isCorrect) {
       setAnswerState('correct');
+      setDisplayedProficiency(calculateNextProficiency(card.proficiency_level || 1, true));
       playAudioAndAdvance(true);
     } else {
       setAnswerState('incorrect');
+      setDisplayedProficiency(calculateNextProficiency(card.proficiency_level || 1, false));
       setUserInput(''); // Clear input on retry
     }
-  }, [userInput, card.target.word, card.reading, playAudioAndAdvance]);
+  }, [userInput, card.target.word, card.reading, card.proficiency_level, playAudioAndAdvance]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -110,6 +115,8 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
       // Allow retry or correction
       if (validateAnswer(userInput, card.target.word, card.reading)) {
         setAnswerState('correct');
+        // If it was already incorrect, we don't update proficiency further here
+        // as handleCheck already processed the "incorrect" result for SRS.
         playAudioAndAdvance(false);
       } else {
         setUserInput('');
@@ -144,6 +151,7 @@ export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
     handleKeyPress,
     playSentenceAudio,
     isPlayingAudio,
-    canPlayAudio
+    canPlayAudio,
+    displayedProficiency
   };
 };

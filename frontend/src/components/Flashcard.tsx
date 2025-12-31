@@ -24,7 +24,8 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
     handleKeyPress,
     playSentenceAudio,
     isPlayingAudio,
-    canPlayAudio
+    canPlayAudio,
+    displayedProficiency
   } = useFlashcardLogic(props);
 
   const sentenceParts = card.sentence_template.split('__');
@@ -45,7 +46,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
         <div className="flex items-start justify-between mb-8">
           <div className="flex flex-col gap-4">
             <ProficiencyIndicator
-              level={card.proficiency_level || 1}
+              level={displayedProficiency}
               onClick={() => setIsModalOpen(true)}
             />
             <div className="flex items-center gap-3 text-[#2A2A29]">

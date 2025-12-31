@@ -61,4 +61,12 @@ describe('ProficiencyIndicator', () => {
 
         expect(handleClick).toHaveBeenCalled();
     });
+
+    test('shows NEW tag only for level 1', () => {
+        const { rerender } = render(<ProficiencyIndicator level={1} onClick={vi.fn()} />);
+        expect(screen.getByText('NEW')).toBeInTheDocument();
+
+        rerender(<ProficiencyIndicator level={2} onClick={vi.fn()} />);
+        expect(screen.queryByText('NEW')).not.toBeInTheDocument();
+    });
 });
