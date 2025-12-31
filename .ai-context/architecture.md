@@ -10,8 +10,8 @@ The core of Dabia is the Spaced Repetition System.
 - **State Machine Synchronization**: 
     > [!IMPORTANT]
     > The proficiency state machine logic is **mirrored** in both layers:
-    > 1. **Backend** ([scheduler.py](file:///Users/eric/workspace/dabia/backend/dabia/core/scheduler.py)): The source of truth for persistent data.
-    > 2. **Frontend** ([srs.ts](file:///Users/eric/workspace/dabia/frontend/src/utils/srs.ts)): Used for instant UI feedback and session history display.
+> 1. **Backend** ([backend/dabia/core/scheduler.py](backend/dabia/core/scheduler.py)): The source of truth for persistent data.
+> 2. **Frontend** ([frontend/src/utils/srs.ts](frontend/src/utils/srs.ts)): Used for instant UI feedback and session history display.
     > **Any change to the SRS logic MUST be applied to both files simultaneously.**
 
 ## 2. Database Schema (Key Models)
