@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Volume2, MessageCircle } from 'lucide-react';
+import { X, Volume2, MessageCircle } from 'lucide-react';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
 import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
@@ -32,11 +32,11 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
 
   const getInputClasses = () => {
     if (answerState === 'unanswered') {
-      return 'border-input focus:border-primary';
+      return 'border-b-2 border-input focus:border-primary';
     }
     return answerState === 'correct'
-      ? 'border-primary bg-primary/10'
-      : 'border-destructive bg-destructive/10';
+      ? 'border-none rounded-lg bg-[#D97757]/10 shadow-[0_2px_8px_rgba(217,119,87,0.15)] text-[#D97757]'
+      : 'border-b-2 border-destructive bg-destructive/10';
   };
 
   return (
@@ -64,7 +64,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
             {mode === 'review' ? (
               <span>
                 {sentenceParts[0]}
-                <span className="font-serif font-medium text-primary mx-1 border-b-2 border-primary/30 px-1">
+                <span className="inline-block mx-2 px-2 py-1 rounded-lg bg-[#D97757]/10 shadow-[0_2px_8px_rgba(217,119,87,0.15)] text-[#D97757] font-medium">
                   {card.target.word}
                 </span>
                 {sentenceParts[1]}
@@ -78,8 +78,8 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className={`inline-block mx-2 px-2 py-1 border-b-2 focus:outline-none text-center transition-colors duration-300 ${getInputClasses()}`}
-                  style={{ width: `${Math.max(card.target.word.length * 1.2, 8)}ch` }}
+                  className={`inline-block mx-2 px-2 py-1 focus:outline-none text-center transition-all duration-300 ${getInputClasses()}`}
+                  style={{ width: `${Math.max(card.target.word.length * 1.5 + 2, 10)}ch` }}
                   disabled={answerState === 'correct'}
                   placeholder=""
                 />
@@ -93,7 +93,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
         <div className="h-12 flex items-center justify-center">
           {mode === 'review' ? (
             <div className="flex items-center gap-2 text-primary font-semibold text-xl">
-              <span>{card.reading}</span>
+              <span>{card.target.word === card.reading ? card.reading : `${card.target.word} (${card.reading})`}</span>
             </div>
           ) : (
             <AnimatePresence>
@@ -106,7 +106,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
                   className="flex items-center gap-2 text-muted-foreground font-semibold"
                 >
                   <X size={20} />
-                  <span>{card.reading}</span>
+                  <span>{card.target.word === card.reading ? card.reading : `${card.target.word} (${card.reading})`}</span>
                 </motion.div>
               )}
               {answerState === 'correct' && (
@@ -115,10 +115,9 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="flex items-center gap-2 text-primary font-semibold"
+                  className="flex items-center gap-2 text-primary font-semibold text-xl"
                 >
-                  <Check size={20} />
-                  <span>Correct!</span>
+                  <span>{card.target.word === card.reading ? card.reading : `${card.target.word} (${card.reading})`}</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -152,9 +151,13 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
             {mode !== 'review' && (answerState === 'unanswered' || answerState === 'incorrect') && (
               <button
                 onClick={handleCheck}
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] disabled:bg-[#F2F0EF] disabled:text-[#999] disabled:cursor-not-allowed bg-[#D97757] text-white shadow-sm hover:bg-[#C96642] h-10 rounded-xl px-6 text-sm"
+                className={`inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] disabled:bg-[#F2F0EF] disabled:text-[#999] disabled:cursor-not-allowed shadow-sm h-10 rounded-xl px-6 text-sm ${
+                  !userInput.trim()
+                    ? 'bg-[#2A2A29] text-white hover:bg-[#40403F]'
+                    : 'bg-[#D97757] text-white hover:bg-[#C96642]'
+                }`}
               >
-                Submit
+                {!userInput.trim() ? 'Learn' : 'Submit'}
               </button>
             )}
             {mode === 'review' && (

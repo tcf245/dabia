@@ -96,26 +96,21 @@ describe('LearningSession', () => {
 
         // Simulate answering correctly
         const input = screen.getByRole('textbox');
-        const submitBtn = screen.getByRole('button', { name: /submit/i });
-
-        // Type answer
-        // Note: Using fireEvent or userEvent. standard existing tests use fireEvent inferred from context or manual DOM manip if simple. 
+        
+        // Type answer FIRST, so button becomes "Submit"
         fireEvent.change(input, { target: { value: 'test' } });
+        
+        // NOW find the button
+        const submitBtn = screen.getByRole('button', { name: /submit/i });
         fireEvent.click(submitBtn);
 
-        // Wait for "Correct!" feedback / auto-advance logic
-        // The component auto-advances or waits for user?
-        // Flashcard component usually waits for timeout or user input on correct answer if audio is present.
-        // In the test mockCard has no audio, so it might expect auto-advance mock or similar.
-        // Let's rely on standard flow. Assuming Flashcard logic holds.
-
         // Wait for popup to appear
-        // The popup fetches stats, so we wait for that text
         await waitFor(() => {
             expect(screen.getByText(/你做得很棒!/i)).toBeInTheDocument();
             expect(screen.getByText(/完成\s*50\s*张词卡/i)).toBeInTheDocument();
         });
     });
+
     it('supports multi-level undo/redo with history and future stacks', async () => {
         const cards = [
             { card_id: '1', target: { word: 'one', hint: 'h1' }, sentence_template: 'is __', reading: 'one', sentence_translation: 't1', deck: { id: 'd1', name: 'D1' } },
@@ -162,6 +157,7 @@ describe('LearningSession', () => {
         // 8. Back button should still work
         expect(screen.getByTitle('Previous Card')).toBeInTheDocument();
     });
+
     it('shows error message and allows retry on API failure', async () => {
         (api.getNextCard as Mock).mockRejectedValueOnce(new Error('API Error'));
 
@@ -288,21 +284,11 @@ describe('LearningSession', () => {
 
         // We can't easily trigger the unreachable branches via the UI without mocking the child component.
         // But we can check that they are indeed safe.
-        // To cover line 75 (handleSubmitAnswer when isViewingPrevious is true), we need to be in review mode.
-
-        // 1. Move to review mode (history: [], current: 1, future: []) -> wait, need history to go back.
-        // Actually, just answer one.
+        
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(api.getNextCard).toHaveBeenCalledTimes(2));
 
-        // Now history: [card1], current: card2, future: []
-        // Go back
         fireEvent.click(screen.getByTitle('Previous Card'));
-        // isViewingPrevious is now true.
-
-        // Now try to call handleSubmitAnswer via the prop of the Flashcard.
-        // But since we can't get the prop easily, we can just rely on the fact that if we 
-        // somehow triggered a submit (e.g. via keyboard if it weren't gated), it would return.
     });
 });
