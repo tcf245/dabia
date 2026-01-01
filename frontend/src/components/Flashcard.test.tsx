@@ -42,7 +42,7 @@ describe('Flashcard component', () => {
     expect(screen.getByText(mockCard.target.hint!)).toBeInTheDocument();
     expect(screen.getByText(mockCard.sentence_translation!)).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /learn/i })).toBeInTheDocument();
   });
 
   test('handles correct answer and auto-advances with audio', async () => {
@@ -52,7 +52,7 @@ describe('Flashcard component', () => {
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
-    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    expect(await screen.findByText('test (てすと)')).toBeInTheDocument();
     expect(globalThis.playMock).toHaveBeenCalled();
 
     await act(async () => {
@@ -87,7 +87,7 @@ describe('Flashcard component', () => {
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    const feedback = await screen.findByText(mockCard.reading!);
+    const feedback = await screen.findByText('test (てすと)');
     expect(feedback).toBeInTheDocument();
     expect(feedback.parentElement).toHaveClass('text-muted-foreground');
     expect(mockOnSubmit).not.toHaveBeenCalled();
@@ -101,14 +101,14 @@ describe('Flashcard component', () => {
     // First attempt (incorrect)
     fireEvent.change(input, { target: { value: 'wrong' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    expect(await screen.findByText(mockCard.reading!)).toBeInTheDocument();
+    expect(await screen.findByText('test (てすと)')).toBeInTheDocument();
 
     // Second attempt (correct)
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    // Should show "Correct!" UI, but submit as false
-    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    // Should show correct UI, but submit as false
+    expect(await screen.findByText('test (てすと)', { selector: '.text-primary span' })).toBeInTheDocument();
     expect(globalThis.playMock).toHaveBeenCalled();
 
     await act(async () => {
@@ -127,7 +127,7 @@ describe('Flashcard component', () => {
     fireEvent.change(input, { target: { value: 'test' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    expect(screen.getByText(/correct!/i)).toBeInTheDocument();
+    expect(screen.getByText('test (てすと)')).toBeInTheDocument();
     expect(globalThis.playMock).not.toHaveBeenCalled();
 
     // Run the timers to fire the setTimeout
@@ -145,7 +145,7 @@ describe('Flashcard component', () => {
     render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} mode="review" onContinue={onContinue} />);
 
     expect(screen.getByText(mockCard.target.word)).toBeInTheDocument();
-    expect(screen.getByText(mockCard.reading!)).toBeInTheDocument();
+    expect(screen.getByText('test (てすと)')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
     const continueButton = screen.getByRole('button', { name: /continue/i });
@@ -170,7 +170,7 @@ describe('Flashcard component', () => {
     // ArrowRight should trigger submit
     fireEvent.keyDown(window, { key: 'ArrowRight' });
 
-    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    expect(await screen.findByText('test (てすと)')).toBeInTheDocument();
   });
 
   test('audio button behavior: disabled initially, enabled after submit', async () => {
@@ -187,7 +187,7 @@ describe('Flashcard component', () => {
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
     // Should be enabled now (state is correct)
-    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    expect(await screen.findByText('test (てすと)')).toBeInTheDocument();
     expect(audioBtn).not.toBeDisabled();
 
     // Clicking it should play audio
@@ -205,7 +205,9 @@ describe('Flashcard component', () => {
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
     // Should show reading hint (incorrect state)
-    const feedback = await screen.findByText(mockCard.reading!);
+    // Note: Empty submission via Learn button (which is the default when empty) triggers handleCheck
+    // handleCheck sees empty, treats as incorrect
+    const feedback = await screen.findByText('test (てすと)');
     expect(feedback).toBeInTheDocument();
 
     // Should NOT submit to backend yet
@@ -219,14 +221,14 @@ describe('Flashcard component', () => {
     // First attempt (incorrect)
     fireEvent.change(input, { target: { value: 'wrong1' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-    expect(await screen.findByText(mockCard.reading!)).toBeInTheDocument();
+    expect(await screen.findByText('test (てすと)')).toBeInTheDocument();
 
     // Second attempt (incorrect again)
     // Clear input first as useFlashcardLogic does on incorrect
     fireEvent.change(input, { target: { value: 'wrong2' } });
     fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
-    // Input should be cleared again (line 115)
+    // Input should be cleared again
     expect(input).toHaveValue('');
   });
 
@@ -240,14 +242,14 @@ describe('Flashcard component', () => {
 
     const audioBtn = await screen.findByRole('button', { name: /play audio/i });
 
-    // Test end event (line 82)
+    // Test end event
     fireEvent.click(audioBtn);
     expect(globalThis.playMock).toHaveBeenCalled();
     act(() => {
       globalThis.triggerOnended();
     });
 
-    // Test playback error (lines 86-87)
+    // Test playback error
     globalThis.playMock.mockReturnValueOnce(Promise.resolve().then(() => { throw new Error('Playback failed'); }));
     fireEvent.click(audioBtn);
   });
@@ -255,7 +257,7 @@ describe('Flashcard component', () => {
   test('audio cleanup and advance error handling', async () => {
     const { rerender } = render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
 
-    // Test cleanup when card changes (lines 39-40)
+    // Test cleanup when card changes
     // First play some audio
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'test' } });
@@ -266,11 +268,11 @@ describe('Flashcard component', () => {
     expect(globalThis.playMock).toHaveBeenCalled();
 
     // Now change card
-    const nextCard = { ...mockCard, card_id: '2', target: { word: 'next', hint: 'next' } };
+    const nextCard = { ...mockCard, card_id: '2', target: { word: 'next', hint: 'next' }, reading: 'next' };
     rerender(<Flashcard card={nextCard} onSubmit={mockOnSubmit} />);
     expect(globalThis.pauseMock).toHaveBeenCalled();
 
-    // Test advance audio play error (lines 61-62)
+    // Test advance audio play error
     const errCard = { ...nextCard, sentence_audio_url: 'http://err.com' };
     rerender(<Flashcard card={errCard} onSubmit={mockOnSubmit} />);
 
@@ -281,7 +283,7 @@ describe('Flashcard component', () => {
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
     // Should still call onSubmit even if audio fails
-    expect(await screen.findByText(/correct!/i)).toBeInTheDocument();
+    expect(await screen.findByText('next', { selector: '.text-primary span' })).toBeInTheDocument();
     // Wait for the catch block to call handleSubmission
     await act(async () => {
       await Promise.resolve(); // flush microtasks
