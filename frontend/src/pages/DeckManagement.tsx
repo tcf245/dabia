@@ -75,12 +75,12 @@ const DeckManagement = () => {
 
     return (
         <div className="min-h-screen pb-32 pt-12 px-6 bg-[#F9F9F8] w-full max-w-4xl mx-auto animate-fade-in">
-          <header className="mb-10 text-center md:text-left">
-            <h1 className="font-serif text-[40px] text-[#1A1A1A] leading-tight mb-2">
+          <header className="text-center mb-12">
+            <h1 className="font-serif text-5xl font-normal text-[#1A1A1A] mb-4 tracking-tight" style={{ lineHeight: '1' }}>
               Library
             </h1>
-            <p className="font-sans text-[#888888] font-light tracking-wide">
-              Select collections for your daily review.
+            <p className="text-[#888] text-sm font-light tracking-wider mt-3">
+              选择用于每日复习的词库。
             </p>
           </header>
 
