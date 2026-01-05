@@ -49,9 +49,11 @@ describe('DeckManagement', () => {
         (api.updateDeckSettings as any).mockResolvedValue({ active_deck_ids: ['1', '2'] });
     });
 
-    it('renders loading state initially', () => {
+    it('renders loading state initially', async () => {
         render(<DeckManagement />);
         expect(screen.getByText(/Loading library.../i)).toBeInTheDocument();
+        // Wait for it to finish loading to avoid act warnings from the background fetches
+        await waitFor(() => expect(screen.queryByText(/Loading library.../i)).not.toBeInTheDocument());
     });
 
     it('renders deck list after loading', async () => {
@@ -94,7 +96,12 @@ describe('DeckManagement', () => {
         fireEvent.click(intermediateDeck);
 
         // Should trigger updateDeckSettings with both
-        expect(api.updateDeckSettings).toHaveBeenCalledWith({ active_deck_ids: ['1', '2'] });
+        await waitFor(() => {
+            expect(api.updateDeckSettings).toHaveBeenCalledWith({ active_deck_ids: ['1', '2'] });
+        });
+
+        // Wait for saving to finish
+        await waitFor(() => expect(screen.queryByText(/Saving changes.../i)).not.toBeInTheDocument());
     });
 
     it('handles toggle error gracefully', async () => {
@@ -110,6 +117,9 @@ describe('DeckManagement', () => {
         await waitFor(() => {
             expect(consoleSpy).toHaveBeenCalledWith("Failed to save deck settings:", expect.any(Error));
         });
+
+        // Also wait for Saving changes to disappear
+        await waitFor(() => expect(screen.queryByText(/Saving changes.../i)).not.toBeInTheDocument());
 
         consoleSpy.mockRestore();
     });

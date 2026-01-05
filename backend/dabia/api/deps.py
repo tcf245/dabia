@@ -1,9 +1,9 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError
 import uuid
 from dabia.core.config import settings
-from dabia.api.v1.auth import ALGORITHM
+from dabia.core.security import decode_token
 from dabia.core.logging import user_id_ctx
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
@@ -25,7 +25,7 @@ async def get_current_user_id(
         return default_user_id
         
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_token(token)
         user_id_str: str = payload.get("sub")
         if user_id_str is None:
             return default_user_id
