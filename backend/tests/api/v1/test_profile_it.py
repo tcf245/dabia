@@ -31,7 +31,7 @@ async def test_get_heatmap_success(client, db_session):
     db_session.add(Card(id=card_id, deck_id=deck_id, target_word="test", reading="test", sentence_template="Test __."))
     db_session.commit()
     
-    now = datetime.now(UTC).replace(tzinfo=None)
+    now = datetime.now(UTC)
     
     # Today
     for _ in range(10):
