@@ -1,9 +1,9 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from jose import jwt, JWTError
+from jose import JWTError
 from datetime import datetime, timezone, timedelta
 from dabia.core.config import settings
-from dabia.api.v1.auth import ALGORITHM, create_access_token
+from dabia.core.security import decode_token, create_access_token
 import time
 
 class TokenRefreshMiddleware(BaseHTTPMiddleware):
@@ -19,7 +19,7 @@ class TokenRefreshMiddleware(BaseHTTPMiddleware):
         
         try:
             # 2. Decode token (without validation first to get exp)
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+            payload = decode_token(token)
             
             # 3. Check if it's "old enough" to refresh but still valid
             # If it's more than 1 day old, refresh it

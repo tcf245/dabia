@@ -4,7 +4,7 @@ from dabia.api.deps import get_current_user_id
 from unittest.mock import MagicMock
 from jose import jwt
 from dabia.core.config import settings
-from dabia.api.v1.auth import ALGORITHM
+from dabia.core.security import decode_token
 import uuid
 
 @pytest.fixture
@@ -37,7 +37,7 @@ async def test_get_current_user_id_expired_token_raises_401():
     mock_db = MagicMock()
     # Create an expired token
     payload = {"sub": str(uuid.uuid4()), "exp": 1} # Expired long ago
-    expired_token = jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+    expired_token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     
     with pytest.raises(HTTPException) as excinfo:
         await get_current_user_id(token=expired_token, db=mock_db)
@@ -54,7 +54,7 @@ async def test_get_current_user_id_valid_token(db_session):
     db_session.commit()
     
     payload = {"sub": str(user_id)}
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     
     result = await get_current_user_id(token=token, db=db_session)
     assert result == user_id
@@ -63,7 +63,7 @@ async def test_get_current_user_id_valid_token(db_session):
 async def test_get_current_user_id_user_not_found_raises_401(db_session):
     user_id = uuid.uuid4() # Random ID not in DB
     payload = {"sub": str(user_id)}
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     
     with pytest.raises(HTTPException) as excinfo:
         await get_current_user_id(token=token, db=db_session)
@@ -86,7 +86,7 @@ def test_get_current_user_success(db_session):
 async def test_get_current_user_id_no_sub_raises_default(db_session):
     # Token with no sub field
     payload = {"some": "data"}
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     result = await get_current_user_id(token=token, db=db_session)
     assert result == uuid.UUID("00000000-0000-0000-0000-000000000000")
 

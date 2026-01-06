@@ -63,3 +63,18 @@ def db_session(db_engine):
     session.close()
     transaction.rollback()
     connection.close()
+
+@pytest.fixture
+async def client(db_session):
+    """Fixture for an async test client."""
+    from httpx import AsyncClient, ASGITransport
+    from dabia.main import app
+    from dabia.database import get_db
+    
+    # Override get_db to use the test session
+    app.dependency_overrides[get_db] = lambda: db_session
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+    
+    app.dependency_overrides.clear()

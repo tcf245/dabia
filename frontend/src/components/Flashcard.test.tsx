@@ -250,8 +250,12 @@ describe('Flashcard component', () => {
     });
 
     // Test playback error
-    globalThis.playMock.mockReturnValueOnce(Promise.resolve().then(() => { throw new Error('Playback failed'); }));
-    fireEvent.click(audioBtn);
+    globalThis.playMock.mockReturnValueOnce(Promise.reject(new Error('Playback failed')));
+    await act(async () => {
+      fireEvent.click(audioBtn);
+      // Wait for the error to be caught and state to update
+      await Promise.resolve();
+    });
   });
 
   test('audio cleanup and advance error handling', async () => {
@@ -280,7 +284,9 @@ describe('Flashcard component', () => {
 
     const input2 = screen.getByRole('textbox');
     fireEvent.change(input2, { target: { value: 'next' } });
-    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    });
 
     // Should still call onSubmit even if audio fails
     expect(await screen.findByText('next', { selector: '.text-primary span' })).toBeInTheDocument();

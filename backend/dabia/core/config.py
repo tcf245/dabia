@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = "PLACEHOLDER_CLIENT_ID"
     GOOGLE_CLIENT_SECRET: str = "PLACEHOLDER_CLIENT_SECRET"
     SECRET_KEY: str = "dev_secret_key" # Default for dev, override in prod
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days (10080 minutes)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

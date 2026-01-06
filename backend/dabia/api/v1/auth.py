@@ -5,8 +5,9 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import requests
 from datetime import datetime, timedelta, timezone
-from jose import jwt
+from jose import JWTError
 from typing import Optional
+from dabia.core.security import create_access_token
 
 from dabia.database import get_db
 from dabia.models.user import User
@@ -21,22 +22,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-# TODO: Move to settings
-GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
+# Removed local constants - using dabia.core.config and security
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+# Removed local create_access_token - using dabia.core.security
 
 @router.post("/login/google", response_model=Token)
 def login_google(request: GoogleLoginRequest, db: Session = Depends(get_db)):
@@ -108,15 +96,13 @@ def login_google(request: GoogleLoginRequest, db: Session = Depends(get_db)):
         db.refresh(user)
 
     # Create access token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={
             "sub": str(user.id),
             "email": user.email,
             "name": user.full_name,
             "picture": user.avatar_url
-        },
-        expires_delta=access_token_expires
+        }
     )
     
     return {"access_token": access_token, "token_type": "bearer"}

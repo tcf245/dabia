@@ -24,7 +24,11 @@ const mockApi: any = (axios.create as any)();
 
 describe('api service', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        // We don't use vi.clearAllMocks() here because we need to inspect 
+        // calls made during the initial import of the api service (like interceptors.use)
+        mockApi.get.mockClear();
+        mockApi.post.mockClear();
+        mockApi.put.mockClear();
     });
 
     it('getDecks calls correct endpoint', async () => {
@@ -78,5 +82,70 @@ describe('api service', () => {
         mockApi.get.mockResolvedValueOnce({ data: { card_id: '123' } });
         await apiService.getCard('123');
         expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123');
+    });
+
+    describe('interceptors', () => {
+        let requestInterceptor: any;
+        let responseInterceptor: any;
+        let responseErrorInterceptor: any;
+
+        beforeEach(() => {
+            // Find the interceptors
+            requestInterceptor = mockApi.interceptors.request.use.mock.calls[0][0];
+            const responseSuccess = mockApi.interceptors.response.use.mock.calls[0][0];
+            const responseError = mockApi.interceptors.response.use.mock.calls[0][1];
+            responseInterceptor = responseSuccess;
+            responseErrorInterceptor = responseError;
+        });
+
+        it('adds Authorization header if token exists', () => {
+            vi.stubGlobal('localStorage', {
+                getItem: vi.fn().mockReturnValue('fake-token'),
+                setItem: vi.fn(),
+                removeItem: vi.fn(),
+            });
+
+            const config = { headers: {} } as any;
+            const updatedConfig = requestInterceptor(config);
+
+            expect(updatedConfig.headers.Authorization).toBe('Bearer fake-token');
+        });
+
+        it('saves refresh token from header', () => {
+            const setItemMock = vi.fn();
+            vi.stubGlobal('localStorage', {
+                getItem: vi.fn(),
+                setItem: setItemMock,
+                removeItem: vi.fn(),
+            });
+
+            const response = {
+                headers: { 'x-refresh-token': 'new-token' },
+                data: {}
+            };
+            responseInterceptor(response);
+
+            expect(setItemMock).toHaveBeenCalledWith('token', 'new-token');
+        });
+
+        it('handles 401 by clearing token and dispatching event', async () => {
+            const removeItemMock = vi.fn();
+            const dispatchEventMock = vi.fn();
+            vi.stubGlobal('localStorage', {
+                getItem: vi.fn(),
+                setItem: vi.fn(),
+                removeItem: removeItemMock,
+            });
+            vi.stubGlobal('dispatchEvent', dispatchEventMock);
+
+            const error = {
+                response: { status: 401 }
+            };
+
+            await expect(responseErrorInterceptor(error)).rejects.toEqual(error);
+            expect(removeItemMock).toHaveBeenCalledWith('token');
+            expect(dispatchEventMock).toHaveBeenCalled();
+            expect(dispatchEventMock.mock.calls[0][0].type).toBe('dabia:unauthorized');
+        });
     });
 });
