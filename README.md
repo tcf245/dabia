@@ -15,12 +15,12 @@ I chose the name **"Dabia"** to capture that sense of innocence. I didn't want t
 
 ---
 
-## 🎨 My Vision: Minimal, Focused, Beautiful
+## 🎨 My Vision: Warm Minimalist & Intellectual
 
-I designed Dabia as an intelligent Japanese vocabulary trainer inspired by *Lingvist*, specifically for those who value both efficiency and aesthetics.
+I designed Dabia to be more than just an app; I wanted it to feel like a piece of premium stationery. The aesthetic is inspired by clean editorial design and the focused energy of a physical study space.
 
-- **Sora-iro (Sky Blue) Aesthetic**: I chose the "Sora-iro" palette, rooted in traditional Japanese colors, to create a calm and clear environment. My goal is to reduce the anxiety that so often comes with study.
-- **Pure Focus**: I've kept the interface as clean as *Notion* and as efficient as *Lingvist*. I've stripped away the noise so you can focus entirely on your conversation with the language.
+- **Terracotta & Canvas Palette**: I moved away from cold, generic UI colors to a signature **Terracotta (#D97757)** brand color set against a warm **Canvas (#F9F9F8)** background. This "paper-like" feel reduces eye strain and creates a grounded, calming atmosphere for deep focus.
+- **Pure Focus**: I've kept the interface as clean as *Notion* and as efficient as *Lingvist*. By using **Noto Serif JP** for Japanese text, I aim to give the language the elegance and respect it deserves, stripping away the digital noise.
 - **Your Reliable Companion**: I built this to be there for you whenever you're ready—whether it's during your morning commute or a quiet study session late at night.
 
 ---
