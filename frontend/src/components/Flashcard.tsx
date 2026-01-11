@@ -11,7 +11,8 @@ type FlashcardProps = UseFlashcardLogicProps;
 
 const Flashcard: React.FC<FlashcardProps> = (props) => {
   const { card, mode = 'quiz' } = props;
-  const onContinue = (props as any).onContinue;
+  // Type-safe extraction of onContinue
+  const onContinue = props.mode === 'review' ? props.onContinue : undefined;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
