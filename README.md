@@ -63,11 +63,10 @@ uv run uvicorn dabia.main:app --reload
 ```
 
 ### Frontend (React + Vite)
-```bash
 cd frontend
+cp .env.example .env # Create environment file and configure if needed
 npm install
 npm run dev
-```
 
 Visit `http://localhost:5173` and start your journey with me.
 
