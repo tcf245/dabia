@@ -5,8 +5,8 @@ import App from './App.tsx'
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
-// TODO: Replace with actual Client ID from environment variable
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+// Use Environment Variable for Client ID
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 import { BrowserRouter } from 'react-router-dom';
 

@@ -48,26 +48,35 @@ def list_decks(db: Session = Depends(get_db)):
     )
     
     deck_list = []
+    has_updates = False
+
     for deck, count in results:
-        # If DB fields are empty, infer from name
-        difficulty = deck.difficulty
-        tags = deck.tags or []
-        
-        if not difficulty or not tags:
+        # If DB fields are empty, infer from name and PERSIST IT (Self-healing)
+        if not deck.difficulty or not deck.tags:
              inferred_diff, inferred_tags = infer_metadata(deck.name)
-             if not difficulty: difficulty = inferred_diff
-             if not tags: tags = inferred_tags
              
+             if not deck.difficulty:
+                 deck.difficulty = inferred_diff
+                 has_updates = True
+                 
+             if not deck.tags:
+                 deck.tags = inferred_tags
+                 has_updates = True
+        
         # Construct schema
         deck_data = schemas.Deck(
             id=deck.id,
             name=deck.name,
             description=deck.description,
             count=count,
-            difficulty=difficulty,
-            tags=tags
+            difficulty=deck.difficulty,
+            tags=deck.tags or []
         )
         deck_list.append(deck_data)
+    
+    # Commit any self-healing updates to optimize future reads
+    if has_updates:
+        db.commit()
         
     return deck_list
 
@@ -76,9 +85,6 @@ def get_deck_settings(current_user: models.User = Depends(get_current_user)):
     """Get the current user's deck settings."""
     active_ids = current_user.active_deck_ids or []
     # active_deck_ids is stored as JSON, which might be a list of strings or UUIDs.
-    # We need to ensure they are returned as UUIDs for the schema.
-    # If the DB stores them as strings, we parse them.
-    # If the DB stores them as UUIDs (unlikely with JSON type unless configured), it handles it.
     
     # Safely convert to UUIDs
     safe_ids = []
