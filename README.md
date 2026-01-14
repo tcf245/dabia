@@ -74,7 +74,7 @@ Visit `http://localhost:5173` and start your journey with me.
 
 ## 💖 Credits
 
-I am grateful to the [anki-jlpt-decks](https://github.com/5mdld/anki-jlpt-decks) project by **egg rolls** for the core card data (licensed under CC BY-NC 4.0).
+I am grateful to the [anki-jlpt-decks](https://github.com/5mdld/anki-jlpt-decks) project by **egg rolls** for the core card data (licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)).
 
 ---
 
