@@ -131,3 +131,41 @@ def test_get_next_card_new(scheduler, db_session, test_user, test_card):
     assert next_card.id == test_card.id
     assert user_assoc is None  # New cards don't have associations yet
     assert meta['type'] == 'new'
+
+def test_get_next_card_skips_mastered_overdue(scheduler, db_session, test_user, test_deck):
+    # Setup a mastered card that is overdue
+    mastered_card = Card(
+        id=uuid.uuid4(),
+        deck_id=test_deck.id,
+        sentence_template="Mastered sentence",
+        target_word="mastered",
+        reading="masutado",
+        sentence_translation="Mastered translation"
+    )
+    new_card = Card(
+        id=uuid.uuid4(),
+        deck_id=test_deck.id,
+        sentence_template="New sentence",
+        target_word="new",
+        reading="nyuu",
+        sentence_translation="New translation"
+    )
+    db_session.add_all([mastered_card, new_card])
+    db_session.commit()
+
+    past = datetime.now() - timedelta(days=1)
+    assoc = UserCardAssociation(
+        user_id=test_user.id,
+        card_id=mastered_card.id,
+        next_review_at=past,
+        interval=30,
+        repetitions=5,
+        proficiency_level=5
+    )
+    db_session.add(assoc)
+    db_session.commit()
+
+    next_card, user_assoc, meta = scheduler.get_next_card(test_user.id)
+    assert next_card.id == new_card.id
+    assert user_assoc is None
+    assert meta["type"] == "new"
