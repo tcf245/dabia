@@ -203,10 +203,17 @@ describe('LearningSession', () => {
         // Answer card 1
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'one' } });
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
-        await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
 
-        // Press ArrowLeft
-        fireEvent.keyDown(window, { key: 'ArrowLeft' });
+        // Wait for card 2 AND ensure loading state is cleared
+        await waitFor(() => {
+            expect(screen.getByText('h2')).toBeInTheDocument();
+            expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
+        });
+
+        // Press ArrowLeft (Need to wrap in act for React 18+ state updates triggered by window events)
+        await waitFor(() => {
+            fireEvent.keyDown(window, { key: 'ArrowLeft' });
+        });
 
         // Should go back to h1
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
