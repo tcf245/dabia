@@ -79,6 +79,7 @@ class Scheduler:
         logger = logging.getLogger(__name__)
 
         now = datetime.now(timezone.utc).replace(tzinfo=None) # Ensure naive datetime for comparison if DB is naive
+        from dabia.core.srs_constants import PROFICIENCY_MASTERED
 
         # Get user settings for deck filtering
         from dabia.models.user import User
@@ -107,7 +108,8 @@ class Scheduler:
             .options(joinedload(UserCardAssociation.card).joinedload(Card.deck))
             .filter(
                 UserCardAssociation.user_id == user_id,
-                UserCardAssociation.next_review_at <= now
+                UserCardAssociation.next_review_at <= now,
+                UserCardAssociation.proficiency_level < PROFICIENCY_MASTERED
             )
         )
         

@@ -1,73 +1,88 @@
-# Dabia Architecture & AI Working Context
+# Dabia Architecture & Global Context
 
 ## 1. Tech Stack
 - Backend: Python 3.12, FastAPI, SQLAlchemy, PostgreSQL, Alembic, uv
-- Frontend: React 19, Vite, TypeScript, Tailwind CSS
+- Frontend: React 19, Vite, Tailwind CSS v4, TypeScript
 
-## 2. Core Learning Model
+## 2. Database Policies
+- Alembic is the source of truth for schema changes and seed updates.
+- Never modify existing migrations; add new migrations instead.
+- Do not commit real or sensitive seed data.
+
+## 3. Core Learning Model
 - `Card` remains the primary learning unit used by session scheduling and SRS.
-- The `/api/v1/session/next-card` flow is still the source of truth for review sessions.
+- `/api/v1/session/next-card` is the source of truth for review sessions.
 - The SRS state machine is mirrored in:
   - `backend/dabia/core/scheduler.py`
   - `frontend/src/utils/srs.ts`
 - Any SRS behavior change must update both layers together.
 
-## 3. Grammar Skeleton Initiative
-- Goal: help learners understand how Japanese sentences are assembled, including sentence roles, particles, and verb/adjective inflection.
-- Scope for the current phase:
+## 4. Key Database Models
+- `User`: account, auth, and review ownership
+- `Card`: sentence-based learning unit
+- `UserCardAssociation`: per-user SRS state for each card
+- `ReviewLog`: immutable review history
+
+## 5. Grammar Skeleton Initiative
+- Goal: help learners understand how Japanese sentences are assembled, including particles, sentence roles, and inflection.
+- Current phase scope:
   - operate on existing `Card.sentence` data
   - provide explanation and visualization only
-  - do not affect question generation or SRS
+  - do not affect question generation or SRS scoring
 - Data model direction:
   - one `Card` can have many grammar annotations
-  - annotations should point to reusable grammar points
-- Recommended entities:
+  - annotations point to reusable grammar points
+- Current entities:
   - `GrammarPoint`: canonical grammar concept
   - `CardGrammarAnnotation`: card-specific mapping, explanation, and evidence span
 
-## 4. Grammar Skeleton Delivery Strategy
+## 6. Grammar Delivery Strategy
 - Phase 1:
-  - add grammar persistence and read APIs
-  - generate annotations from existing card sentences
-  - surface grammar explanations in the card UI as an optional panel
-- Phase 2:
-  - improve taxonomy coverage and annotation quality
-  - add editorial or manual correction workflow
-- Explicitly out of scope for Phase 1:
-  - SRS integration
+  - grammar persistence and read APIs
+  - batch generation for existing card sentences
+  - optional flashcard grammar panel
+- Out of scope for Phase 1:
   - grammar-only exercise generation
-  - a full external grammar knowledge crawler as the primary source of truth
+  - SRS integration
+  - full external grammar crawling as production source of truth
 
-## 5. Batch Annotation Pipeline Pattern
-- The grammar analysis workflow should be treated as a batch loop:
+## 7. Batch Annotation Pipeline Pattern
+- Treat grammar analysis as a batch loop:
   1. select a bounded card slice
-  2. run morphological analysis
-  3. apply deterministic grammar mapping rules
+  2. run analysis
+  3. apply deterministic mapping rules
   4. persist candidate annotations with provenance
-  5. evaluate precision on a reviewed sample
-  6. refine rules and re-run incrementally
-- The pipeline must be idempotent or support safe upsert semantics.
-- Confidence and source metadata are required to support later review.
+  5. evaluate quality on a reviewed sample
+  6. refine rules and rerun incrementally
+- The pipeline should be idempotent or safe to upsert.
+- Keep `source` and `confidence` fields for later review.
 
-## 6. Verification Strategy
-- Schema changes: migration tests and model-level assertions
-- API changes: backend integration tests for card grammar retrieval
-- UI changes: frontend component/page tests for grammar panel rendering
+## 8. Verification Strategy
+- Schema changes: migration verification and model assertions
+- API changes: backend integration tests
+- UI changes: frontend component/page tests
 - Batch pipeline changes:
-  - fixture-based parser/rule tests
-  - golden sample evaluation against reviewed cards
-  - dry-run support before bulk persistence
+  - fixture-based rule tests
+  - sampled quality checks
+  - dry-run support before larger writes
 
-## 7. Local Data Source
+## 9. Local Data Source
 - A local PostgreSQL database is available for real-card analysis and validation.
-- Connection target: local `dabia` database provided by the user.
-- Verified on 2026-03-15:
-  - `cards` row count: `10157`
-  - sample sentences are available and suitable for batch grammar analysis
-- Local SQL client setup is now aligned with the user's environment:
-  - `psql` installed via Homebrew `libpq`
-  - binary path: `/opt/homebrew/opt/libpq/bin/psql`
-- Use this database as the primary dataset for:
+- Verified local dataset size on 2026-03-15: `10157` cards.
+- Standard local SQL client path: `/opt/homebrew/opt/libpq/bin/psql`
+- Use this dataset for:
   - sampling real cards
   - dry-run annotation checks
   - post-migration validation
+
+## 10. Environment Variables
+- `backend/.env`: `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `SECRET_KEY`
+- `frontend/.env`: `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`
+- Grammar debug flags:
+  - `GRAMMAR_DEBUG_ENABLED`
+  - `GRAMMAR_DEBUG_SOURCE`
+
+## 11. Deployment
+- Frontend: static build to Vercel/Netlify
+- Backend: Docker container
+- Database: managed PostgreSQL

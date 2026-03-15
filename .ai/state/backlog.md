@@ -4,6 +4,8 @@
 - [x] feat(grammar): implement backend schema and Alembic migration
 - [x] feat(grammar): add card grammar retrieval API and integration tests
 - [x] feat(grammar): build batch annotation script with dry-run mode
-- [ ] feat(grammar): add sample fixtures and evaluation workflow for annotation precision
 - [x] feat(grammar): render optional grammar panel in flashcard UI
-- [x] docs(grammar): write feature walkthrough and validation notes in `docs/dev_logs/`
+- [x] feat(grammar): add grammar debug review mode in session selection
+- [ ] feat(grammar): add reviewed sample fixtures and evaluation workflow for annotation precision
+- [ ] feat(grammar): expand grammar coverage beyond the initial particle and predicate rules
+- [ ] feat(grammar): decide whether auto-generated annotations should be persisted by default in local development

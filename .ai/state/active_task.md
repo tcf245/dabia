@@ -3,7 +3,7 @@
 ## Current Context
 - Updated: 2026-03-15
 - Branch: `feat/grammar-skeleton`
-- Phase: Phase 1 implementation / verified
+- Phase: Phase 1 implementation / grammar debug review
 
 ## Active Feature
 - Name: `grammar-skeleton`
@@ -16,45 +16,35 @@
 
 ## Agreed Technical Direction
 - `Card` remains the review unit.
-- Grammar data should be modeled separately rather than adding many ad hoc fields onto `cards`.
-- Use a conservative rollout:
-  - persistence and retrieval first
-  - batch annotation pipeline second
-  - UI integration third
+- Grammar data is modeled separately instead of adding many nullable fields onto `cards`.
+- Conservative rollout:
+  1. persistence and retrieval
+  2. batch annotation pipeline
+  3. UI integration
+  4. debug review flow
 - Favor deterministic analysis plus rule mapping over a fully model-driven annotation system.
 
-## Planned Workstreams
-1. Define schema for `GrammarPoint` and `CardGrammarAnnotation`. Completed.
-2. Add backend model, migration, and retrieval API. Completed.
-3. Design a batch annotation script for existing card sentences. Initial version completed.
-4. Add frontend grammar panel on the flashcard view. Completed.
-5. Establish sample-based validation for annotation quality. Initial dry-run loop completed.
-
 ## Current Risks
-- Existing AI context on older branches is stale and inconsistent with the current feature.
-- Grammar explanation quality is still rule-limited and currently focuses on a small N5-oriented subset.
-- Batch processing needs confidence and provenance fields to support later review.
-- Real-data iteration must remain safe and read-oriented until the annotation persistence layer is implemented.
+- Grammar explanation quality is still rule-limited and currently focused on a small N5-oriented subset.
+- Batch output quality will become the main bottleneck before infrastructure does.
+- Existing historical AI context from older branches may still be stale.
 
-## Next Checkpoint
-- Expand grammar taxonomy coverage and decide whether to persist auto-generated annotations into the local dataset.
-
-## Available Validation Resource
-- Local PostgreSQL dataset confirmed available on 2026-03-15.
-- Current `cards` volume observed: `10157`.
-- Initial live examples observed:
-  - `テーマを絞り込む`
-  - `品数がない`
-  - `初版を完売する`
+## Available Validation Resources
+- Local PostgreSQL dataset confirmed available.
+- Observed `cards` volume: `10157`
+- Local grammar debug mode is supported through:
+  - `GRAMMAR_DEBUG_ENABLED`
+  - `GRAMMAR_DEBUG_SOURCE`
 
 ## Completed This Session
-- Added grammar schema, migration, and ORM models.
-- Added `GET /api/v1/cards/{card_id}/grammar`.
-- Added flashcard grammar panel with lazy loading.
-- Added a deterministic grammar analysis module and dry-run batch script.
-- Verified the batch script against the local PostgreSQL dataset after applying the new migration.
-- Added a grammar debug feature flag so session selection can prioritize annotated cards.
-- Persisted grammar annotations for the first 50 local cards sample:
+- Added grammar schema, migration, ORM models, API, and flashcard UI.
+- Added deterministic grammar analysis and a batch script.
+- Added grammar debug mode so session selection can prioritize annotated cards.
+- Persisted an initial local sample from the first 50 cards:
   - `37` annotated cards
   - `45` total annotations
-- Enabled local backend debug mode through `backend/.env` using `GRAMMAR_DEBUG_ENABLED=true`.
+- Enabled local backend debug mode in `backend/.env`.
+
+## Next Checkpoint
+- Resolve PR merge conflicts cleanly against `master`.
+- Expand grammar taxonomy coverage and improve annotation quality on reviewed samples.
