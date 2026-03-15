@@ -210,10 +210,8 @@ describe('LearningSession', () => {
             expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
         });
 
-        // Press ArrowLeft (Need to wrap in act for React 18+ state updates triggered by window events)
-        await waitFor(() => {
-            fireEvent.keyDown(window, { key: 'ArrowLeft' });
-        });
+        // Press ArrowLeft once, then wait for the previous card to render.
+        fireEvent.keyDown(window, { key: 'ArrowLeft' });
 
         // Should go back to h1
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
