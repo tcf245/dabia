@@ -54,3 +54,8 @@
 - Prefer the same local PostgreSQL client setup as the user when inspecting production-like data.
 - Current standard client path: `/opt/homebrew/opt/libpq/bin/psql`
 - Use read-only queries for exploration until the grammar persistence workflow is implemented and verified.
+
+## 9. Local Documentation Policy
+- The entire `docs/` directory is treated as local working knowledge by default and should not be committed.
+- Use `docs/` for diaries, walkthroughs, and NotebookLM-oriented notes, but keep those files out of git unless the user explicitly asks otherwise.
+- If `docs/` files are accidentally staged or tracked, remove them from the git index while preserving local copies.

@@ -53,3 +53,8 @@
 - Added flashcard grammar panel with lazy loading.
 - Added a deterministic grammar analysis module and dry-run batch script.
 - Verified the batch script against the local PostgreSQL dataset after applying the new migration.
+- Added a grammar debug feature flag so session selection can prioritize annotated cards.
+- Persisted grammar annotations for the first 50 local cards sample:
+  - `37` annotated cards
+  - `45` total annotations
+- Enabled local backend debug mode through `backend/.env` using `GRAMMAR_DEBUG_ENABLED=true`.

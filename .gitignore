@@ -112,3 +112,4 @@ frontend/coverage/
 # Gemini Context
 .gemini/
 .idea/
+docs/
