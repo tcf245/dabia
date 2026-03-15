@@ -6,6 +6,9 @@ from .session import (
     SessionProgress,
     NextCardResponse,
 )
+from .grammar import GrammarPointSummary, CardGrammarAnnotation, CardGrammarResponse
+from .stats import DailyStats
+from .deck import Deck, DeckSettings
 
 __all__ = [
     "PreviousAnswer",
@@ -14,8 +17,10 @@ __all__ = [
     "Card",
     "SessionProgress",
     "NextCardResponse",
+    "GrammarPointSummary",
+    "CardGrammarAnnotation",
+    "CardGrammarResponse",
+    "DailyStats",
     "Deck",
     "DeckSettings",
 ]
-from .stats import DailyStats
-from .deck import Deck, DeckSettings

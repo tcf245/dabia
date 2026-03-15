@@ -29,3 +29,9 @@ class Card(Base):
     deck = relationship("Deck", back_populates="cards")
     review_logs = relationship("ReviewLog", back_populates="card")
     users = relationship("UserCardAssociation", back_populates="card")
+    grammar_annotations = relationship(
+        "CardGrammarAnnotation",
+        back_populates="card",
+        cascade="all, delete-orphan",
+        order_by="CardGrammarAnnotation.display_order",
+    )

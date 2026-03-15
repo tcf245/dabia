@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import uuid
 from typing import Any
 
@@ -48,3 +48,32 @@ def get_card(
         sentence_audio_url=storage_provider.get_url(card.sentence_audio_url),
         proficiency_level=proficiency_level,
     )
+
+
+@router.get("/{card_id}/grammar", response_model=schemas.CardGrammarResponse)
+def get_card_grammar(
+    card_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+) -> Any:
+    """
+    Get grammar annotations for a specific card.
+    """
+    _ = current_user_id
+
+    card = (
+        db.query(models.Card)
+        .options(
+            joinedload(models.Card.grammar_annotations).joinedload(models.CardGrammarAnnotation.grammar_point)
+        )
+        .filter(models.Card.id == card_id)
+        .first()
+    )
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    annotations = [
+        schemas.CardGrammarAnnotation.model_validate(annotation)
+        for annotation in sorted(card.grammar_annotations, key=lambda item: item.display_order)
+    ]
+    return schemas.CardGrammarResponse(card_id=card.id, annotations=annotations)

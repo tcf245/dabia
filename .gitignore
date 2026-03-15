@@ -111,4 +111,4 @@ frontend/coverage/
 
 # Gemini Context
 .gemini/
-docs/dev_logs/
+.idea/

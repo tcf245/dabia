@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import Flashcard from './Flashcard';
-import type { Card } from '../services/api';
+import { getCardGrammar, type Card } from '../services/api';
 
 // Mock framer-motion to be synchronous and non-animated for tests
 vi.mock('framer-motion', () => ({
@@ -10,6 +10,14 @@ vi.mock('framer-motion', () => ({
     div: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
   },
 }));
+
+vi.mock('../services/api', async () => {
+  const actual = await vi.importActual<typeof import('../services/api')>('../services/api');
+  return {
+    ...actual,
+    getCardGrammar: vi.fn(),
+  };
+});
 
 
 describe('Flashcard component', () => {
@@ -31,6 +39,7 @@ describe('Flashcard component', () => {
 
   beforeEach(() => {
     mockOnSubmit.mockClear();
+    vi.mocked(getCardGrammar).mockReset();
     if (globalThis.playMock) {
       globalThis.playMock.mockClear();
     }
@@ -313,5 +322,65 @@ describe('Flashcard component', () => {
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
     expect(globalThis.pauseMock).toHaveBeenCalled();
+  });
+
+  test('loads and renders grammar annotations on demand', async () => {
+    vi.mocked(getCardGrammar).mockResolvedValueOnce({
+      card_id: '1',
+      annotations: [
+        {
+          id: 'a1',
+          surface_text: 'を',
+          start_index: 5,
+          end_index: 6,
+          role_label: 'object-marker',
+          explanation_for_sentence: 'Marks the direct object.',
+          display_order: 1,
+          confidence: 0.99,
+          source: 'manual',
+          grammar_point: {
+            id: 'g1',
+            slug: 'particle-o',
+            title: 'Particle を',
+            short_meaning: 'Marks the direct object.',
+            category: 'particle',
+            jlpt_level: 'N5',
+            formation: 'noun + を + verb',
+            notes: 'Used with transitive verbs.',
+          },
+        },
+      ],
+    });
+
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /show grammar/i }));
+
+    await waitFor(() => {
+      expect(getCardGrammar).toHaveBeenCalledWith('1');
+    });
+
+    expect(await screen.findByText('Particle を')).toBeInTheDocument();
+    expect(screen.getAllByText('Marks the direct object.')[0]).toBeInTheDocument();
+    expect(screen.getByText('object-marker')).toBeInTheDocument();
+  });
+
+  test('reuses loaded grammar data when toggling panel', async () => {
+    vi.mocked(getCardGrammar).mockResolvedValueOnce({
+      card_id: '1',
+      annotations: [],
+    });
+
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /show grammar/i }));
+    await waitFor(() => {
+      expect(getCardGrammar).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /hide grammar/i }));
+    fireEvent.click(screen.getByRole('button', { name: /show grammar/i }));
+
+    expect(getCardGrammar).toHaveBeenCalledTimes(1);
   });
 });
