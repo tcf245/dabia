@@ -383,4 +383,32 @@ describe('Flashcard component', () => {
 
     expect(getCardGrammar).toHaveBeenCalledTimes(1);
   });
+
+  test('shows grammar fallback text when sentence is missing', async () => {
+    vi.mocked(getCardGrammar).mockResolvedValueOnce({
+      card_id: '1',
+      annotations: [],
+    });
+
+    const cardWithoutSentence = { ...mockCard, sentence: null };
+    render(<Flashcard card={cardWithoutSentence} onSubmit={mockOnSubmit} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /show grammar/i }));
+
+    await waitFor(() => {
+      expect(getCardGrammar).toHaveBeenCalledWith('1');
+    });
+
+    expect(screen.getByText(cardWithoutSentence.sentence_template)).toBeInTheDocument();
+  });
+
+  test('shows grammar error state when loading fails', async () => {
+    vi.mocked(getCardGrammar).mockRejectedValueOnce(new Error('grammar failed'));
+
+    render(<Flashcard card={mockCard} onSubmit={mockOnSubmit} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /show grammar/i }));
+
+    expect(await screen.findByText('Could not load grammar details right now.')).toBeInTheDocument();
+  });
 });

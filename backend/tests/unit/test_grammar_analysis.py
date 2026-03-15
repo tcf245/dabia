@@ -28,3 +28,7 @@ def test_analyze_sentence_detects_plain_negative():
 
 def test_analyze_sentence_returns_empty_for_missing_sentence():
     assert analyze_sentence(None) == []
+
+
+def test_analyze_sentence_returns_empty_for_sentence_without_supported_patterns():
+    assert analyze_sentence("静かな森") == []

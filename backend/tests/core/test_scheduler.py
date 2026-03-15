@@ -4,7 +4,10 @@ from sqlalchemy.orm import Session
 from dabia.core.scheduler import Scheduler
 from dabia.models.user_card_association import UserCardAssociation
 from dabia.models.card import Card
+from dabia.models.card_grammar_annotation import CardGrammarAnnotation
+from dabia.models.grammar_point import GrammarPoint
 from dabia.models.user import User
+from dabia.core.config import settings
 import uuid
 
 @pytest.fixture
@@ -169,3 +172,70 @@ def test_get_next_card_skips_mastered_overdue(scheduler, db_session, test_user, 
     assert next_card.id == new_card.id
     assert user_assoc is None
     assert meta["type"] == "new"
+
+
+def test_normalize_deck_ids_accepts_uuid_objects_and_skips_invalid_values(scheduler):
+    valid_uuid = uuid.uuid4()
+
+    deck_ids = scheduler._normalize_deck_ids([str(valid_uuid), valid_uuid, "not-a-uuid"])
+
+    assert deck_ids == [valid_uuid, valid_uuid]
+
+
+def test_get_grammar_debug_card_returns_missing_when_selected_card_disappears(
+    scheduler, db_session, test_user, test_deck
+):
+    card = Card(
+        id=uuid.uuid4(),
+        deck_id=test_deck.id,
+        sentence_template="Debug sentence",
+        target_word="debug",
+        reading="debug",
+        sentence_translation="Debug translation",
+    )
+    db_session.add(card)
+    db_session.commit()
+
+    grammar_point = GrammarPoint(
+        id=uuid.uuid4(),
+        slug="particle-o",
+        title="Particle を",
+        short_meaning="Marks the direct object.",
+        category="particle",
+        jlpt_level="N5",
+        formation="noun + を + verb",
+        notes="Used with transitive verbs.",
+    )
+    db_session.add(grammar_point)
+    db_session.flush()
+    db_session.add(
+        CardGrammarAnnotation(
+            id=uuid.uuid4(),
+            card_id=card.id,
+            grammar_point_id=grammar_point.id,
+            surface_text="を",
+            start_index=0,
+            end_index=1,
+            role_label="object-marker",
+            explanation_for_sentence="を marks the direct object in this card.",
+            display_order=1,
+            confidence=0.9,
+            source="auto-rule-v1",
+        )
+    )
+    db_session.commit()
+
+    card_id = card.id
+    db_session.delete(card)
+    db_session.commit()
+
+    original_source = settings.GRAMMAR_DEBUG_SOURCE
+    settings.GRAMMAR_DEBUG_SOURCE = "auto-rule-v1"
+    try:
+        next_card, assoc, meta = scheduler._get_grammar_debug_card(test_user.id, [])
+    finally:
+        settings.GRAMMAR_DEBUG_SOURCE = original_source
+
+    assert next_card is None
+    assert assoc is None
+    assert meta["type"] == "grammar-debug-empty"
