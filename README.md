@@ -36,7 +36,7 @@ If you are using an AI agent (like Cursor, Claude, or ChatGPT) to work on this p
    ```
 
 ### Credits & Gratitude
-Special thanks to the [anki-jlpt-decks](https://github.com/5mdld/anki-jlpt-decks) project by **egg rolls** for the core card data.
+Special thanks to the [anki-jlpt-decks](https://github.com/5mdld/anki-jlpt-decks) project by **egg rolls** for the core card data (licensed under CC BY-NC 4.0).
 
 ---
 © 2026 Dabia Project. Built with care for learners everywhere.
