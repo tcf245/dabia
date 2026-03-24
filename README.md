@@ -1,82 +1,42 @@
 # Dabia (ダビア)
 
-![Dabia Banner](https://raw.githubusercontent.com/yetone/dabia/main/docs/assets/banner.png)
+Dabia is a minimalist Japanese vocabulary trainer built to help learners build their vocabulary at a steady, rhythmic pace.
 
-> **A Father's Gift, A Learner's Journey.**
-> "Dabia" is not in any dictionary. It's a lovely word my three-year-old daughter invented—for me, it represents the pure joy of discovery and expression.
+### The Origin
+The name "Dabia" was invented by my three-year-old daughter. To me, it represents the pure, unburdened joy of discovery—the same feeling I want to bring back to the process of learning a new language.
 
----
+### How it Works
+The core of Dabia is a 5-stage Spaced Repetition System (SRS) designed for incremental growth. Instead of a simple "pass/fail" approach, Dabia models your memory across five proficiency levels:
 
-## ✨ Why I Built Dabia: A Story That Started with a Word
+1. **New** → 2. **Hard** → 3. **Learning** → 4. **Easy** → 5. **Mastered**
 
-Dabia was born from my own family's journey. When I moved with my family from China to Japan, I watched my young daughter navigate a new world with curiosity and ease. She didn't "study" the language; she acquired it organically, through play and discovery.
+The system manages your study sessions by mixing short-term reinforcement (intervals of seconds and minutes) with long-term retention (intervals of days and weeks), ensuring that your vocabulary grows naturally and stays permanent.
 
-I chose the name **"Dabia"** to capture that sense of innocence. I didn't want to build just another piece of software; I wanted to create a tool forged from paternal love—something that could transform the heavy burden of language learning into the lighthearted joy of discovery. I believe learning shouldn't be a grind; it should feel like exploring the world through a child's eyes.
+### Tech Stack
+- **Backend**: FastAPI (Python 3.12), PostgreSQL, SQLAlchemy (Async).
+- **Frontend**: React 19, Vite, Tailwind CSS v4, TypeScript.
 
----
+### Documentation for AI
+If you are using an AI agent (like Cursor, Claude, or ChatGPT) to work on this project, comprehensive architectural details, coding rules, and state maps are maintained in the `.ai/` directory.
 
-## 🎨 My Vision: Warm Minimalist & Intellectual
+### Quick Start
+1. **Backend**:
+   ```bash
+   cd backend
+   docker-compose up -d  # Start PostgreSQL
+   uv sync               # Install dependencies
+   uv run alembic upgrade head
+   uv run uvicorn dabia.main:app --reload
+   ```
+2. **Frontend**:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-I designed Dabia to be more than just an app; I wanted it to feel like a piece of premium stationery. The aesthetic is inspired by clean editorial design and the focused energy of a physical study space.
-
-- **Terracotta & Canvas Palette**: I moved away from cold, generic UI colors to a signature **Terracotta (#D97757)** brand color set against a warm **Canvas (#F9F9F8)** background. This "paper-like" feel reduces eye strain and creates a grounded, calming atmosphere for deep focus.
-- **Pure Focus**: I've kept the interface as clean as *Notion* and as efficient as *Lingvist*. By using **Noto Serif JP** for Japanese text, I aim to give the language the elegance and respect it deserves, stripping away the digital noise.
-- **Your Reliable Companion**: I built this to be there for you whenever you're ready—whether it's during your morning commute or a quiet study session late at night.
-
----
-
-## 🧠 The Memory Engine: My 5-Stage Proficiency SRS
-
-At the heart of Dabia is a rigorous **Spaced Repetition System (SRS)** I developed to respect how our brains actually work. I don't just want to track if you're "right" or "wrong"; I want to model your memory's journey across five distinct stages:
-
-1.  **New**: Our first connection with a new word.
-2.  **Hard**: Your brain is working hard to build neural pathways; I'll show you this card more frequently for immediate reinforcement.
-3.  **Learning**: You're starting to internalize the word; short-term consolidation is happening.
-4.  **Easy**: Long-term retention is established; I'll extend the review intervals to weeks so you can focus on new challenges.
-5.  **Mastered**: The word has become part of your subconscious—true language intuition.
-
-My scheduler acts as your personal coach, delivering the right card at the precise moment before you forget. I want to ensure every minute you spend is a permanent investment in your fluency.
-
----
-
-## 📺 Preview
-
-### Core Learning Flow
-![Learning Session Preview](https://raw.githubusercontent.com/yetone/dabia/main/docs/assets/demo_session.gif)
-
-### Proficiency Dashboard
-![Proficiency Dashboard](https://raw.githubusercontent.com/yetone/dabia/main/docs/assets/proficiency_ui.png)
+### Credits & Gratitude
+Special thanks to the [anki-jlpt-decks](https://github.com/5mdld/anki-jlpt-decks) project by **egg rolls** for the core card data (licensed under CC BY-NC 4.0).
 
 ---
-
-## 🚀 Quick Start
-
-You can get your local learning environment up and running in just a few minutes.
-
-### Backend (FastAPI + PostgreSQL)
-```bash
-cd backend
-docker-compose up -d  # Start database
-uv sync              # Install dependencies
-uv run alembic upgrade head  # Apply migrations
-uv run uvicorn dabia.main:app --reload
-```
-
-### Frontend (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Visit `http://localhost:5173` and start your journey with me.
-
----
-
-## 💖 Credits
-
-I am grateful to the [anki-jlpt-decks](https://github.com/5mdld/anki-jlpt-decks) project by **egg rolls** for the core card data (licensed under CC BY-NC 4.0).
-
----
-
-© 2026 Dabia Project. Built with code, defined by heart.
+© 2026 Dabia Project. Built with care for learners everywhere.
