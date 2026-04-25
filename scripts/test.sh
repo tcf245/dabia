@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Run all tests and report only failures. Exit 0 if all pass, 1 if any fail.
-set -euo pipefail
+set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FAILED=0
 
 # ── Frontend (vitest) ─────────────────────────────────────────────────────────
 echo "▶ Frontend tests..."
-FE_OUT=$(cd "$ROOT/frontend" && npm test -- --run --reporter=verbose 2>&1)
+FE_OUT=$(cd "$ROOT/frontend" && npm test -- --run --reporter=verbose 2>&1) || true
 # Only check the vitest summary lines for actual failures (ignore console.error in tests)
 FE_FAIL=$(echo "$FE_OUT" | grep -E "^ Test Files .* failed|^ +Tests .* failed" || true)
 if [ -n "$FE_FAIL" ]; then
@@ -21,7 +21,7 @@ fi
 
 # ── Backend (pytest) ──────────────────────────────────────────────────────────
 echo "▶ Backend tests..."
-BE_OUT=$(cd "$ROOT" && python -m pytest --tb=line -q 2>&1)
+BE_OUT=$(cd "$ROOT" && python -m pytest --tb=line -q 2>&1) || true
 BE_FAIL=$(echo "$BE_OUT" | grep -E "^FAILED|ERROR " || true)
 BE_SUMMARY=$(echo "$BE_OUT" | tail -3)
 if [ -n "$BE_FAIL" ]; then
