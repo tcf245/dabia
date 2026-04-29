@@ -33,7 +33,15 @@ The core of Dabia is the Spaced Repetition System.
 - `backend/.env`: `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `SECRET_KEY`
 - `frontend/.env`: `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`
 
-## 6. Deployment
+## 6. API Design
+See `.ai/api-design.md` for full endpoint specifications and request/response models.
+
+## 7. Architecture Decisions
+See `.ai/decisions/` for the rationale behind key design choices:
+- `001-srs-dual-state-machine.md` — why SRS logic is mirrored in frontend
+- `002-alembic-for-ddl.md` — why all DDL goes through Alembic
+
+## 8. Deployment
 - **Frontend**: Static build to Vercel/Netlify.
 - **Backend**: Docker container.
 - **Database**: Managed PostgreSQL.
