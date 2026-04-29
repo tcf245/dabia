@@ -84,6 +84,12 @@ describe('api service', () => {
         expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123');
     });
 
+    it('getCardGrammar calls correct endpoint', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { card_id: '123', annotations: [] } });
+        await apiService.getCardGrammar('123');
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123/grammar');
+    });
+
     describe('interceptors', () => {
         let requestInterceptor: any;
         let responseInterceptor: any;

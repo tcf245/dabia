@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev_secret_key" # Default for dev, override in prod
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days (10080 minutes)
+    GRAMMAR_DEBUG_ENABLED: bool = False
+    GRAMMAR_DEBUG_SOURCE: str = "auto-rule-v1"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

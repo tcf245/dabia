@@ -1,39 +1,88 @@
 # Dabia Architecture & Global Context
 
 ## 1. Tech Stack
-- **Backend**: Python 3.12, FastAPI, SQLAlchemy (Async), PostgreSQL, Alembic, uv.
-- **Frontend**: React 19, Vite, Tailwind CSS v4, TypeScript.
+- Backend: Python 3.12, FastAPI, SQLAlchemy, PostgreSQL, Alembic, uv
+- Frontend: React 19, Vite, Tailwind CSS v4, TypeScript
 
 ## 2. Database Policies
-- **Alembic**: Alembic is used to manage all database schema (DDL) changes and seed data updates.
-- **NO MODIFICATION of existing migrations**: Existing migration files should NEVER be modified; new changes must be added as new migration files, considering the current database state.
-- **Seed Data Privacy**: When writing seed data, privacy must be strictly protected. Placeholder or anonymous data like `00000000-0000-0000-0000-000000000000` is acceptable, but no real, sensitive, or personally identifiable information should ever be included in the codebase.
+- Alembic is the source of truth for schema changes and seed updates.
+- Never modify existing migrations; add new migrations instead.
+- Do not commit real or sensitive seed data.
 
-## 3. Domain Model (SRS Engine)
-The core of Dabia is the Spaced Repetition System.
-- **Proficiency Levels**: 1 (New) -> 2 (Hard) -> 3 (Learning) -> 4 (Easy) -> 5 (Mastered).
-- **Scheduling**: 
-    - Short-term: Seconds/Minutes (for levels 1-3).
-    - Long-term: Days/Weeks (for levels 4-5).
-- **Session Logic**: The `/api/v1/session/next-card` endpoint drives the entire flow. It accepts the previous card's result and returns the next card.
-- **State Machine Synchronization**: 
-    > [!IMPORTANT]
-    > The proficiency state machine logic is **mirrored** in both layers:
-    > 1. **Backend** (`backend/dabia/core/scheduler.py`): The source of truth for persistent data.
-    > 2. **Frontend** (`frontend/src/utils/srs.ts`): Used for instant UI feedback and session history display.
-    > **Any change to the SRS logic MUST be applied to both files simultaneously.**
+## 3. Core Learning Model
+- `Card` remains the primary learning unit used by session scheduling and SRS.
+- `/api/v1/session/next-card` is the source of truth for review sessions.
+- The SRS state machine is mirrored in:
+  - `backend/dabia/core/scheduler.py`
+  - `frontend/src/utils/srs.ts`
+- Any SRS behavior change must update both layers together.
 
 ## 4. Key Database Models
-- **User**: ID (UUID), Email, Google_ID, Review Logs (One-to-Many).
-- **Card**: Static content (Question, Answer, Audio).
-- **UserCardAssociation**: Tracks the proficiency level of a specific card for a specific user.
-- **ReviewLog**: Immutable history of every review attempt (timestamp, duration, rating).
+- `User`: account, auth, and review ownership
+- `Card`: sentence-based learning unit
+- `UserCardAssociation`: per-user SRS state for each card
+- `ReviewLog`: immutable review history
 
-## 5. Environment Variables
+## 5. Grammar Skeleton Initiative
+- Goal: help learners understand how Japanese sentences are assembled, including particles, sentence roles, and inflection.
+- Current phase scope:
+  - operate on existing `Card.sentence` data
+  - provide explanation and visualization only
+  - do not affect question generation or SRS scoring
+- Data model direction:
+  - one `Card` can have many grammar annotations
+  - annotations point to reusable grammar points
+- Current entities:
+  - `GrammarPoint`: canonical grammar concept
+  - `CardGrammarAnnotation`: card-specific mapping, explanation, and evidence span
+
+## 6. Grammar Delivery Strategy
+- Phase 1:
+  - grammar persistence and read APIs
+  - batch generation for existing card sentences
+  - optional flashcard grammar panel
+- Out of scope for Phase 1:
+  - grammar-only exercise generation
+  - SRS integration
+  - full external grammar crawling as production source of truth
+
+## 7. Batch Annotation Pipeline Pattern
+- Treat grammar analysis as a batch loop:
+  1. select a bounded card slice
+  2. run analysis
+  3. apply deterministic mapping rules
+  4. persist candidate annotations with provenance
+  5. evaluate quality on a reviewed sample
+  6. refine rules and rerun incrementally
+- The pipeline should be idempotent or safe to upsert.
+- Keep `source` and `confidence` fields for later review.
+
+## 8. Verification Strategy
+- Schema changes: migration verification and model assertions
+- API changes: backend integration tests
+- UI changes: frontend component/page tests
+- Batch pipeline changes:
+  - fixture-based rule tests
+  - sampled quality checks
+  - dry-run support before larger writes
+
+## 9. Local Data Source
+- A local PostgreSQL database is available for real-card analysis and validation.
+- Verified local dataset size on 2026-03-15: `10157` cards.
+- Standard local SQL client path: `/opt/homebrew/opt/libpq/bin/psql`
+- Use this dataset for:
+  - sampling real cards
+  - dry-run annotation checks
+  - post-migration validation
+
+## 10. Environment Variables
 - `backend/.env`: `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `SECRET_KEY`
 - `frontend/.env`: `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`
+- Grammar debug flags:
+  - `GRAMMAR_DEBUG_ENABLED`
+  - `GRAMMAR_DEBUG_SOURCE`
 
-## 6. Deployment
-- **Frontend**: Static build to Vercel/Netlify.
-- **Backend**: Docker container.
-- **Database**: Managed PostgreSQL.
+## 11. Deployment
+- Frontend: static build to Vercel/Netlify
+- Backend: Docker container
+- Database: managed PostgreSQL

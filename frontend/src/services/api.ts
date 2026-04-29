@@ -76,6 +76,35 @@ export interface Card {
   proficiency_level: number;
 }
 
+export interface GrammarPoint {
+  id: string;
+  slug: string;
+  title: string;
+  short_meaning: string;
+  category: string;
+  jlpt_level: string | null;
+  formation: string | null;
+  notes: string | null;
+}
+
+export interface CardGrammarAnnotation {
+  id: string;
+  surface_text: string;
+  start_index: number | null;
+  end_index: number | null;
+  role_label: string | null;
+  explanation_for_sentence: string;
+  display_order: number;
+  confidence: number | null;
+  source: string;
+  grammar_point: GrammarPoint;
+}
+
+export interface CardGrammarResponse {
+  card_id: string;
+  annotations: CardGrammarAnnotation[];
+}
+
 export interface SessionProgress {
   completed_today: number;
   goal_today: number;
@@ -132,6 +161,11 @@ export const getNextCard = async (answer?: PreviousAnswer): Promise<NextCardResp
 
 export const getCard = async (cardId: string): Promise<Card> => {
   const response = await api.get<Card>(`/api/v1/cards/${cardId}`);
+  return response.data;
+};
+
+export const getCardGrammar = async (cardId: string): Promise<CardGrammarResponse> => {
+  const response = await api.get<CardGrammarResponse>(`/api/v1/cards/${cardId}/grammar`);
   return response.data;
 };
 

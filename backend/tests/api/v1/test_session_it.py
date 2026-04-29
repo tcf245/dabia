@@ -9,6 +9,7 @@ from dabia import models
 from dabia.database import get_db
 from dabia.database import get_db
 from dabia.api.deps import get_current_user_id
+from dabia.core.config import settings
 
 client = TestClient(app)
 
@@ -116,3 +117,58 @@ def test_answer_incorrectly_updates_srs_data(db_session: Session, override_get_d
     assert assoc.lapses_count == 1
     # Interval ~ 90s (0.001 days)
     assert assoc.interval < 0.01
+
+
+def test_get_next_card_prioritizes_annotated_cards_when_grammar_debug_enabled(
+    db_session: Session, override_get_db, test_user
+):
+    original_enabled = settings.GRAMMAR_DEBUG_ENABLED
+    original_source = settings.GRAMMAR_DEBUG_SOURCE
+    settings.GRAMMAR_DEBUG_ENABLED = True
+    settings.GRAMMAR_DEBUG_SOURCE = "auto-rule-v1"
+
+    try:
+        deck = models.Deck(id=uuid.uuid4(), name="Grammar Debug Deck")
+        db_session.add(deck)
+        db_session.commit()
+
+        plain_card = create_card(db_session, deck)
+        annotated_card = create_card(db_session, deck)
+
+        grammar_point = models.GrammarPoint(
+            id=uuid.uuid4(),
+            slug="particle-o",
+            title="Particle を",
+            short_meaning="Marks the direct object.",
+            category="particle",
+            jlpt_level="N5",
+            formation="noun + を + verb",
+            notes="Used with transitive verbs.",
+        )
+        db_session.add(grammar_point)
+        db_session.flush()
+        db_session.add(
+            models.CardGrammarAnnotation(
+                id=uuid.uuid4(),
+                card_id=annotated_card.id,
+                grammar_point_id=grammar_point.id,
+                surface_text="を",
+                start_index=2,
+                end_index=3,
+                role_label="object-marker",
+                explanation_for_sentence="を marks the direct object in this card.",
+                display_order=1,
+                confidence=0.9,
+                source="auto-rule-v1",
+            )
+        )
+        db_session.commit()
+
+        response = client.post("/api/v1/session/next-card")
+
+        assert response.status_code == 200
+        assert response.json()["card"]["card_id"] == str(annotated_card.id)
+        assert response.json()["card"]["card_id"] != str(plain_card.id)
+    finally:
+        settings.GRAMMAR_DEBUG_ENABLED = original_enabled
+        settings.GRAMMAR_DEBUG_SOURCE = original_source

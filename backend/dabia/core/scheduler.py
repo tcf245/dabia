@@ -8,10 +8,58 @@ from typing import Optional, Tuple
 from dabia.models.user_card_association import UserCardAssociation
 from dabia.models.card import Card
 from dabia.models.review_log import ReviewLog
+from dabia.models.card_grammar_annotation import CardGrammarAnnotation
+from dabia.core.config import settings
 
 class Scheduler:
     def __init__(self, db: Session):
         self.db = db
+
+    def _normalize_deck_ids(self, active_deck_ids: list) -> list[uuid.UUID]:
+        deck_ids = []
+        for uid in active_deck_ids:
+            try:
+                if isinstance(uid, str):
+                    deck_ids.append(uuid.UUID(uid))
+                else:
+                    deck_ids.append(uid)
+            except ValueError:
+                continue
+        return deck_ids
+
+    def _get_grammar_debug_card(self, user_id: str, active_deck_ids: list) -> Tuple[Optional[Card], Optional[UserCardAssociation], dict]:
+        from sqlalchemy.orm import joinedload
+
+        debug_card_id = (
+            self.db.query(Card.id)
+            .join(CardGrammarAnnotation, CardGrammarAnnotation.card_id == Card.id)
+            .outerjoin(
+                UserCardAssociation,
+                and_(
+                    Card.id == UserCardAssociation.card_id,
+                    UserCardAssociation.user_id == user_id,
+                ),
+            )
+            .filter(UserCardAssociation.card_id == None)
+            .filter(CardGrammarAnnotation.source == settings.GRAMMAR_DEBUG_SOURCE)
+        )
+
+        if active_deck_ids:
+            debug_card_id = debug_card_id.filter(Card.deck_id.in_(self._normalize_deck_ids(active_deck_ids)))
+
+        debug_card_id = debug_card_id.order_by(func.random()).limit(1).scalar()
+        if not debug_card_id:
+            return None, None, {"type": "grammar-debug-empty"}
+
+        debug_card = (
+            self.db.query(Card)
+            .options(joinedload(Card.deck))
+            .filter(Card.id == debug_card_id)
+            .first()
+        )
+        if debug_card:
+            return debug_card, None, {"type": "grammar-debug"}
+        return None, None, {"type": "grammar-debug-missing"}
 
     def get_next_card(self, user_id: str) -> Tuple[Optional[Card], Optional[UserCardAssociation], dict]:
         """
@@ -37,8 +85,14 @@ class Scheduler:
         from dabia.models.user import User
         user = self.db.query(User).filter(User.id == user_id).first()
         active_deck_ids = user.active_deck_ids if user else []
-        # Ensure UUIDs are strings for SQL comparison if needed, or rely on SQLAlchemy
-        # active_deck_ids is JSON list of strings/UUIDs.
+        
+        if settings.GRAMMAR_DEBUG_ENABLED:
+            debug_card, debug_assoc, debug_meta = self._get_grammar_debug_card(user_id, active_deck_ids)
+            if debug_card:
+                logger.info(
+                    f"SRS Decision [User: {user_id}]: Selected GRAMMAR DEBUG card {debug_card.id}."
+                )
+                return debug_card, debug_assoc, debug_meta
         
         # 1. Check for overdue reviews
         # We want to prioritize cards that are most overdue, but also mix in some variety.
@@ -60,17 +114,7 @@ class Scheduler:
         )
         
         if active_deck_ids:
-            # Safely convert to UUID objects for SQL comparison
-            deck_ids = []
-            for uid in active_deck_ids:
-                try:
-                    if isinstance(uid, str):
-                        deck_ids.append(uuid.UUID(uid))
-                    else:
-                        deck_ids.append(uid)
-                except ValueError:
-                    continue
-            
+            deck_ids = self._normalize_deck_ids(active_deck_ids)
             overdue_query = overdue_query.filter(Card.deck_id.in_(deck_ids))
 
         overdue_card_assoc = overdue_query.order_by(UserCardAssociation.next_review_at.asc()).first()
@@ -114,15 +158,7 @@ class Scheduler:
         )
         
         if active_deck_ids:
-            deck_ids = []
-            for uid in active_deck_ids:
-                try:
-                    if isinstance(uid, str):
-                        deck_ids.append(uuid.UUID(uid))
-                    else:
-                        deck_ids.append(uid)
-                except ValueError:
-                    continue
+            deck_ids = self._normalize_deck_ids(active_deck_ids)
             new_card_query = new_card_query.filter(Card.deck_id.in_(deck_ids))
             
         new_card = new_card_query.order_by(func.random()).limit(1).first()

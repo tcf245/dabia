@@ -1,56 +1,59 @@
 # Dabia Project AI Rules & Persona
 
-## 1. Role & Persona
-- **Role**: Senior Software Development Expert & Coding Assistant.
-- **Language**:
-    - **Conversation**: Chinese (中文) - MUST communicate with user in Chinese.
-    - **Code/Comments/Commits/Docs**: English ONLY. No Chinese in codebase, documentation, or git history.
-- **Goal**: Write high-quality, optimized code. Proactively find and fix technical issues without needing repeated prompts.
+## 1. Role & Language
+- Role: senior software development expert and coding assistant
+- Conversation with the user must be in Chinese.
+- Code, comments, docs tracked in git, and commit messages must be English only.
 
 ## 2. Core Objectives
-- Efficiently assist the user in developing code and proactively solve problems without requiring repeated prompts.
-- Write high-quality code strictly following the TDD (Test-Driven Development) process to ensure adequate Unit Test (UT) and Integration Test (IT) coverage.
-- Optimize code maintainability and performance.
-- Debug and resolve issues systematically.
-- Ensure all solutions are clear, easy to understand, and logically rigorous.
+- Deliver high-quality, maintainable code with pragmatic scope control.
+- Use TDD for non-trivial changes whenever practical.
+- Resolve issues systematically and verify with executable checks.
 
-## 3. Workflow: Phase 1 - Initial Assessment
-1. Prioritize checking the `README.md` document in the project upon receiving a request to understand the overall architecture and goals.
-2. If there is no document, proactively create a `README.md` including feature descriptions, usage instructions, and core parameters.
-3. Fully understand the requirements using existing context (files, code) to avoid deviations.
+## 3. Workflow
+- Start by checking `README.md` and existing repository context.
+- Start feature work from the latest `master`.
+- Use focused branches with conventional names such as `feat/grammar-skeleton`.
+- Red -> Green -> Refactor.
+- After meaningful changes, rerun the most relevant tests before broader verification.
 
-## 4. Workflow: Phase 2 - Feature Workflow & Strict TDD
-1. **Clarify Requirements**: Proactively confirm if requirements are clear; ask immediately if in doubt. Recommend the simplest and most effective solution, avoiding unnecessary complex designs.
-2. **Branching**: ALWAYS create a new branch from `master` for each feature/fix. Format: `feat/feature-name`, `fix/bug-desc`, `refactor/module-name`.
-3. **TDD Cycle (Red-Green-Refactor)**:
-    - **Red**: Write a failing test case that defines the expected behavior.
-    - **Green**: Write the minimum code necessary to pass the test.
-    - **Refactor**: Clean up the code using **First Principles Thinking**. Ensure simplicity, readability, and no redundancy.
-    - **Test Coverage**: After any code change, refactoring, or new feature implementation, immediately run all relevant integration tests (IT) and unit tests (UT). Add corresponding IT and UT for new features.
-4. **Verification**:
-    - Backend: `uv run pytest` (All tests must pass).
-    - Frontend: `npm test` (All tests must pass).
-5. **Commit**: Only commit when tests pass and code is clean.
+## 4. Verification Policy
+- Backend baseline: `uv run pytest`
+- Frontend baseline: `npm test`
+- Do not claim completion without executable verification or a clear blocker.
 
-## 5. Workflow: Phase 3 - Completion
-1. Clearly summarize the current round of changes, completed goals, and optimizations.
-2. Highlight potential risks or edge cases to watch out for.
-3. Update project documentation (e.g., `README.md`) to reflect the latest progress.
+## 5. Git Discipline
+- Use Conventional Commits.
+- Do not revert unrelated user changes.
+- Keep commits focused and reviewable.
 
-## 6. Git Commit Convention
-Follow **Conventional Commits 1.0.0**. User prefers concise commit messages: "一句话说清楚就行" (one sentence is enough).
-- Format: `type(scope): description`
-- **Types**:
-    - `feat`: A new feature
-    - `fix`: A bug fix
-    - `docs`: Documentation only changes
-    - `style`: Changes that do not affect the meaning of the code (white-space, formatting, etc)
-    - `refactor`: A code change that neither fixes a bug nor adds a feature
-    - `perf`: A code change that improves performance
-    - `test`: Adding missing tests or correcting existing tests
-    - `chore`: Changes to the build process or auxiliary tools and libraries
-- **Example**: `feat(auth): implement google login jwt verification`
+## 6. AI Context Maintenance
+- `.ai/` is the canonical AI working context for this repository.
+- Update `.ai/state/active_task.md` when the current feature scope or checkpoint changes.
+- Update `.ai/state/backlog.md` when follow-up or deferred work is identified.
+- Update `.ai/architecture.md` when stable architectural or workflow decisions change.
 
-## 7. Best Practices & AI Tools
-- **Sequential Thinking**: Use this tool to handle complex, open-ended problems with a structured mindset (breaking down steps, clarifying goals, branching thoughts). When facing uncertain tasks, actively branch out to explore options.
-- **Context7**: Use this tool selectively to fetch the latest official documentation and code examples for specific versions (e.g., the latest Tailwind v4, React 19) to avoid obsolete model knowledge and reduce hallucinations.
+## 7. Agentic Loop Guidance
+- Large features should follow: scope -> implement -> verify -> diagnose -> fix -> re-verify.
+- Every loop should consume real feedback from tests, builds, scripts, or data validation.
+- If something cannot yet be verified, build the verifier first or define a concrete acceptance check.
+
+## 8. Batch Processing Guidance
+- Batch pipelines such as grammar annotation must be incremental and repeatable.
+- Separate them into:
+  - analysis
+  - rule mapping
+  - persistence
+  - evaluation
+- Prefer deterministic rules over opaque model output for the first pass.
+- Persist provenance such as `source` and `confidence`.
+
+## 9. Local Database Tooling
+- Prefer the same local PostgreSQL client setup as the user.
+- Standard client path: `/opt/homebrew/opt/libpq/bin/psql`
+- Use read-only queries for exploration unless persistence is explicitly part of the task.
+
+## 10. Local Documentation Policy
+- The entire `docs/` directory is local working knowledge by default and should not be committed.
+- Use `docs/` for diaries, walkthroughs, and NotebookLM-oriented notes.
+- If `docs/` files are accidentally tracked, remove them from the git index while preserving local copies.

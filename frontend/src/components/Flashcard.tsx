@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Volume2, MessageCircle } from 'lucide-react';
+import { X, Volume2, MessageCircle, Braces } from 'lucide-react';
 import ProficiencyIndicator from './ProficiencyIndicator';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
 import { useFlashcardLogic } from '../hooks/useFlashcardLogic';
 import type { UseFlashcardLogicProps } from '../hooks/useFlashcardLogic';
+import { getCardGrammar, type CardGrammarAnnotation } from '../services/api';
 
 // Re-export or use the type from the hook to ensure consistency
 type FlashcardProps = UseFlashcardLogicProps;
@@ -15,6 +16,10 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
   const onContinue = props.mode === 'review' ? props.onContinue : undefined;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGrammarOpen, setIsGrammarOpen] = useState(false);
+  const [grammarAnnotations, setGrammarAnnotations] = useState<CardGrammarAnnotation[] | null>(null);
+  const [isGrammarLoading, setIsGrammarLoading] = useState(false);
+  const [grammarError, setGrammarError] = useState<string | null>(null);
 
   const {
     userInput,
@@ -30,6 +35,35 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
   } = useFlashcardLogic(props);
 
   const sentenceParts = card.sentence_template.split('__');
+
+  useEffect(() => {
+    setIsGrammarOpen(false);
+    setGrammarAnnotations(null);
+    setIsGrammarLoading(false);
+    setGrammarError(null);
+  }, [card.card_id]);
+
+  const toggleGrammarPanel = async () => {
+    const nextOpen = !isGrammarOpen;
+    setIsGrammarOpen(nextOpen);
+
+    if (!nextOpen || grammarAnnotations !== null || isGrammarLoading) {
+      return;
+    }
+
+    setIsGrammarLoading(true);
+    setGrammarError(null);
+
+    try {
+      const response = await getCardGrammar(card.card_id);
+      setGrammarAnnotations(response.annotations);
+    } catch (error) {
+      console.error(error);
+      setGrammarError('Could not load grammar details right now.');
+    } finally {
+      setIsGrammarLoading(false);
+    }
+  };
 
   const getInputClasses = () => {
     if (answerState === 'unanswered') {
@@ -130,6 +164,16 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
           <span className="text-base font-light text-[#74746E] text-left">{card.sentence_translation}</span>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleGrammarPanel}
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#D97757] border border-[#E6E6E3] text-[#5F5F59] hover:text-[#2A2A29] hover:border-[#D97757]/40 h-10 rounded-xl px-4 text-sm"
+              aria-label={isGrammarOpen ? 'Hide grammar' : 'Show grammar'}
+              type="button"
+            >
+              <Braces size={16} strokeWidth={1.75} />
+              <span>{isGrammarOpen ? 'Hide Grammar' : 'Show Grammar'}</span>
+            </button>
+
             {/* Audio Button */}
             {card.sentence_audio_url && (
               <button
@@ -171,6 +215,64 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
             )}
           </div>
         </div>
+
+        {isGrammarOpen && (
+          <div className="mt-6 pt-6 border-t border-dashed border-[#E6E6E3]" data-testid="grammar-panel">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium tracking-[0.08em] uppercase text-[#74746E]">Grammar Skeleton</h3>
+              <span className="text-xs text-[#999999]">{card.sentence || card.sentence_template}</span>
+            </div>
+
+            {isGrammarLoading && <p className="text-sm text-[#74746E]">Loading grammar details...</p>}
+            {grammarError && <p className="text-sm text-destructive">{grammarError}</p>}
+            {!isGrammarLoading && !grammarError && grammarAnnotations?.length === 0 && (
+              <p className="text-sm text-[#74746E]">No grammar annotations are available for this card yet.</p>
+            )}
+
+            {!isGrammarLoading && !grammarError && grammarAnnotations && grammarAnnotations.length > 0 && (
+              <div className="space-y-3">
+                {grammarAnnotations.map((annotation) => (
+                  <div
+                    key={annotation.id}
+                    className="rounded-2xl border border-[#E6E6E3] bg-[#F9F7F6] px-4 py-3 text-left"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-[#2A2A29]">
+                            {annotation.grammar_point.title}
+                          </span>
+                          {annotation.role_label && (
+                            <span className="rounded-full bg-[#F2DCD6] px-2 py-0.5 text-[11px] uppercase tracking-[0.08em] text-[#B05030]">
+                              {annotation.role_label}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-[#5F5F59]">{annotation.grammar_point.short_meaning}</p>
+                      </div>
+                      <span className="rounded-full bg-white px-2 py-1 text-xs text-[#74746E]">
+                        {annotation.surface_text}
+                      </span>
+                    </div>
+
+                    <p className="mt-3 text-sm text-[#2A2A29]">{annotation.explanation_for_sentence}</p>
+
+                    {(annotation.grammar_point.formation || annotation.grammar_point.jlpt_level) && (
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#74746E]">
+                        {annotation.grammar_point.formation && (
+                          <span className="rounded-full bg-white px-2 py-1">{annotation.grammar_point.formation}</span>
+                        )}
+                        {annotation.grammar_point.jlpt_level && (
+                          <span className="rounded-full bg-white px-2 py-1">{annotation.grammar_point.jlpt_level}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <ProficiencyLevelModal
