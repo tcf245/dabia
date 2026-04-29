@@ -54,7 +54,7 @@ Every new task MUST follow these steps in order before touching any code:
 
 2. **Fix all failures** until the script exits with code 0. Do not commit with failing tests.
 
-3. **Commit** following [Conventional Commits 1.0.0](https://www.conventionalcommits.org/zh-hans/v1.0.0/):
+3. **Commit** following [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
    - Format: `type(scope): description`
    - Keep it one concise sentence — no verbose bullet lists in commit messages.
    - Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `chore`
