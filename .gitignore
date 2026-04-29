@@ -117,3 +117,9 @@ docs/dev_logs/
 # Source of truth is AGENTS.md — these are thin local wrappers
 CLAUDE.md
 .cursorrules
+
+# IDE
+.idea/
+
+# Local docs (not for version control)
+docs/
