@@ -7,7 +7,7 @@ Accepted
 The backend (`scheduler.py`) is the source of truth for all SRS proficiency state transitions. However, the backend and database are hosted in a different region from users, causing noticeable API latency (~300–500ms+) on every card interaction.
 
 ## Decision
-Mirror the SRS state machine logic in the frontend (`frontend/src/utils/srs.ts`) so that UI state transitions (proficiency level updates, next interval preview) can be computed locally without waiting for the API round-trip.
+Mirror the SRS proficiency level transition logic in the frontend (`frontend/src/utils/srs.ts`) so that UI state transitions (proficiency level updates) can be computed locally without waiting for the API round-trip. Note: interval calculation remains backend-only; the frontend mirrors only the proficiency state machine.
 
 ## Consequences
 - **UI feels instant**: proficiency feedback is shown immediately without waiting for the server

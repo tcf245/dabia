@@ -36,7 +36,7 @@ git stash push -m "wip: <description>"   # skip if working tree is clean
 # 2. Branch from latest master
 git checkout master
 git pull origin master
-git checkout -b feat/<short-desc>        # or fix/ refactor/
+git checkout -b <type>/<short-desc>      # e.g. feat/ fix/ refactor/
 ```
 
 Before opening a PR:
@@ -49,7 +49,7 @@ bash scripts/test.sh                     # must exit 0
 git commit -m "feat(scope): one concise sentence"
 
 # 5. Open PR
-gh pr create --title "..." --body "..."
+gh pr create --title "<same as commit title>" --body "<brief description of changes and test coverage>"
 ```
 
 Rules: coverage must stay ≥ 80%. Do not commit with failing tests.
