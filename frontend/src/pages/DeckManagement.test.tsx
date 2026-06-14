@@ -67,6 +67,30 @@ describe('DeckManagement', () => {
         expect(screen.getByText('50 CARDS')).toBeInTheDocument();
     });
 
+    it('renders the JLPT N2 grammar deck as a dedicated resource', async () => {
+        (api.getDecks as any).mockResolvedValueOnce([
+            {
+                id: 'n2-grammar',
+                name: 'dabia-jlpt::N2 Grammar',
+                description: 'JLPT N2 grammar patterns from the local Japanese N2 Grammar wiki note.',
+                count: 160,
+                difficulty: 'Advanced',
+                tags: ['JLPT N2', 'Grammar']
+            }
+        ]);
+        (api.getDeckSettings as any).mockResolvedValueOnce({ active_deck_ids: [] });
+
+        render(<DeckManagement />);
+
+        await waitFor(() => expect(screen.getByText('dabia-jlpt::N2 Grammar')).toBeInTheDocument());
+
+        expect(screen.getByText('JLPT N2 grammar patterns from the local Japanese N2 Grammar wiki note.')).toBeInTheDocument();
+        expect(screen.getByText('160 CARDS')).toBeInTheDocument();
+        expect(screen.getByText('JLPT N2')).toBeInTheDocument();
+        expect(screen.getByText('Grammar')).toBeInTheDocument();
+        expect(screen.getByText('Advanced')).toBeInTheDocument();
+    });
+
     it('toggles deck selection (unselect)', async () => {
         render(<DeckManagement />);
 

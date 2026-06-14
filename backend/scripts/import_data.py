@@ -15,6 +15,14 @@ from dabia.models import Card, Deck
 
 CHUNK_SIZE = 500
 
+DECK_METADATA = {
+    "dabia-jlpt::N2 Grammar": {
+        "description": "JLPT N2 grammar patterns from the local Japanese N2 Grammar wiki note.",
+        "difficulty": "Advanced",
+        "tags": ["JLPT N2", "Grammar"],
+    },
+}
+
 def chunk_reader(reader: csv.DictReader, size: int) -> Generator[List[Dict[str, Any]], None, None]:
     """Yields chunks of rows from a CSV reader."""
     chunk = []
@@ -31,14 +39,25 @@ def get_or_create_deck(db: Session, deck_name: str, cache: Dict[str, Any]) -> An
     if deck_name in cache:
         return cache[deck_name]
 
+    metadata = DECK_METADATA.get(deck_name, {})
     deck = db.query(Deck).filter(Deck.name == deck_name).first()
     if deck:
         print(f"Found existing deck: '{deck_name}' (ID: {deck.id})")
+        for field, value in metadata.items():
+            if getattr(deck, field) != value:
+                setattr(deck, field, value)
+        if metadata:
+            db.flush()
         cache[deck_name] = deck.id
         return deck.id
     
     print(f"Deck '{deck_name}' not found, creating new one...")
-    new_deck = Deck(name=deck_name, description=f"Cards from Anki export: {deck_name}")
+    new_deck = Deck(
+        name=deck_name,
+        description=metadata.get("description", f"Cards from Anki export: {deck_name}"),
+        difficulty=metadata.get("difficulty"),
+        tags=metadata.get("tags"),
+    )
     db.add(new_deck)
     db.flush()  # Flush to get the new ID without committing the transaction
     print(f"Created new deck: '{deck_name}' (ID: {new_deck.id})")
