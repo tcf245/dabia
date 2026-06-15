@@ -31,12 +31,62 @@ The script reads data by its column position (index). The following columns are 
 | 6 (row[5])   | Reading (Furigana)       | `まる`                                       |                                                                         |
 | 7 (row[6])   | Gloss / Hint             | `圆，圆形；句号`                             |                                                                         |
 | 9 (row[8])   | Word Audio               | `[sound:丸_マル━_0_...mp3]`                  | The script extracts the filename.                                       |
-| 12 (row[11]) | Full Example Sentence    | `答えに丸をつける`                           |                                                                         |
-| 13 (row[12]) | Sentence with Furigana   | `答[こた]えに<b> 丸[まる]</b>をつける`       |                                                                         |
+| 12 (row[11]) | Example Sentence Template| `答えに__をつける`                           | Generated cloze rows can put `__` here. Legacy full sentences are still supported. |
+| 13 (row[12]) | Full Sentence / Furigana | `答[こた]えに<b> 丸[まる]</b>をつける`       | For generated cloze rows, this should preserve the full display sentence. |
 | 14 (row[13]) | Sentence Translation     | `在答案上画圈`                               |                                                                         |
 | 16 (row[15]) | Sentence Audio           | `[sound:voicepeak-ad60...mp3]`               | The script extracts the filename.                                       |
 
-**Note**: The script automatically generates the `sentence_template` (cloze deletion) by replacing the target word in the full sentence with `__`.
+**Note**: The script preserves `row[11]` when it already contains `__`. For legacy rows without a cloze marker, it still generates `sentence_template` by replacing the target word in the sentence with `__`.
+
+## N2 Grammar Deck
+
+Generate the N2 grammar deck CSV from the local wiki source:
+
+```bash
+python3 backend/scripts/generate_n2_grammar_deck.py \
+  "/Users/eric/Library/Mobile Documents/iCloud~md~obsidian/Documents/LLM-Wiki/raw/assets/Japanese N2 grammar.md" \
+  backend/data/jlpt_n2_grammar_deck.csv
+```
+
+The generator uses the bolded grammar span inside each wiki example as the target answer. This keeps `target_word` usable for review, for example `っぽい` instead of `～っぽい`, and writes a single `__` cloze into `row[11]`.
+
+## Sentence Audio Generation
+
+Use `generate_sentence_audio.py` to fill missing `row[15]` sentence audio paths and generate media files.
+
+Recommended low-cost options:
+
+- `edge-tts`: best practical default for Japanese quality and cost. Install with `pipx install edge-tts` or `uv tool install edge-tts`. It uses Microsoft neural voices, so it is not fully offline.
+- `VOICEVOX`: local/offline Japanese TTS via its local engine API. It is free and easy to run locally, but voices can sound more character/anime-like.
+
+Ollama is not a TTS runtime, so it cannot directly generate audio. It can help clean text or annotate rows, but the audio still needs a TTS engine such as `edge-tts`, VOICEVOX, Style-Bert-VITS2, MeloTTS, or Piper.
+
+Dry-run the first few rows:
+
+```bash
+python3 backend/scripts/generate_sentence_audio.py \
+  --csv backend/data/jlpt_n2_grammar_deck.csv \
+  --limit 3 \
+  --dry-run
+```
+
+Generate MP3 audio with `edge-tts`:
+
+```bash
+python3 backend/scripts/generate_sentence_audio.py \
+  --csv backend/data/jlpt_n2_grammar_deck.csv \
+  --provider edge-tts \
+  --voice ja-JP-NanamiNeural
+```
+
+Generate WAV audio with local VOICEVOX after starting the VOICEVOX engine on port 50021:
+
+```bash
+python3 backend/scripts/generate_sentence_audio.py \
+  --csv backend/data/jlpt_n2_grammar_deck.csv \
+  --provider voicevox \
+  --speaker 3
+```
 
 ## Usage
 

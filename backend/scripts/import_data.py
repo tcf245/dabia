@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Any, List, Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -22,6 +22,18 @@ DECK_METADATA = {
         "tags": ["JLPT N2", "Grammar"],
     },
 }
+
+
+def resolve_sentence_fields(sentence_field: str, sentence_furigana_field: str, word: str) -> tuple[str, str, str]:
+    """Return sentence_template, sentence, and furigana from an import row."""
+    if "__" in sentence_field:
+        sentence_template = sentence_field
+        sentence = sentence_furigana_field or sentence_field.replace("__", word)
+        sentence_furigana = sentence_furigana_field or sentence
+        return sentence_template, sentence, sentence_furigana
+
+    sentence = sentence_field
+    return sentence.replace(word, "__"), sentence, sentence_furigana_field
 
 def chunk_reader(reader: csv.DictReader, size: int) -> Generator[List[Dict[str, Any]], None, None]:
     """Yields chunks of rows from a CSV reader."""
@@ -76,6 +88,26 @@ def get_session(db_url: str = None) -> Session:
         print("Connecting to default database from .env file...")
         return next(get_db())
 
+def upsert_cards(db: Session, card_mappings: List[Dict[str, Any]]) -> None:
+    stmt = insert(Card).values(card_mappings)
+    update_fields = [
+        "deck_id",
+        "sentence_template",
+        "target_word",
+        "reading",
+        "hint",
+        "audio_url",
+        "sentence",
+        "sentence_furigana",
+        "sentence_translation",
+        "sentence_audio_url",
+    ]
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["guid"],
+        set_={field: getattr(stmt.excluded, field) for field in update_fields} | {"updated_at": func.now()},
+    )
+    db.execute(stmt)
+
 def main(csv_path: Path, db_url: str = None):
     """Main function to import card data from a CSV file."""
     print(f"--- Starting data import from {csv_path} ---")
@@ -113,17 +145,22 @@ def main(csv_path: Path, db_url: str = None):
 
                 word_audio = word_audio_raw.replace('[sound:', '').replace(']', '')
                 sentence_audio = sentence_audio_raw.replace('[sound:', '').replace(']', '')
+                sentence_template, sentence_text, sentence_furigana_text = resolve_sentence_fields(
+                    sentence,
+                    sentence_furigana,
+                    word,
+                )
 
                 card_mappings.append({
                     "guid": guid,
                     "deck_id": deck_id,
-                    "sentence_template": sentence.replace(word, "__"), # Create a simple cloze
+                    "sentence_template": sentence_template,
                     "target_word": word,
                     "reading": reading,
                     "hint": gloss,
                     "audio_url": word_audio or None,
-                    "sentence": sentence,
-                    "sentence_furigana": sentence_furigana,
+                    "sentence": sentence_text,
+                    "sentence_furigana": sentence_furigana_text,
                     "sentence_translation": sentence_translation,
                     "sentence_audio_url": sentence_audio or None,
                 })
@@ -131,9 +168,7 @@ def main(csv_path: Path, db_url: str = None):
                 # Process in chunks
                 if len(card_mappings) >= CHUNK_SIZE:
                     print(f"Processing chunk of {len(card_mappings)} cards...")
-                    stmt = insert(Card).values(card_mappings)
-                    stmt = stmt.on_conflict_do_nothing(index_elements=['guid'])
-                    db.execute(stmt)
+                    upsert_cards(db, card_mappings)
                     db.commit()
                     total_processed += len(card_mappings)
                     card_mappings = []
@@ -141,9 +176,7 @@ def main(csv_path: Path, db_url: str = None):
             # Process any remaining cards
             if card_mappings:
                 print(f"Processing final chunk of {len(card_mappings)} cards...")
-                stmt = insert(Card).values(card_mappings)
-                stmt = stmt.on_conflict_do_nothing(index_elements=['guid'])
-                db.execute(stmt)
+                upsert_cards(db, card_mappings)
                 db.commit()
                 total_processed += len(card_mappings)
 

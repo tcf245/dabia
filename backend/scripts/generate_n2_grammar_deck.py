@@ -25,6 +25,7 @@ class GrammarItem:
     connection: str
     example: str
     translation: str
+    focus_terms: tuple[str, ...] = ()
 
 
 def clean_cell(value: str) -> str:
@@ -41,17 +42,53 @@ def clean_bucket(heading: str) -> str:
     return text
 
 
-def split_example(value: str) -> tuple[str, str]:
+def clean_focus_term(value: str) -> str:
+    return clean_cell(value).strip()
+
+
+def split_example(value: str) -> tuple[str, str, tuple[str, ...]]:
+    focus_terms = tuple(
+        term for term in (clean_focus_term(match) for match in re.findall(r"\*\*(.*?)\*\*", value)) if term
+    )
     cleaned = clean_cell(value)
     match = re.search(r"^(.*?。)\s*[（(](.*?)[）)]$", cleaned)
     if match:
-        return match.group(1).strip(), match.group(2).strip()
+        return match.group(1).strip(), match.group(2).strip(), focus_terms
 
     parts = re.split(r"\s*/\s*[（(]", cleaned, maxsplit=1)
     if len(parts) == 2:
-        return parts[0].strip(), parts[1].rstrip("）)").strip()
+        return parts[0].strip(), parts[1].rstrip("）)").strip(), focus_terms
 
-    return cleaned, ""
+    return cleaned, "", focus_terms
+
+
+def pattern_variants(pattern: str) -> list[str]:
+    variants: list[str] = []
+    for part in re.split(r"\s*/\s*", clean_cell(pattern)):
+        text = part.strip()
+        text = re.sub(r"[①②③④⑤⑥⑦⑧⑨]+$", "", text).strip()
+        text = re.sub(r"^[～~]+", "", text).strip()
+        text = re.sub(r"[（(][ぁ-んァ-ンー]+[）)]", "", text).strip()
+        if text and text not in variants:
+            variants.append(text)
+    return variants
+
+
+def choose_focus_term(item: GrammarItem) -> str:
+    candidates = [term for term in item.focus_terms if term in item.example]
+    if not candidates:
+        candidates = [variant for variant in pattern_variants(item.pattern) if variant in item.example]
+    if not candidates:
+        candidates = pattern_variants(item.pattern)
+    if not candidates:
+        return item.pattern
+    return max(candidates, key=len)
+
+
+def cloze_example(example: str, target: str) -> str:
+    if target and target in example:
+        return example.replace(target, "__", 1)
+    return example
 
 
 def parse_table_row(line: str) -> list[str]:
@@ -80,7 +117,7 @@ def parse_grammar_markdown(markdown: str) -> list[GrammarItem]:
         pattern = clean_cell(cells[0])
         meaning = clean_cell(cells[1])
         connection = clean_cell(cells[2])
-        example, translation = split_example(cells[3])
+        example, translation, focus_terms = split_example(cells[3])
 
         if not bucket or not pattern or not example:
             continue
@@ -93,6 +130,7 @@ def parse_grammar_markdown(markdown: str) -> list[GrammarItem]:
                 connection=connection,
                 example=example,
                 translation=translation,
+                focus_terms=focus_terms,
             )
         )
 
@@ -100,18 +138,21 @@ def parse_grammar_markdown(markdown: str) -> list[GrammarItem]:
 
 
 def stable_guid(item: GrammarItem) -> str:
-    key = f"{SOURCE_TITLE}|{item.bucket}|{item.pattern}|{item.example}"
+    # Keep GUIDs stable across source typo fixes after cards have been imported.
+    example_key = item.example.replace("驚きのあまり", "惊きのあまり")
+    key = f"{SOURCE_TITLE}|{item.bucket}|{item.pattern}|{example_key}"
     return str(uuid.uuid5(GUID_NAMESPACE, key))
 
 
 def generate_rows(items: Iterable[GrammarItem]) -> list[list[str]]:
     rows: list[list[str]] = []
     for item in items:
+        target = choose_focus_term(item)
         rows.append(
             [
                 DECK_NAME,
                 stable_guid(item),
-                item.pattern,
+                target,
                 "",
                 "",
                 item.connection,
@@ -120,7 +161,7 @@ def generate_rows(items: Iterable[GrammarItem]) -> list[list[str]]:
                 "",
                 "",
                 "",
-                item.example,
+                cloze_example(item.example, target),
                 item.example,
                 item.translation,
                 "",
