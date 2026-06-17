@@ -141,8 +141,8 @@ def parse_grammar_markdown(markdown: str) -> list[GrammarItem]:
 
 def stable_guid(item: GrammarItem) -> str:
     # Keep GUIDs stable across source typo fixes after cards have been imported.
-def stable_guid(item: GrammarItem) -> str:
-    key = f"{SOURCE_TITLE}|{item.pattern}"
+    example_key = item.example.replace("驚きのあまり", "惊きのあまり")
+    key = f"{SOURCE_TITLE}|{item.bucket}|{item.pattern}|{example_key}"
     return str(uuid.uuid5(GUID_NAMESPACE, key))
 
 
