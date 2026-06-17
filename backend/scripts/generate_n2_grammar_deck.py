@@ -92,7 +92,9 @@ def cloze_example(example: str, target: str) -> str:
 
 
 def parse_table_row(line: str) -> list[str]:
-    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+    processed = line.strip().strip("|").replace(r"\|", "__PIPE_PLACEHOLDER__")
+    cells = [cell.strip() for cell in processed.split("|")]
+    return [cell.replace("__PIPE_PLACEHOLDER__", "|") for cell in cells]
 
 
 def parse_grammar_markdown(markdown: str) -> list[GrammarItem]:
@@ -139,8 +141,8 @@ def parse_grammar_markdown(markdown: str) -> list[GrammarItem]:
 
 def stable_guid(item: GrammarItem) -> str:
     # Keep GUIDs stable across source typo fixes after cards have been imported.
-    example_key = item.example.replace("驚きのあまり", "惊きのあまり")
-    key = f"{SOURCE_TITLE}|{item.bucket}|{item.pattern}|{example_key}"
+def stable_guid(item: GrammarItem) -> str:
+    key = f"{SOURCE_TITLE}|{item.pattern}"
     return str(uuid.uuid5(GUID_NAMESPACE, key))
 
 

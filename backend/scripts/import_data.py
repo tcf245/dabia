@@ -55,10 +55,12 @@ def get_or_create_deck(db: Session, deck_name: str, cache: Dict[str, Any]) -> An
     deck = db.query(Deck).filter(Deck.name == deck_name).first()
     if deck:
         print(f"Found existing deck: '{deck_name}' (ID: {deck.id})")
+        has_changes = False
         for field, value in metadata.items():
             if getattr(deck, field) != value:
                 setattr(deck, field, value)
-        if metadata:
+                has_changes = True
+        if has_changes:
             db.flush()
         cache[deck_name] = deck.id
         return deck.id
