@@ -1,23 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Layers } from 'lucide-react';
 import * as api from '../services/api';
-// Using inline SVGs to avoid dependency issues if lucide-react is not installed
-// or if version mismatches occur. This ensures the UI renders exactly as requested.
-
-const Icons = {
-  Layers: (props: any) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
-    </svg>
-  ),
-};
-
-const getDifficultyColor = (difficulty: string) => {
-    const d = difficulty?.toLowerCase() || '';
-    if (d === 'basic' || d === 'beginner') return 'text-emerald-600/70';
-    if (d === 'advanced' || d === 'expert') return 'text-[#D97757]/80';
-    return 'text-[#888888]';
-};
-
+import { deckDescription, deckTitle, isGrammarDeck, sortDecks } from '../utils/decks';
 const DeckManagement = () => {
     const [decks, setDecks] = useState<api.Deck[]>([]);
     const [selectedDeckIds, setSelectedDeckIds] = useState<string[]>([]);
@@ -31,7 +15,7 @@ const DeckManagement = () => {
                     api.getDecks(),
                     api.getDeckSettings()
                 ]);
-                setDecks(allDecks);
+                setDecks(sortDecks(allDecks));
                 setSelectedDeckIds(settings.active_deck_ids);
             } catch (error) {
                 console.error("Failed to load deck data:", error);
@@ -62,10 +46,10 @@ const DeckManagement = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#F9F9F8]">
+            <div className="py-24 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                      <div className="animate-spin text-[#D97757]">
-                        <Icons.Layers size={32} />
+                        <Layers size={32} />
                      </div>
                      <p className="text-[#888888] font-light">Loading library...</p>
                 </div>
@@ -74,7 +58,7 @@ const DeckManagement = () => {
     }
 
     return (
-        <div className="min-h-screen pb-32 pt-12 px-6 bg-[#F9F9F8] w-full max-w-4xl mx-auto animate-fade-in">
+        <div className="pb-24 w-full max-w-4xl mx-auto animate-fade-in">
           <header className="text-center mb-12">
             <h1 className="font-serif text-5xl font-normal text-[#1A1A1A] mb-4 tracking-tight" style={{ lineHeight: '1' }}>
               Library
@@ -87,14 +71,24 @@ const DeckManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {decks.map((deck) => {
               const isActive = selectedDeckIds.includes(deck.id);
-              const difficultyColor = getDifficultyColor(deck.difficulty);
+              const grammar = isGrammarDeck(deck);
               
               return (
                 <div 
                   key={deck.id}
+                  role="switch"
+                  aria-checked={isActive}
+                  aria-label={deckTitle(deck.name)}
+                  tabIndex={0}
                   onClick={() => handleToggle(deck.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleToggle(deck.id);
+                    }
+                  }}
                   className={`
-                    relative rounded-[20px] border p-6 cursor-pointer transition-all duration-300 group
+                    relative rounded-[20px] border p-6 cursor-pointer transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757] focus-visible:ring-offset-2
                     ${isActive 
                       ? 'bg-white border-[#D97757] shadow-[0_8px_30px_rgba(217,119,87,0.15)]' 
                       : 'bg-white border-[#E6E6E3] hover:border-[#D0D0D0] shadow-[0_4px_20px_rgba(0,0,0,0.02)]'
@@ -103,20 +97,14 @@ const DeckManagement = () => {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-6">
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {deck.tags.map(tag => (
-                          <span key={tag} className="px-2 py-0.5 rounded-md bg-[#F2F0EF] text-[#888888] text-[10px] font-medium uppercase tracking-wider">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      
+                      <span className="inline-block mb-3 px-2 py-0.5 rounded-md bg-[#F2F0EF] text-[#74746E] text-[10px] font-medium uppercase tracking-wider">
+                        {grammar ? 'Grammar' : 'Vocabulary'}
+                      </span>
                       <h3 className={`font-serif text-xl font-bold mb-2 ${isActive ? 'text-[#D97757]' : 'text-[#2A2A29]'}`}>
-                        {deck.name}
+                        {deckTitle(deck.name)}
                       </h3>
-                      <p className="text-[#888888] text-sm font-light leading-relaxed line-clamp-2 min-h-[40px]">
-                        {deck.description || "No description provided."}
+                      <p className="text-[#74746E] text-sm font-light leading-relaxed line-clamp-2">
+                        {deckDescription(deck)}
                       </p>
                     </div>
 
@@ -133,10 +121,10 @@ const DeckManagement = () => {
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-[#F2F0EF] flex items-center justify-between">
-                    <span className="text-xs text-[#999999] font-mono tracking-wider">
-                      {deck.count} CARDS
+                    <span className="text-xs text-[#74746E] tabular-nums">
+                      {deck.count.toLocaleString('en-US')} cards
                     </span>
-                    <span className={`text-xs font-medium ${difficultyColor}`}>
+                    <span className="text-xs font-medium text-[#74746E]">
                       {deck.difficulty || 'Unknown'}
                     </span>
                   </div>

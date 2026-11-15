@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sortDecks, isGrammarDeck } from './decks';
+import { sortDecks, isGrammarDeck, deckTitle, deckDescription } from './decks';
 import type { Deck } from '../services/api';
 
 const deck = (name: string, difficulty: string, tags: string[] = []): Deck =>
@@ -31,5 +31,24 @@ describe('isGrammarDeck', () => {
         expect(isGrammarDeck(deck('n2', 'Advanced', ['Grammar']))).toBe(true);
         expect(isGrammarDeck(deck('JLPT grammar', 'Advanced'))).toBe(true);
         expect(isGrammarDeck(deck('eggrolls::3-N2', 'Advanced', ['JLPT N2']))).toBe(false);
+    });
+});
+
+describe('deckTitle', () => {
+    it('prefixes imported JLPT decks and leaves custom names alone', () => {
+        expect(deckTitle('eggrolls-JLPT10k-v3::1-N4+N5')).toBe('JLPT N5–N4');
+        expect(deckTitle('dabia-jlpt::N2 Grammar')).toBe('JLPT N2 Grammar');
+        expect(deckTitle('Basic Japanese')).toBe('Basic Japanese');
+    });
+});
+
+describe('deckDescription', () => {
+    it('keeps real descriptions and replaces import provenance notes', () => {
+        expect(deckDescription(deck('x', 'Beginner'))).toBe('Vocabulary in example sentences, with audio.');
+        expect(deckDescription({ ...deck('a::3-N2', 'Advanced'), description: 'Cards from Anki export: a::3-N2' }))
+            .toBe('Vocabulary in example sentences, with audio.');
+        expect(deckDescription({ ...deck('g', 'Advanced', ['Grammar']), description: 'Patterns from the local Japanese N2 Grammar wiki note.' }))
+            .toBe('Grammar patterns, each shown in an example sentence.');
+        expect(deckDescription({ ...deck('c', 'Beginner'), description: 'Common phrases' })).toBe('Common phrases');
     });
 });

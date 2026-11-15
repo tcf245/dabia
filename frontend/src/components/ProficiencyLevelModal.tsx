@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface ProficiencyLevelModalProps {
     isOpen: boolean;
@@ -8,6 +9,7 @@ interface ProficiencyLevelModalProps {
 }
 
 const ProficiencyLevelModal: React.FC<ProficiencyLevelModalProps> = ({ isOpen, onClose }) => {
+    useEscapeKey(isOpen, onClose);
     if (!isOpen) return null;
 
     const levels = [

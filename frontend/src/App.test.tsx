@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
@@ -29,5 +29,25 @@ describe('App routing', () => {
         renderAt('/');
         expect(screen.getByText('learning-session')).toBeInTheDocument();
         expect(screen.queryByText('welcome-page')).not.toBeInTheDocument();
+    });
+
+    it('opens the login modal from the header and closes it by Escape, button or backdrop', () => {
+        renderAt('/');
+        const open = () => fireEvent.click(screen.getByRole('button', { name: '登录' }));
+
+        open();
+        const dialog = screen.getByRole('dialog', { name: '登录' });
+        fireEvent.click(dialog);
+        expect(screen.getByRole('dialog', { name: '登录' })).toBeInTheDocument();
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        open();
+        fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        open();
+        fireEvent.click(screen.getByRole('dialog').parentElement!);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 });

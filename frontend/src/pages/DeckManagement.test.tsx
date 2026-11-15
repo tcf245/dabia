@@ -63,8 +63,8 @@ describe('DeckManagement', () => {
 
         expect(screen.getByText('Basic Japanese')).toBeInTheDocument();
         expect(screen.getByText('Intermediate Kanji')).toBeInTheDocument();
-        expect(screen.getByText('100 CARDS')).toBeInTheDocument();
-        expect(screen.getByText('50 CARDS')).toBeInTheDocument();
+        expect(screen.getByText('100 cards')).toBeInTheDocument();
+        expect(screen.getByText('50 cards')).toBeInTheDocument();
     });
 
     it('toggles deck selection (unselect)', async () => {
@@ -135,5 +135,18 @@ describe('DeckManagement', () => {
         });
 
         consoleSpy.mockRestore();
+    });
+    it('toggles a deck from the keyboard with Enter or Space only', async () => {
+        render(<DeckManagement />);
+        const deck = await screen.findByRole('switch', { name: 'Intermediate Kanji' });
+
+        fireEvent.keyDown(deck, { key: 'Tab' });
+        expect(api.updateDeckSettings).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(deck, { key: 'Enter' });
+        await waitFor(() => expect(api.updateDeckSettings).toHaveBeenCalledTimes(1));
+
+        fireEvent.keyDown(deck, { key: ' ' });
+        await waitFor(() => expect(api.updateDeckSettings).toHaveBeenCalledTimes(2));
     });
 });

@@ -75,7 +75,7 @@ const DemoCard: React.FC<{ copy: WelcomeCopy }> = ({ copy }) => {
                     <span className="text-sm font-light">{card.hint}</span>
                 </div>
 
-                <p lang="ja" className="font-serif font-light text-2xl sm:text-3xl text-center text-[#2A2A29] leading-relaxed min-h-[3.5rem]">
+                <p lang="ja" className="font-serif font-light text-xl sm:text-3xl text-center text-[#2A2A29] leading-relaxed min-h-[3.5rem]">
                     {before}
                     <span
                         className={`inline-block align-baseline mx-1.5 px-2 py-0.5 min-w-[4.5ch] transition-all duration-300 ${isCorrect

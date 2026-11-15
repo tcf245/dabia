@@ -12,38 +12,21 @@ export const Login = ({ onLoginSuccess }: LoginProps) => {
     return (
         <div className="flex flex-col items-center justify-center w-full">
             <div className="mb-8 text-center">
-                <h1 className="mb-2 text-3xl font-serif font-bold text-[#3d3929] tracking-tight">Welcome back</h1>
-                <p className="text-[#83827d] text-base">Sign in to your account to continue</p>
+                <h1 className="mb-2 text-3xl font-serif font-bold text-[#2A2A29] tracking-tight">登录 Dabia</h1>
+                <p className="text-[#74746E] text-base">首次登录会自动创建账户，学习进度随账户保存。</p>
             </div>
 
-            <div className="w-full space-y-3">
-                <button
-                    onClick={() => login()}
-                    className="w-full bg-white border border-[#dad9d4] rounded-lg py-2.5 px-4 flex items-center justify-center gap-3 hover:bg-[#f5f4f0] transition-colors shadow-sm group"
-                >
-                    <GoogleIcon />
-                    <span className="text-[#3d3929] font-medium">Continue with Google</span>
-                </button>
-
-                {/* Placeholder for GitHub button if needed in future */}
-                {/* <button className="w-full bg-white border border-[#dad9d4] rounded-lg py-2.5 px-4 flex items-center justify-center gap-3 hover:bg-[#f5f4f0] transition-colors shadow-sm text-[#3d3929] font-medium">
-                    <GithubIcon /> Continue with GitHub
-                </button> */}
-            </div>
+            <button
+                onClick={() => login()}
+                className="w-full h-11 bg-white border border-[#E6E6E3] rounded-xl px-4 flex items-center justify-center gap-3 hover:bg-[#F5F4F0] transition-colors shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757]"
+            >
+                <GoogleIcon />
+                <span className="text-[#2A2A29] font-medium">使用 Google 登录</span>
+            </button>
 
             {error && (
-                <p className="mt-4 text-sm text-red-500 text-center">{error}</p>
+                <p role="alert" className="mt-4 text-sm text-red-500 text-center">{error}</p>
             )}
-
-            <div className="flex items-center gap-4 w-full my-8">
-                <div className="h-px bg-[#dad9d4] flex-1"></div>
-                <span className="text-xs font-medium text-[#83827d] uppercase tracking-wider">New to Dabia?</span>
-                <div className="h-px bg-[#dad9d4] flex-1"></div>
-            </div>
-
-            <button className="text-[#c96442] hover:text-[#a85335] font-medium text-sm transition-colors">
-                Create an account
-            </button>
         </div>
     );
 };
