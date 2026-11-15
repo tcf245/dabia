@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Serif+JP:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Serif+JP:wght@400;500;700&family=Noto+Serif+SC:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
@@ -35,6 +35,16 @@
 
   .font-serif {
     font-family: var(--font-serif);
+  }
+
+  /* Simplified Chinese glyphs differ from Japanese ones; prefer the SC face in zh blocks. */
+  :lang(zh) .font-serif {
+    font-family: ui-serif, Georgia, 'Noto Serif SC', 'Noto Serif JP', serif;
+  }
+
+  :lang(zh) :lang(ja).font-serif,
+  :lang(zh) .font-serif :lang(ja) {
+    font-family: ui-serif, Georgia, 'Noto Serif JP', serif;
   }
 
   body {
