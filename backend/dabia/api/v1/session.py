@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 import sqlalchemy as sa
 import uuid
-from typing import Optional
+from typing import Annotated, Optional
 from datetime import datetime, UTC, timedelta
 from dabia.core.scheduler import Scheduler
+from dabia.core.i18n import localize
 
 from dabia import models, schemas
 from dabia.core.storage import storage_provider
@@ -17,6 +18,7 @@ router = APIRouter()
 @router.post("/next-card", response_model=schemas.NextCardResponse)
 def get_next_card(
     answer: Optional[schemas.PreviousAnswer] = None,
+    lang: Annotated[Optional[str], Query(description="Learner language (BCP 47, e.g. en, pt-BR) for hint and translation; falls back to the base language, then zh")] = None,
     db: Session = Depends(get_db),
     current_user_id: uuid.UUID = Depends(get_current_user_id)
 ):
@@ -85,18 +87,20 @@ def get_next_card(
         format_start = time.time()
         proficiency_level = user_assoc.proficiency_level if user_assoc else 0
 
+        content = localize(db, next_card_db, lang)
         card_response = schemas.Card(
             card_id=next_card_db.id,
             deck=schemas.DeckInfo.model_validate(next_card_db.deck),
             sentence_template=next_card_db.sentence_template,
-            target=schemas.CardTarget(word=next_card_db.target_word, hint=next_card_db.hint),
+            target=schemas.CardTarget(word=next_card_db.target_word, hint=content.hint),
             reading=next_card_db.reading,
             audio_url=storage_provider.get_url(next_card_db.audio_url),
             sentence=next_card_db.sentence,
             sentence_furigana=next_card_db.sentence_furigana,
-            sentence_translation=next_card_db.sentence_translation,
+            sentence_translation=content.sentence_translation,
             sentence_audio_url=storage_provider.get_url(next_card_db.sentence_audio_url),
             proficiency_level=proficiency_level,
+            language=content.language,
         )
         previous_card_id = answer.card_id if answer else None
 

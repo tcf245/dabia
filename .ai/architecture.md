@@ -26,6 +26,7 @@ The core of Dabia is the Spaced Repetition System.
 ## 4. Key Database Models
 - **User**: ID (UUID), Email, Google_ID, Review Logs (One-to-Many).
 - **Card**: Static content (Question, Answer, Audio).
+- **CardTranslation**: Learner-language hint and sentence translation per card and language (`zh` is the original). See ADR 003.
 - **UserCardAssociation**: Tracks the proficiency level of a specific card for a specific user.
 - **ReviewLog**: Immutable history of every review attempt (timestamp, duration, rating).
 
@@ -40,6 +41,7 @@ See `.ai/api-design.md` for full endpoint specifications and request/response mo
 See `.ai/decisions/` for the rationale behind key design choices:
 - `001-srs-dual-state-machine.md` — why SRS logic is mirrored in frontend
 - `002-alembic-for-ddl.md` — why all DDL goes through Alembic
+- `003-card-content-i18n.md` — how cards are served in more than one learner language, and how to add one
 
 ## 8. Deployment
 - **Frontend**: Static build to Vercel/Netlify.
