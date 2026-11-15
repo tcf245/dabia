@@ -46,7 +46,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onLoginSuccess }) => {
     const wordCount = decks.filter((d) => !isGrammarDeck(d)).reduce((sum, d) => sum + d.count, 0);
 
     return (
-        <div lang="zh-CN" className="welcome w-full -mt-12 sm:-mt-8">
+        <div lang="zh-CN" className="welcome w-full">
             {/* Hero */}
             <section className="flex flex-col items-center text-center">
                 <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#E6E6E3] bg-white px-3 py-1 text-xs font-medium text-[#74746E]">

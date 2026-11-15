@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import LearningSession from './pages/LearningSession';
 import Login from './components/Login';
 import { jwtDecode } from "jwt-decode";
-import { Menu, Transition } from '@headlessui/react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import AppHeader from './components/AppHeader';
 import Profile from './pages/Profile';
 import DeckManagement from './pages/DeckManagement';
 import Welcome from './pages/Welcome';
@@ -78,7 +78,7 @@ function App() {
   };
 
   return (
-    <div className="bg-background min-h-screen w-full flex justify-center p-4 sm:p-6 lg:p-8 relative">
+    <div className="bg-background min-h-screen w-full relative">
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-sm p-4">
           <div className="bg-[#F7F7F5] w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden border border-stone-200">
@@ -95,96 +95,14 @@ function App() {
         </div>
       )}
 
-      <div className="w-full max-w-4xl">
-        <header className="mb-24 flex justify-between items-center relative z-50">
-          <Link to="/" className="font-serif text-2xl font-bold text-[#D97757] tracking-tight">Dabia.</Link>
-          <div className="flex items-center gap-4">
-            {token ? (
-              <Menu as="div" className="relative inline-block text-left">
-                <Menu.Button className="flex items-center gap-2 hover:bg-secondary/50 p-1.5 rounded-lg transition-colors focus:outline-none">
-                  {user?.picture ? (
-                    <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-border/50" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium border border-primary/20">
-                      {(user?.name || user?.email || '?')[0].toUpperCase()}
-                    </div>
-                  )}
-                  <span className="text-sm font-medium text-foreground hidden sm:block">{user?.name || user?.email}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="m6 9 6 6 6-6" /></svg>
-                </Menu.Button>
-                <Transition
-                  enter="transition ease-out duration-100"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
-                >
-                  <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-border rounded-lg bg-popover shadow-lg ring-1 ring-black/5 focus:outline-none border border-border">
-                    <div className="px-1 py-1">
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            to="/"
-                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-                            Cards
-                          </Link>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            to="/decks"
-                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>
-                            Decks
-                          </Link>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <Link
-                            to="/profile"
-                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            Profile
-                          </Link>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <button
-                            onClick={logout}
-                            className={`${active ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-                              } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 h-4 w-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
-                            Logout
-                          </button>
-                        )}
-                      </Menu.Item>
-                    </div>
-                  </Menu.Items>
-                </Transition>
-              </Menu>
-            ) : (
-              <button
-                onClick={() => setIsLoginModalOpen(true)}
-                className="text-sm font-medium text-[#3d3929] hover:text-[#c96442] transition-colors"
-              >
-                登录
-              </button>
-            )}
-          </div>
-        </header>
-        <main className="flex flex-col items-center justify-center w-full">
+      <AppHeader
+        user={token ? (user ?? { sub: '' }) : null}
+        onLogin={() => setIsLoginModalOpen(true)}
+        onLogout={logout}
+      />
+
+      <div className="w-full flex justify-center px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-8">
+        <main className="w-full max-w-4xl flex flex-col items-center justify-center">
           <Routes>
             <Route path="/" element={token ? <LearningSession /> : <Welcome onLoginSuccess={handleLoginSuccess} />} />
             <Route path="/decks" element={<DeckManagement />} />
