@@ -6,6 +6,14 @@ import { vi } from 'vitest';
 // the 1 s default for findBy/waitFor times out on a loaded machine or CI runner.
 configure({ asyncUtilTimeout: 3000 });
 
+// jsdom lacks ResizeObserver; Headless UI anchored menus (floating-ui) need it.
+class ResizeObserverStub {
+  observe() { }
+  unobserve() { }
+  disconnect() { }
+}
+vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+
 // This is a global setup file for tests
 
 // This function will be overwritten by the mock's onended setter,
