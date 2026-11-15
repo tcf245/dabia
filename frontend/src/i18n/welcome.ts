@@ -45,9 +45,9 @@ export interface WelcomeCopy {
 // Level transitions and intervals follow backend/dabia/core/srs_constants.py.
 export const zh: WelcomeCopy = {
     badge: '日语单词 · JLPT N5 到 N1',
-    titleLead: '背日语单词，',
-    titleAccent: '在快忘时复习。',
-    subtitle: '每个单词都放在真实例句里学。Dabia 记录你对每个词的掌握程度，在你快要忘记的时候把它再拿出来。',
+    titleLead: '忘记之前，',
+    titleAccent: '再见一次。',
+    subtitle: 'Dabia 用真实例句教你日语单词，记下你对每个词的掌握程度，在恰当的时间安排复习。',
     signIn: '使用 Google 登录',
     signInNote: '免费使用，登录后马上开始第一张卡。',
     demoLabel: '示例',

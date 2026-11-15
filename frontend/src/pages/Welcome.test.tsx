@@ -30,7 +30,7 @@ describe('Welcome', () => {
     it('explains the product and starts Google sign-in from the hero', () => {
         render(<Welcome onLoginSuccess={vi.fn()} />);
 
-        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('背日语单词');
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('忘记之前');
         fireEvent.click(screen.getAllByRole('button', { name: /使用 Google 登录/ })[0]);
         expect(signIn).toHaveBeenCalledTimes(1);
     });
