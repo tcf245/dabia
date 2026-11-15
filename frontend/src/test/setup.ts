@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/react';
 import { vi } from 'vitest';
+
+// LearningSession tests chain several async fetches and framer-motion transitions;
+// the 1 s default for findBy/waitFor times out on a loaded machine or CI runner.
+configure({ asyncUtilTimeout: 3000 });
 
 // This is a global setup file for tests
 
