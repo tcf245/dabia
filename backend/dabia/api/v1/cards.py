@@ -1,18 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 import uuid
-from typing import Any
+from typing import Annotated, Any, Optional
 
 from dabia.database import get_db
 from dabia.api.deps import get_current_user_id
 from dabia import models, schemas
 from dabia.core.storage import storage_provider
+from dabia.core.i18n import localize
 
 router = APIRouter()
 
 @router.get("/{card_id}", response_model=schemas.Card)
 def get_card(
     card_id: uuid.UUID,
+    lang: Annotated[Optional[str], Query(description="Learner language (BCP 47, e.g. en, pt-BR) for hint and translation; falls back to the base language, then zh")] = None,
     db: Session = Depends(get_db),
     current_user_id: uuid.UUID = Depends(get_current_user_id)
 ) -> Any:
@@ -35,16 +37,18 @@ def get_card(
     
     proficiency_level = user_assoc.proficiency_level if user_assoc else 0
 
+    content = localize(db, card, lang)
     return schemas.Card(
         card_id=card.id,
         deck=schemas.DeckInfo.model_validate(card.deck),
         sentence_template=card.sentence_template,
-        target=schemas.CardTarget(word=card.target_word, hint=card.hint),
+        target=schemas.CardTarget(word=card.target_word, hint=content.hint),
         reading=card.reading,
         audio_url=storage_provider.get_url(card.audio_url),
         sentence=card.sentence,
         sentence_furigana=card.sentence_furigana,
-        sentence_translation=card.sentence_translation,
+        sentence_translation=content.sentence_translation,
         sentence_audio_url=storage_provider.get_url(card.sentence_audio_url),
         proficiency_level=proficiency_level,
+        language=content.language,
     )

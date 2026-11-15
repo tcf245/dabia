@@ -16,6 +16,12 @@ This is the single core endpoint that drives the user's learning session. The cl
 
 **Authentication**: Required (e.g., via Bearer Token).
 
+#### Query Parameters
+
+- `lang` (optional): learner language for `target.hint` and `sentence_translation`, as a BCP 47 tag (`en`, `pt-BR`).
+  Falls back to the base language, then `zh`. The response's `card.language` is the language actually served.
+  The same parameter works on `GET /api/v1/cards/{card_id}`.
+
 #### Request Body
 
 The body of the request should contain the result of the card the user just answered. For the very first request in a session, the body should be empty.
@@ -77,3 +83,21 @@ curl -X POST http://127.0.0.1:8000/api/v1/session/next-card -H "Content-Type: ap
   "response_time_ms": 3000
 }'
 ```
+
+---
+
+### `GET /api/v1/languages`
+
+The learner languages cards can be served in. Public (no login), so the signed-out welcome page can build its
+language menu. A language appears as soon as translations for it are imported.
+
+```json
+{
+  "default": "zh",
+  "languages": [
+    {"code": "zh", "cards": 10307},
+    {"code": "en", "cards": 10307}
+  ]
+}
+```
+

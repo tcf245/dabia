@@ -33,6 +33,7 @@ class Card(BaseModel):
     sentence_translation: Optional[str] = None
     sentence_audio_url: Optional[str] = None
     proficiency_level: int
+    language: str = "zh"  # learner language of hint and sentence_translation, after fallback
 
 class SessionProgress(BaseModel):
     completed_today: int

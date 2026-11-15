@@ -29,3 +29,4 @@ class Card(Base):
     deck = relationship("Deck", back_populates="cards")
     review_logs = relationship("ReviewLog", back_populates="card")
     users = relationship("UserCardAssociation", back_populates="card")
+    translations = relationship("CardTranslation", back_populates="card", cascade="all, delete-orphan", passive_deletes=True)
