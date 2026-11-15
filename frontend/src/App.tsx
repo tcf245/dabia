@@ -6,6 +6,7 @@ import { Menu, Transition } from '@headlessui/react';
 import { Routes, Route, Link } from 'react-router-dom';
 import Profile from './pages/Profile';
 import DeckManagement from './pages/DeckManagement';
+import Welcome from './pages/Welcome';
 
 
 interface User {
@@ -178,14 +179,14 @@ function App() {
                 onClick={() => setIsLoginModalOpen(true)}
                 className="text-sm font-medium text-[#3d3929] hover:text-[#c96442] transition-colors"
               >
-                Log In
+                登录
               </button>
             )}
           </div>
         </header>
         <main className="flex flex-col items-center justify-center w-full">
           <Routes>
-            <Route path="/" element={<LearningSession />} />
+            <Route path="/" element={token ? <LearningSession /> : <Welcome onLoginSuccess={handleLoginSuccess} />} />
             <Route path="/decks" element={<DeckManagement />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
