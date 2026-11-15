@@ -23,7 +23,11 @@ everyone.
 ## Adding a language
 1. Generate a CSV of `guid,hint,sentence_translation` for the new language from the Chinese source (the English one
    was made this way, with a validator for row counts, empty fields and leftover Chinese characters).
-2. Import it into `card_translations` by `guid` with an upsert, STG first, then PROD.
+2. Put it in `backend/alembic/data/card_translations_<language>.csv` (columns `guid,hint,sentence_translation`) and add
+   a data migration like `c3f5a7b9d1e2_import_english_card_translations.py`: it upserts by `guid` and skips guids with
+   no card. Seed data goes through Alembic (ADR 002), and the backend's Vercel install step runs
+   `alembic upgrade head`, so merging deploys the content to each environment without anyone handling database
+   credentials.
 3. Add the UI strings for the language to the frontend dictionary. No backend or schema change is needed.
 
 ## Consequences

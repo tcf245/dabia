@@ -188,3 +188,39 @@ def test_the_migration_copies_existing_chinese_content(db_engine):
             conn.execute(sa.text("DELETE FROM card_translations WHERE card_id IN (:a, :b)"), {"a": card_id, "b": bare_id})
             conn.execute(sa.text("DELETE FROM cards WHERE deck_id = :d"), {"d": deck_id})
             conn.execute(sa.text("DELETE FROM decks WHERE id = :d"), {"d": deck_id})
+
+
+def test_the_english_import_matches_cards_by_guid_and_can_be_rolled_back(db_engine):
+    """The data migration fills English rows for cards whose guid is in the CSV and skips guids with no card."""
+    cfg = Config(os.path.join(os.path.dirname(__file__), "..", "..", "..", "alembic.ini"))
+    command.downgrade(cfg, "b7e1c2d3f4a5")
+    deck_id, card_id = uuid.uuid4(), uuid.uuid4()
+    try:
+        with db_engine.begin() as conn:
+            conn.execute(sa.text("INSERT INTO decks (id, name) VALUES (:id, :name)"), {"id": deck_id, "name": f"en-{deck_id}"})
+            conn.execute(
+                sa.text(
+                    "INSERT INTO cards (id, deck_id, guid, sentence_template, target_word, hint) "
+                    "VALUES (:id, :deck, '469b5ba2-a0bb-11ef-9eca-75d1f1bae144', '__', '高校', '高中')"
+                ),
+                {"id": card_id, "deck": deck_id},
+            )
+        command.upgrade(cfg, "head")
+        with db_engine.connect() as conn:
+            row = conn.execute(
+                sa.text("SELECT hint, sentence_translation FROM card_translations WHERE card_id = :c AND language = 'en'"),
+                {"c": card_id},
+            ).one()
+            total = conn.execute(sa.text("SELECT count(*) FROM card_translations WHERE language = 'en'")).scalar()
+        assert row.hint == "high school; senior high school"
+        assert row.sentence_translation == "My younger sister attends high school."
+        assert total == 1  # the other 10,306 guids have no card in this database and are skipped
+        command.downgrade(cfg, "b7e1c2d3f4a5")
+        with db_engine.connect() as conn:
+            assert conn.execute(sa.text("SELECT count(*) FROM card_translations WHERE language = 'en'")).scalar() == 0
+    finally:
+        command.upgrade(cfg, "head")
+        with db_engine.begin() as conn:
+            conn.execute(sa.text("DELETE FROM card_translations WHERE card_id = :c"), {"c": card_id})
+            conn.execute(sa.text("DELETE FROM cards WHERE id = :c"), {"c": card_id})
+            conn.execute(sa.text("DELETE FROM decks WHERE id = :d"), {"d": deck_id})
