@@ -155,7 +155,7 @@ const LearningSession: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col items-center relative">
-      <div className="w-full max-w-2xl px-5">
+      <div className="w-full max-w-2xl">
         <SessionProgress
           progress={sessionProgress}
           headerLeft={
