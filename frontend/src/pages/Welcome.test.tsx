@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import Welcome from './Welcome';
 import { deckLabel } from '../utils/decks';
@@ -18,6 +18,13 @@ const decks = [
     { id: 'n5', name: 'eggrolls-JLPT10k-v3::1-N4+N5', description: '', count: 1568, difficulty: 'Beginner', tags: ['JLPT N4'] },
 ];
 
+// Render and let the deck request settle so state updates stay inside act().
+const renderWelcome = async (onLoginSuccess = vi.fn()) => {
+    await act(async () => {
+        render(<Welcome onLoginSuccess={onLoginSuccess} />);
+    });
+};
+
 describe('Welcome', () => {
     const signIn = vi.fn();
 
@@ -27,22 +34,22 @@ describe('Welcome', () => {
         (api.getDecks as Mock).mockResolvedValue(decks);
     });
 
-    it('explains the product and starts Google sign-in from the hero', () => {
-        render(<Welcome onLoginSuccess={vi.fn()} />);
+    it('explains the product and starts Google sign-in from the hero', async () => {
+        await renderWelcome();
 
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('忘记之前');
         fireEvent.click(screen.getAllByRole('button', { name: /使用 Google 登录/ })[0]);
         expect(signIn).toHaveBeenCalledTimes(1);
     });
 
-    it('passes the login callback to the sign-in hook', () => {
+    it('passes the login callback to the sign-in hook', async () => {
         const onLoginSuccess = vi.fn();
-        render(<Welcome onLoginSuccess={onLoginSuccess} />);
+        await renderWelcome(onLoginSuccess);
         expect(useGoogleSignIn).toHaveBeenCalledWith(onLoginSuccess);
     });
 
-    it('shows the five SRS stages with their review intervals', () => {
-        render(<Welcome onLoginSuccess={vi.fn()} />);
+    it('shows the five SRS stages with their review intervals', async () => {
+        await renderWelcome();
 
         for (const stage of ['新词', '生疏', '学习中', '熟悉', '掌握']) {
             expect(screen.getByText(stage)).toBeInTheDocument();
@@ -53,7 +60,7 @@ describe('Welcome', () => {
     });
 
     it('lists live decks from easiest to hardest with card counts', async () => {
-        render(<Welcome onLoginSuccess={vi.fn()} />);
+        await renderWelcome();
         expect(await screen.findByText('共 5,652 个单词，覆盖 JLPT 各级')).toBeInTheDocument();
 
         const labels = await screen.findAllByTestId('deck-label');
@@ -64,21 +71,21 @@ describe('Welcome', () => {
 
     it('hides the deck list when decks cannot be loaded', async () => {
         (api.getDecks as Mock).mockRejectedValue(new Error('offline'));
-        render(<Welcome onLoginSuccess={vi.fn()} />);
+        await renderWelcome();
 
         await waitFor(() => expect(api.getDecks).toHaveBeenCalled());
         expect(screen.queryByTestId('deck-label')).not.toBeInTheDocument();
     });
 
-    it('shows sign-in errors', () => {
+    it('shows sign-in errors', async () => {
         (useGoogleSignIn as Mock).mockReturnValue({ signIn, error: 'Login failed' });
-        render(<Welcome onLoginSuccess={vi.fn()} />);
+        await renderWelcome();
         expect(screen.getAllByText('Login failed').length).toBeGreaterThan(0);
     });
 });
 
 describe('deckLabel', () => {
-    it('turns deck names into short JLPT labels', () => {
+    it('turns deck names into short JLPT labels', async () => {
         expect(deckLabel('eggrolls-JLPT10k-v3::3-N2')).toBe('N2');
         expect(deckLabel('eggrolls-JLPT10k-v3::1-N4+N5')).toBe('N5–N4');
         expect(deckLabel('dabia-jlpt::N2 Grammar')).toBe('N2 Grammar');

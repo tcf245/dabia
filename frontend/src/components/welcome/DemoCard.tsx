@@ -91,7 +91,7 @@ const DemoCard: React.FC<{ copy: WelcomeCopy }> = ({ copy }) => {
                 </p>
 
                 <div className="h-8 flex items-center justify-center">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence>
                         {isCorrect && (
                             <motion.span
                                 key={card.word}
@@ -115,7 +115,7 @@ const DemoCard: React.FC<{ copy: WelcomeCopy }> = ({ copy }) => {
             </div>
 
             <div className="mt-8 flex justify-center h-8">
-                <AnimatePresence mode="wait">
+                <AnimatePresence>
                     {isCorrect && (
                         <motion.div
                             key={`next-${card.word}`}
