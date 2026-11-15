@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import AppHeader from './AppHeader';
 
@@ -47,5 +47,21 @@ describe('AppHeader', () => {
     it('falls back to an initial when the user has no picture', () => {
         renderHeader({ user: { sub: 'u2', email: 'kana@example.com' } });
         expect(screen.getByText('K')).toBeInTheDocument();
+    });
+
+    describe('scroll state', () => {
+        afterEach(() => {
+            Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+        });
+
+        it('adds a border and blurred background once the page scrolls', () => {
+            renderHeader();
+            const header = screen.getByRole('banner');
+            expect(header.className).not.toContain('backdrop-blur-md');
+
+            Object.defineProperty(window, 'scrollY', { value: 120, configurable: true });
+            fireEvent.scroll(window);
+            expect(header.className).toContain('backdrop-blur-md');
+        });
     });
 });

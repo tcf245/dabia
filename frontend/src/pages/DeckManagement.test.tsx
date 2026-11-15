@@ -136,4 +136,17 @@ describe('DeckManagement', () => {
 
         consoleSpy.mockRestore();
     });
+    it('toggles a deck from the keyboard with Enter or Space only', async () => {
+        render(<DeckManagement />);
+        const deck = await screen.findByRole('switch', { name: 'Intermediate Kanji' });
+
+        fireEvent.keyDown(deck, { key: 'Tab' });
+        expect(api.updateDeckSettings).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(deck, { key: 'Enter' });
+        await waitFor(() => expect(api.updateDeckSettings).toHaveBeenCalledTimes(1));
+
+        fireEvent.keyDown(deck, { key: ' ' });
+        await waitFor(() => expect(api.updateDeckSettings).toHaveBeenCalledTimes(2));
+    });
 });
