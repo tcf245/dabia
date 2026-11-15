@@ -28,7 +28,16 @@ everyone.
    no card. Seed data goes through Alembic (ADR 002), and the backend's Vercel install step runs
    `alembic upgrade head`, so merging deploys the content to each environment without anyone handling database
    credentials.
-3. Add the UI strings for the language to the frontend dictionary. No backend or schema change is needed.
+3. Add the UI strings: `frontend/src/i18n/messages/<language>.ts`, typed as `Messages` (a missing key fails the
+   build), registered in `frontend/src/i18n/index.ts`. The language menu offers a language once it has both a UI
+   dictionary and card content (`GET /api/v1/languages`). No backend or schema change is needed.
+
+## Frontend
+- `LanguageProvider` picks the language: the saved choice (`localStorage` `dabia.language`), then the browser's
+  preferred languages (full tag, then base), then `zh`. It sets `<html lang>` and the `lang` parameter of card
+  requests, and `useI18n()` gives components the dictionary.
+- Switching language mid-session reloads the card on screen in the new language; dates and numbers follow the
+  dictionary's `locale`.
 
 ## Consequences
 - One extra indexed query per served card.

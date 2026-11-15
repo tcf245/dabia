@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useI18n } from '../i18n/LanguageProvider';
 
 interface ProficiencyIndicatorProps {
     level: number; // 1-5
     onClick: () => void;
 }
 
-const PROFICIENCY_TEXTS: Record<number, string> = {
-    1: '没见过的新单词！',
-    2: '这个单词需要多练练！',
-    3: '就要学起来了！',
-    4: '唾手可得！',
-    5: '记忆满点！',
-};
 
 const PROFICIENCY_COLORS: Record<number, string> = {
     1: 'bg-[#F2DCD6]',
@@ -26,6 +20,7 @@ const PROFICIENCY_SEGMENTS = [1, 2, 3, 4, 5];
 
 const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onClick }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const { messages } = useI18n();
 
     return (
         <div
@@ -55,7 +50,7 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
             {/* NEW Tag */}
             {level === 1 && (
                 <div className="bg-[#D97757]/10 text-[#D97757] text-[10px] px-1.5 py-0.5 rounded-md font-sans font-medium uppercase tracking-wider animate-in fade-in zoom-in duration-500">
-                    NEW
+                    {messages.flashcard.newTag}
                 </div>
             )}
 
@@ -69,7 +64,7 @@ const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({ level, onCl
                         className="flex items-center gap-2"
                     >
                         <span className="text-xs font-sans text-[#74746E] font-medium drop-shadow-[0_1px_1px_rgba(0,0,0,0.1)]">
-                            {PROFICIENCY_TEXTS[level as keyof typeof PROFICIENCY_TEXTS]}
+                            {messages.proficiency.levels[level]}
                         </span>
                     </motion.div>
                 )}

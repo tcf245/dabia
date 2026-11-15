@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { BookOpen, ChevronDown, Layers, LogOut, UserRound } from 'lucide-react';
+import LanguageSelect from './LanguageSelect';
+import { useI18n } from '../i18n/LanguageProvider';
+import type { Messages } from '../i18n';
 
 export interface HeaderUser {
     sub: string;
@@ -16,10 +19,10 @@ interface AppHeaderProps {
     onLogout: () => void;
 }
 
-const NAV_ITEMS = [
-    { to: '/', label: 'Learn', icon: BookOpen, end: true },
-    { to: '/decks', label: 'Decks', icon: Layers, end: false },
-    { to: '/profile', label: 'Profile', icon: UserRound, end: false },
+const NAV_ITEMS: { to: string; label: keyof Messages['header']; icon: typeof BookOpen; end: boolean }[] = [
+    { to: '/', label: 'learn', icon: BookOpen, end: true },
+    { to: '/decks', label: 'decks', icon: Layers, end: false },
+    { to: '/profile', label: 'profile', icon: UserRound, end: false },
 ];
 
 /** The recall-card brand mark, same artwork as public/favicon.svg. */
@@ -48,6 +51,8 @@ const Avatar: React.FC<{ user: HeaderUser; size: 'sm' | 'md' }> = ({ user, size 
 
 const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogin, onLogout }) => {
     const [scrolled, setScrolled] = useState(false);
+    const { messages } = useI18n();
+    const t = messages.header;
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 4);
@@ -70,9 +75,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogin, onLogout }) => {
                 </Link>
 
                 {user ? (
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <nav aria-label="Main" className="flex items-center gap-1 rounded-full bg-[#F2F0EF] p-1">
-                            {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <nav aria-label={t.mainNav} className="flex items-center gap-1 rounded-full bg-[#F2F0EF] p-1">
+                            {NAV_ITEMS.map(({ to, label: key, icon: Icon, end }) => {
+                                const label = t[key];
+                                return (
                                 <NavLink
                                     key={to}
                                     to={to}
@@ -90,12 +97,15 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogin, onLogout }) => {
                                         </>
                                     )}
                                 </NavLink>
-                            ))}
+                                );
+                            })}
                         </nav>
+
+                        <LanguageSelect />
 
                         <Menu>
                             <MenuButton
-                                aria-label="Account menu"
+                                aria-label={t.accountMenu}
                                 className="flex items-center gap-1 rounded-full p-0.5 pr-1.5 transition-colors hover:bg-[#F2F0EF] focus:outline-none data-[focus]:ring-2 data-[focus]:ring-[#D97757] data-[open]:bg-[#F2F0EF]"
                             >
                                 <Avatar user={user} size="sm" />
@@ -120,7 +130,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogin, onLogout }) => {
                                         className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[#2A2A29] data-[focus]:bg-[#F2F0EF]"
                                     >
                                         <UserRound size={16} className="text-[#74746E]" />
-                                        Profile & stats
+                                        {t.profileAndStats}
                                     </Link>
                                 </MenuItem>
                                 <MenuItem>
@@ -129,19 +139,22 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogin, onLogout }) => {
                                         className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[#2A2A29] data-[focus]:bg-[#F2F0EF]"
                                     >
                                         <LogOut size={16} className="text-[#74746E]" />
-                                        Log out
+                                        {t.logOut}
                                     </button>
                                 </MenuItem>
                             </MenuItems>
                         </Menu>
                     </div>
                 ) : (
+                    <div className="flex items-center gap-2">
+                    <LanguageSelect />
                     <button
                         onClick={onLogin}
                         className="h-9 rounded-lg border border-[#E6E6E3] bg-white px-4 text-sm font-medium text-[#2A2A29] shadow-sm transition-colors hover:bg-[#F5F4F0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757]"
                     >
-                        登录
+                        {t.signIn}
                     </button>
+                    </div>
                 )}
             </div>
         </header>

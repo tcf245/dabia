@@ -4,11 +4,14 @@ import Flashcard from '../components/Flashcard';
 import SkeletonFlashcard from '../components/SkeletonFlashcard';
 import SessionProgress from '../components/SessionProgress';
 import DailyGoalPopup from '../components/DailyGoalPopup';
-import { getNextCard } from '../services/api';
+import { getCard, getNextCard } from '../services/api';
+import { useI18n } from '../i18n/LanguageProvider';
 import type { PreviousAnswer, Card, SessionProgress as SessionProgressType } from '../services/api';
 import { calculateNextProficiency } from '../utils/srs';
 
 const LearningSession: React.FC = () => {
+  const { language, messages } = useI18n();
+  const t = messages.session;
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [sessionProgress, setSessionProgress] = useState<SessionProgressType>({ completed_today: 0, goal_today: 50 });
   const [history, setHistory] = useState<Card[]>([]);
@@ -39,7 +42,7 @@ const LearningSession: React.FC = () => {
         hasShownDailyGoal.current = true;
       }
     } catch (err) {
-      setError('Could not connect to the server. Please check your connection or try again later.');
+      setError(t.connectionError);
       console.error(err);
     } finally {
       setLoading(false);
@@ -49,6 +52,21 @@ const LearningSession: React.FC = () => {
   useEffect(() => {
     fetchNextCard();
   }, []);
+
+  // Switching language mid-session reloads the card on screen in the new language; the rest follow as they come.
+  const shownLanguage = React.useRef(language);
+  useEffect(() => {
+    if (shownLanguage.current === language) return;
+    shownLanguage.current = language;
+    if (!currentCard) return;
+    getCard(currentCard.card_id)
+      .then((card) => setCurrentCard((shown) => (
+        shown && shown.card_id === card.card_id
+          ? { ...shown, target: { ...shown.target, hint: card.target.hint }, sentence_translation: card.sentence_translation, language: card.language }
+          : shown
+      )))
+      .catch(console.error);
+  }, [language]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -121,14 +139,14 @@ const LearningSession: React.FC = () => {
     return (
       <MessageCard
         icon={<AlertTriangle className="text-destructive" size={48} />}
-        title="Connection Error"
+        title={t.connectionErrorTitle}
       >
         <p className="mb-6">{error}</p>
         <button
           onClick={() => fetchNextCard()}
           className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
         >
-          Retry
+          {t.retry}
         </button>
       </MessageCard>
     );
@@ -140,9 +158,9 @@ const LearningSession: React.FC = () => {
         <SessionProgress progress={sessionProgress} />
         <MessageCard
           icon={<PartyPopper className="text-primary" size={48} />}
-          title="Session Completed!"
+          title={t.completedTitle}
         >
-          <p>You've finished all your reviews for now. Great job!</p>
+          <p>{t.completedBody}</p>
         </MessageCard>
       </>
     );
@@ -163,11 +181,11 @@ const LearningSession: React.FC = () => {
               <button
                 onClick={handlePreviousClick}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E6E6E3] bg-white pl-2 pr-3 text-sm text-[#74746E] shadow-sm transition-colors hover:text-[#2A2A29] hover:bg-[#F5F4F0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757]"
-                title="Previous card (←)"
-                aria-label="Previous card"
+                title={t.previousTitle}
+                aria-label={t.previous}
               >
                 <ArrowLeft size={16} />
-                <span>Previous</span>
+                <span>{t.previous}</span>
               </button>
             ) : null
           }

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { MessageCircle, Volume2, Clock } from 'lucide-react';
-import type { WelcomeCopy } from '../../i18n/welcome';
+import type { Messages } from '../../i18n';
+
+type WelcomeCopy = Messages['welcome'];
 
 const SEGMENT_COLORS = ['#F2DCD6', '#E5A087', '#D97757', '#D97757', '#D97757'];
 

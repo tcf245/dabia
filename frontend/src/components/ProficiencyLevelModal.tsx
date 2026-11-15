@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useI18n } from '../i18n/LanguageProvider';
 
 interface ProficiencyLevelModalProps {
     isOpen: boolean;
@@ -10,14 +11,16 @@ interface ProficiencyLevelModalProps {
 
 const ProficiencyLevelModal: React.FC<ProficiencyLevelModalProps> = ({ isOpen, onClose }) => {
     useEscapeKey(isOpen, onClose);
+    const { messages } = useI18n();
+    const t = messages.proficiency;
     if (!isOpen) return null;
 
     const levels = [
-        { level: 5, text: '记忆满点！', color: 'bg-[#D97757]' },
-        { level: 4, text: '唾手可得！', color: 'bg-[#D97757]' },
-        { level: 3, text: '就要学起来了！', color: 'bg-[#D97757]' },
-        { level: 2, text: '这个单词需要多练练！', color: 'bg-[#E5A087]' },
-        { level: 1, text: '没见过的新单词！', color: 'bg-[#F2DCD6]' },
+        { level: 5, text: t.levels[5], color: 'bg-[#D97757]' },
+        { level: 4, text: t.levels[4], color: 'bg-[#D97757]' },
+        { level: 3, text: t.levels[3], color: 'bg-[#D97757]' },
+        { level: 2, text: t.levels[2], color: 'bg-[#E5A087]' },
+        { level: 1, text: t.levels[1], color: 'bg-[#F2DCD6]' },
     ];
 
     return (
@@ -38,12 +41,12 @@ const ProficiencyLevelModal: React.FC<ProficiencyLevelModalProps> = ({ isOpen, o
                 >
                     {/* Header */}
                     <div className="text-center mb-8">
-                        <h2 className="font-serif text-2xl text-[#333333] mb-4">掌握你的每日词汇</h2>
+                        <h2 className="font-serif text-2xl text-[#333333] mb-4">{t.modalTitle}</h2>
                         <p className="text-sm text-[#888888] font-light leading-relaxed">
-                            Dabia 记录你的每一次练习。通过智能间隔算法，我们能识别你对每个单词的熟悉程度，并在最适合的时间提醒你复习。
+                            {t.modalBody}
                         </p>
                         <p className="text-sm text-[#888888] font-light mt-4">
-                            让记忆像细胞一样生长，直至达成母语般的条件反射。
+                            {t.modalFooter}
                         </p>
                     </div>
 
@@ -75,7 +78,7 @@ const ProficiencyLevelModal: React.FC<ProficiencyLevelModalProps> = ({ isOpen, o
                     {/* Close Button */}
                     <button
                         onClick={onClose}
-                        aria-label="Close"
+                        aria-label={messages.common.close}
                         className="absolute top-6 right-6 p-2 text-[#999999] hover:text-[#2A2A29] transition-colors rounded-full hover:bg-[#F2F0EF]"
                     >
                         <X size={20} />

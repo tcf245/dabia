@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useGoogleSignIn } from './useGoogleSignIn';
+import { en } from '../i18n/messages/en';
 
 vi.mock('@react-oauth/google', () => ({ useGoogleLogin: vi.fn() }));
 
@@ -65,12 +66,12 @@ describe('useGoogleSignIn', () => {
 
         await act(() => options().onSuccess({ code: 'x' }));
 
-        expect(hook.result.current.error).toBe('Login failed');
+        expect(hook.result.current.error).toBe(en.login.failed);
     });
 
     it('reports a Google-side failure', () => {
         const { hook, options } = setup();
         act(() => options().onError());
-        expect(hook.result.current.error).toBe('Login failed. Please try again.');
+        expect(hook.result.current.error).toBe(en.login.failed);
     });
 });

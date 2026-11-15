@@ -1,4 +1,5 @@
 import type { Deck } from '../services/api';
+import type { Messages } from '../i18n';
 
 const DIFFICULTY_RANK: Record<string, number> = { Beginner: 0, Intermediate: 1, Advanced: 2, Expert: 3 };
 
@@ -17,18 +18,17 @@ export const sortDecks = (decks: Deck[]) =>
         || Number(isGrammarDeck(a)) - Number(isGrammarDeck(b))
         || a.name.localeCompare(b.name));
 
-/** Learner-facing deck title: `JLPT N5–N4` for imported JLPT decks, otherwise the short name. */
-export const deckTitle = (name: string): string => {
-    const label = deckLabel(name);
+/** Learner-facing deck title: `JLPT N5–N4` for imported JLPT decks, otherwise the short name. `grammarSuffix`
+ * replaces a trailing ` Grammar` (`N2 Grammar` -> `N2 语法`). */
+export const deckTitle = (name: string, grammarSuffix = 'Grammar'): string => {
+    const label = deckLabel(name).replace(/ Grammar$/, ` ${grammarSuffix}`);
     return name.includes('::') && /^N\d/.test(label) ? `JLPT ${label}` : label;
 };
 
 // Import tooling writes provenance notes into `description`; those are not meant for learners.
 const INTERNAL_DESCRIPTION = /cards from anki export|wiki note/i;
 
-export const deckDescription = (deck: Deck): string => {
+export const deckDescription = (deck: Deck, t: Messages['decks']): string => {
     if (deck.description && !INTERNAL_DESCRIPTION.test(deck.description)) return deck.description;
-    return isGrammarDeck(deck)
-        ? 'Grammar patterns, each shown in an example sentence.'
-        : 'Vocabulary in example sentences, with audio.';
+    return isGrammarDeck(deck) ? t.grammarDescription : t.vocabularyDescription;
 };

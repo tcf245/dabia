@@ -1,6 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import ProficiencyLevelModal from './ProficiencyLevelModal';
+import { setFallbackLanguage } from '../i18n/context';
+import { zh } from '../i18n/messages/zh';
+
+// These assertions use the Chinese interface.
+beforeEach(() => setFallbackLanguage('zh'));
 
 // Mock framer-motion to be synchronous and non-animated for tests
 vi.mock('framer-motion', () => ({
@@ -31,7 +36,7 @@ describe('ProficiencyLevelModal', () => {
     test('calls onClose when close button is clicked', () => {
         render(<ProficiencyLevelModal isOpen={true} onClose={mockOnClose} />);
 
-        const closeButton = screen.getByRole('button', { name: /close/i });
+        const closeButton = screen.getByRole('button', { name: zh.common.close });
         fireEvent.click(closeButton);
 
         expect(mockOnClose).toHaveBeenCalled();

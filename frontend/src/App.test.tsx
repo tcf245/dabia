@@ -2,6 +2,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
+import { setFallbackLanguage } from './i18n/context';
+
+// These assertions use the Chinese interface.
+beforeEach(() => setFallbackLanguage('zh'));
 
 vi.mock('./pages/Welcome', () => ({ default: () => <div>welcome-page</div> }));
 vi.mock('./pages/LearningSession', () => ({ default: () => <div>learning-session</div> }));

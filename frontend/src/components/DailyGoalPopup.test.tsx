@@ -2,6 +2,11 @@ import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import DailyGoalPopup from './DailyGoalPopup';
 import * as statsApi from '../services/api';
+import { setFallbackLanguage } from '../i18n/context';
+import { zh } from '../i18n/messages/zh';
+
+// These assertions use the Chinese interface.
+beforeEach(() => setFallbackLanguage('zh'));
 
 vi.mock('../services/api', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../services/api')>();
@@ -41,8 +46,9 @@ describe('DailyGoalPopup', () => {
         // This is intentional "Red" state.
 
         // Check for specific UI elements from the screenshot
-        expect(await screen.findByText(/你做得很棒!/i)).toBeInTheDocument();
-        expect(screen.getByText(/完成\s*50\s*张词卡/i)).toBeInTheDocument();
+        expect(await screen.findByText(zh.dailyGoal.celebration)).toBeInTheDocument();
+        expect(screen.getByText(zh.dailyGoal.completed(50))).toBeInTheDocument();
+        expect(screen.getByText(zh.dailyGoal.toLearn)).toBeInTheDocument();
 
         // Check stats
         expect(screen.getByText('14')).toBeInTheDocument(); // Learned

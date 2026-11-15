@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import DeckManagement from './DeckManagement';
 import * as api from '../services/api';
+import { en } from '../i18n/messages/en';
 
 // Mock the api service
 vi.mock('../services/api', () => ({
@@ -51,15 +52,15 @@ describe('DeckManagement', () => {
 
     it('renders loading state initially', async () => {
         render(<DeckManagement />);
-        expect(screen.getByText(/Loading library.../i)).toBeInTheDocument();
+        expect(screen.getByText(en.decks.loading)).toBeInTheDocument();
         // Wait for it to finish loading to avoid act warnings from the background fetches
-        await waitFor(() => expect(screen.queryByText(/Loading library.../i)).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText(en.decks.loading)).not.toBeInTheDocument());
     });
 
     it('renders deck list after loading', async () => {
         render(<DeckManagement />);
 
-        await waitFor(() => expect(screen.queryByText(/Loading library.../i)).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText(en.decks.loading)).not.toBeInTheDocument());
 
         expect(screen.getByText('Basic Japanese')).toBeInTheDocument();
         expect(screen.getByText('Intermediate Kanji')).toBeInTheDocument();
@@ -79,9 +80,9 @@ describe('DeckManagement', () => {
 
         // Should trigger updateDeckSettings with only '1'
         expect(api.updateDeckSettings).toHaveBeenCalledWith({ active_deck_ids: ['1'] });
-        expect(screen.getByText(/Saving changes.../i)).toBeInTheDocument();
+        expect(screen.getByText(en.decks.saving)).toBeInTheDocument();
 
-        await waitFor(() => expect(screen.queryByText(/Saving changes.../i)).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText(en.decks.saving)).not.toBeInTheDocument());
     });
 
     it('toggles deck selection (select)', async () => {
@@ -101,7 +102,7 @@ describe('DeckManagement', () => {
         });
 
         // Wait for saving to finish
-        await waitFor(() => expect(screen.queryByText(/Saving changes.../i)).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText(en.decks.saving)).not.toBeInTheDocument());
     });
 
     it('handles toggle error gracefully', async () => {
@@ -119,7 +120,7 @@ describe('DeckManagement', () => {
         });
 
         // Also wait for Saving changes to disappear
-        await waitFor(() => expect(screen.queryByText(/Saving changes.../i)).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText(en.decks.saving)).not.toBeInTheDocument());
 
         consoleSpy.mockRestore();
     });

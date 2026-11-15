@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import Flashcard from './Flashcard';
 import type { Card } from '../services/api';
+import { en } from '../i18n/messages/en';
 
 // Mock framer-motion to be synchronous and non-animated for tests
 vi.mock('framer-motion', () => ({
@@ -70,14 +71,14 @@ describe('Flashcard component', () => {
     fireEvent.click(indicator);
 
     // Verify modal is open (checks title text)
-    expect(screen.getByText('掌握你的每日词汇')).toBeInTheDocument();
+    expect(screen.getByText(en.proficiency.modalTitle)).toBeInTheDocument();
 
     // Close the modal
     const closeButton = screen.getByRole('button', { name: /close/i });
     fireEvent.click(closeButton);
 
     // Verify modal is closed
-    expect(screen.queryByText('掌握你的每日词汇')).not.toBeInTheDocument();
+    expect(screen.queryByText(en.proficiency.modalTitle)).not.toBeInTheDocument();
   });
 
   test('handles incorrect answer and shows reading hint', async () => {

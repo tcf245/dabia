@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { getDailySummary } from '../services/api';
 import type { DailyStats } from '../services/api';
+import { useI18n } from '../i18n/LanguageProvider';
 
 interface DailyGoalPopupProps {
     isOpen: boolean;
@@ -15,6 +16,8 @@ interface DailyGoalPopupProps {
 
 const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initialStats }) => {
     const [stats, setStats] = useState<DailyStats | null>(initialStats || null);
+    const { messages } = useI18n();
+    const t = messages.dailyGoal;
 
     useEffect(() => {
         if (isOpen && !stats && !initialStats) {
@@ -26,12 +29,12 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
 
     if (!isOpen) return null;
 
-    const todayStr = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const todayStr = new Date().toLocaleDateString(messages.locale, { weekday: 'long', day: 'numeric', month: 'long' });
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
-        return `${mins} 分钟, ${secs} 秒`;
+        return t.duration(mins, secs);
     };
 
     return (
@@ -45,7 +48,7 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
                         <h2 className="font-serif text-2xl text-[#333333]">
                             {todayStr}
                         </h2>
-                        <button onClick={onClose} aria-label="Close" className="text-[#888888] hover:text-[#2A2A29] transition-colors p-1">
+                        <button onClick={onClose} aria-label={messages.common.close} className="text-[#888888] hover:text-[#2A2A29] transition-colors p-1">
                             <X size={20} strokeWidth={1.5} />
                         </button>
                     </div>
@@ -56,9 +59,9 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
                             <Check size={20} strokeWidth={2} />
                         </div>
                         <div>
-                            <h3 className="font-serif text-xl text-[#2A2A29] mb-1">你做得很棒!</h3>
-                            <p className="font-sans text-sm text-[#2A2A29] font-medium">完成 {stats?.total_answered || 50} 张词卡</p>
-                            <p className="font-sans text-xs text-[#888888] mt-1 font-light tracking-wide">50张词卡是最佳学习的建议目标。</p>
+                            <h3 className="font-serif text-xl text-[#2A2A29] mb-1">{t.celebration}</h3>
+                            <p className="font-sans text-sm text-[#2A2A29] font-medium">{t.completed(stats?.total_answered || 50)}</p>
+                            <p className="font-sans text-xs text-[#888888] mt-1 font-light tracking-wide">{t.suggestion}</p>
                         </div>
                     </div>
 
@@ -68,12 +71,12 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
                         <div className="grid grid-cols-2 gap-4">
                             <StatBox
                                 icon={<Maximize2 size={16} strokeWidth={1.5} className="text-[#D97757]" />}
-                                label="要学的单词"
+                                label={t.toLearn}
                                 value={stats?.to_learn_count ?? 0}
                             />
                             <StatBox
                                 icon={<MoveVertical size={16} strokeWidth={1.5} className="text-[#D97757]" />}
-                                label="已学单词"
+                                label={t.learned}
                                 value={stats?.learned_count ?? 0}
                             />
                         </div>
@@ -82,22 +85,22 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
                         <div className="bg-[#F9F9F8] rounded-[20px] p-1 border border-[#E6E6E3]">
                             <StatRow
                                 icon={<ArrowUp size={16} strokeWidth={1.5} className="text-[#888888]" />}
-                                label="单词已强化"
+                                label={t.reinforced}
                                 value={stats?.reinforced_count ?? 0}
                             />
                             <StatRow
                                 icon={<Clock size={16} strokeWidth={1.5} className="text-[#888888]" />}
-                                label="总耗时"
+                                label={t.totalTime}
                                 value={formatTime(stats?.total_time_seconds || 0)}
                             />
                             <StatRow
                                 icon={<Star size={16} strokeWidth={1.5} className="text-[#888888]" />}
-                                label="新单词"
+                                label={t.newWords}
                                 value={stats?.new_words_count ?? 0}
                             />
                             <StatRow
                                 icon={<CheckCircle2 size={16} strokeWidth={1.5} className="text-[#888888]" />}
-                                label="正确率"
+                                label={t.accuracy}
                                 value={`${Math.round(stats?.accuracy ?? 0)}%`}
                                 isLast
                             />
@@ -109,7 +112,7 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
                         onClick={onClose}
                         className="w-full bg-[#D97757] text-white font-medium py-3 rounded-full hover:bg-[#B05030] transition-colors shadow-sm"
                     >
-                        继续
+                        {t.continue}
                     </button>
 
                 </DialogPanel>

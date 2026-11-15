@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import type { SessionProgress as SessionProgressType } from '../services/api';
+import { useI18n } from '../i18n/LanguageProvider';
 
 interface SessionProgressProps {
   progress: SessionProgressType;
@@ -15,6 +16,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 /** Session toolbar above the flashcard: optional left slot and a compact daily-goal ring. */
 const SessionProgress: React.FC<SessionProgressProps> = ({ progress, headerLeft }) => {
   const { completed_today: done, goal_today: goal } = progress;
+  const t = useI18n().messages.session;
   const ratio = goal > 0 ? Math.min(done / goal, 1) : 0;
   const reached = goal > 0 && done >= goal;
 
@@ -24,11 +26,11 @@ const SessionProgress: React.FC<SessionProgressProps> = ({ progress, headerLeft 
 
       <div
         role="progressbar"
-        aria-label="Daily goal"
+        aria-label={t.dailyGoal}
         aria-valuemin={0}
         aria-valuemax={goal}
         aria-valuenow={done}
-        title="Daily goal"
+        title={t.dailyGoal}
         className={`inline-flex h-8 items-center gap-2 rounded-full border pl-1.5 pr-3 text-sm transition-colors ${reached
           ? 'border-[#F2DCD6] bg-[#F2DCD6]/50'
           : 'border-[#E6E6E3] bg-white'
@@ -57,7 +59,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({ progress, headerLeft 
         <span className="tabular-nums font-medium text-[#2A2A29]">
           {done} <span className="text-[#A3A39D]">/ {goal}</span>
         </span>
-        <span className="text-[#74746E]">today</span>
+        <span className="text-[#74746E]">{t.today}</span>
       </div>
     </div>
   );

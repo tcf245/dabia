@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useI18n } from '../i18n/LanguageProvider';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -9,6 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
  */
 export const useGoogleSignIn = (onLoginSuccess: (token: string) => void) => {
     const [error, setError] = useState<string | null>(null);
+    const failed = useI18n().messages.login.failed;
 
     const signIn = useGoogleLogin({
         flow: 'auth-code',
@@ -23,7 +25,7 @@ export const useGoogleSignIn = (onLoginSuccess: (token: string) => void) => {
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     console.error('Login failed details:', errorData);
-                    throw new Error(errorData.detail || 'Login failed');
+                    throw new Error(errorData.detail || failed);
                 }
 
                 const data = await response.json();
@@ -31,10 +33,10 @@ export const useGoogleSignIn = (onLoginSuccess: (token: string) => void) => {
                 onLoginSuccess(data.access_token);
             } catch (err) {
                 console.error('Login error:', err);
-                setError(err instanceof Error ? err.message : 'Failed to log in. Please try again.');
+                setError(err instanceof Error ? err.message : failed);
             }
         },
-        onError: () => setError('Login failed. Please try again.'),
+        onError: () => setError(failed),
     });
 
     return { signIn: () => signIn(), error };
