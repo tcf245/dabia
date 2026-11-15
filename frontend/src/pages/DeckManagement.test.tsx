@@ -63,8 +63,8 @@ describe('DeckManagement', () => {
 
         expect(screen.getByText('Basic Japanese')).toBeInTheDocument();
         expect(screen.getByText('Intermediate Kanji')).toBeInTheDocument();
-        expect(screen.getByText('100 CARDS')).toBeInTheDocument();
-        expect(screen.getByText('50 CARDS')).toBeInTheDocument();
+        expect(screen.getByText('100 cards')).toBeInTheDocument();
+        expect(screen.getByText('50 cards')).toBeInTheDocument();
     });
 
     it('toggles deck selection (unselect)', async () => {

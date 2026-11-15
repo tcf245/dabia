@@ -139,11 +139,11 @@ describe('LearningSession', () => {
         await waitFor(() => expect(screen.getByText('h3')).toBeInTheDocument());
 
         // 4. Press Back -> get 'two'
-        fireEvent.click(screen.getByTitle('Previous Card'));
+        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
         await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
 
         // 5. Press Back again -> get 'one'
-        fireEvent.click(screen.getByTitle('Previous Card'));
+        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
 
         // 6. Press Continue -> get 'two'
@@ -155,7 +155,7 @@ describe('LearningSession', () => {
         await waitFor(() => expect(screen.getByText('h3')).toBeInTheDocument());
 
         // 8. Back button should still work
-        expect(screen.getByTitle('Previous Card')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Previous card' })).toBeInTheDocument();
     });
 
     it('shows error message and allows retry on API failure', async () => {
@@ -248,7 +248,7 @@ describe('LearningSession', () => {
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Previous Card'));
+        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
 
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -296,6 +296,6 @@ describe('LearningSession', () => {
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(api.getNextCard).toHaveBeenCalledTimes(2));
 
-        fireEvent.click(screen.getByTitle('Previous Card'));
+        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
     });
 });

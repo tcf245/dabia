@@ -162,10 +162,12 @@ const LearningSession: React.FC = () => {
             !loading && history.length > 0 ? (
               <button
                 onClick={handlePreviousClick}
-                className="text-muted-foreground hover:text-foreground transition-colors p-0 flex items-center"
-                title="Previous Card"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#E6E6E3] bg-white pl-2 pr-3 text-sm text-[#74746E] shadow-sm transition-colors hover:text-[#2A2A29] hover:bg-[#F5F4F0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757]"
+                title="Previous card (←)"
+                aria-label="Previous card"
               >
-                <ArrowLeft size={24} />
+                <ArrowLeft size={16} />
+                <span>Previous</span>
               </button>
             ) : null
           }

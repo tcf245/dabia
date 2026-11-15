@@ -16,3 +16,19 @@ export const sortDecks = (decks: Deck[]) =>
         (DIFFICULTY_RANK[a.difficulty] ?? 9) - (DIFFICULTY_RANK[b.difficulty] ?? 9)
         || Number(isGrammarDeck(a)) - Number(isGrammarDeck(b))
         || a.name.localeCompare(b.name));
+
+/** Learner-facing deck title: `JLPT N5–N4` for imported JLPT decks, otherwise the short name. */
+export const deckTitle = (name: string): string => {
+    const label = deckLabel(name);
+    return name.includes('::') && /^N\d/.test(label) ? `JLPT ${label}` : label;
+};
+
+// Import tooling writes provenance notes into `description`; those are not meant for learners.
+const INTERNAL_DESCRIPTION = /cards from anki export|wiki note/i;
+
+export const deckDescription = (deck: Deck): string => {
+    if (deck.description && !INTERNAL_DESCRIPTION.test(deck.description)) return deck.description;
+    return isGrammarDeck(deck)
+        ? 'Grammar patterns, each shown in an example sentence.'
+        : 'Vocabulary in example sentences, with audio.';
+};

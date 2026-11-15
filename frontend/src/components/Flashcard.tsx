@@ -126,7 +126,7 @@ const Flashcard: React.FC<FlashcardProps> = (props) => {
         </div>
 
         {/* Action Bar */}
-        <div className="mt-6 pt-6 border-t border-dashed border-[#E6E6E3] flex justify-between items-center">
+        <div className="mt-6 pt-6 min-h-[65px] gap-4 border-t border-dashed border-[#E6E6E3] flex justify-between items-center">
           <span className="text-base font-light text-[#74746E] text-left">{card.sentence_translation}</span>
 
           <div className="flex items-center gap-3">
