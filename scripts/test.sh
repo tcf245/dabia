@@ -7,12 +7,12 @@ FAILED=0
 
 # ── Frontend (vitest) ─────────────────────────────────────────────────────────
 echo "▶ Frontend tests..."
-FE_OUT=$(cd "$ROOT/frontend" && npm test -- --run --reporter=verbose 2>&1) || true
-# Only check the vitest summary lines for actual failures (ignore console.error in tests)
-FE_FAIL=$(echo "$FE_OUT" | grep -E "^ Test Files .* failed|^ +Tests .* failed" || true)
-if [ -n "$FE_FAIL" ]; then
-  echo "❌ Frontend failures:"
-  echo "$FE_OUT" | grep -E "FAIL|✗" | grep -v "ExperimentalWarning" || true
+# Vitest's exit code is the source of truth; NO_COLOR keeps the summary greppable.
+FE_STATUS=0
+FE_OUT=$(cd "$ROOT/frontend" && NO_COLOR=1 npm test -- --run --reporter=verbose 2>&1) || FE_STATUS=$?
+if [ "$FE_STATUS" -ne 0 ]; then
+  echo "❌ Frontend failures (vitest exit $FE_STATUS):"
+  echo "$FE_OUT" | grep -E "FAIL|✗|×|Tests " | grep -v "ExperimentalWarning" || true
   FAILED=1
 else
   FE_SUMMARY=$(echo "$FE_OUT" | grep -E "Test Files|Tests " | tail -2 | tr '\n' ' ' | sed 's/  */ /g')
@@ -21,12 +21,12 @@ fi
 
 # ── Backend (pytest) ──────────────────────────────────────────────────────────
 echo "▶ Backend tests..."
-BE_OUT=$(cd "$ROOT" && python -m pytest --tb=line -q 2>&1) || true
-BE_FAIL=$(echo "$BE_OUT" | grep -E "^FAILED|ERROR " || true)
+BE_STATUS=0
+BE_OUT=$(cd "$ROOT" && python -m pytest --tb=line -q 2>&1) || BE_STATUS=$?
 BE_SUMMARY=$(echo "$BE_OUT" | tail -3)
-if [ -n "$BE_FAIL" ]; then
-  echo "❌ Backend failures:"
-  echo "$BE_FAIL"
+if [ "$BE_STATUS" -ne 0 ]; then
+  echo "❌ Backend failures (pytest exit $BE_STATUS):"
+  echo "$BE_OUT" | grep -E "^FAILED|ERROR " || echo "$BE_SUMMARY"
   FAILED=1
 else
   echo "✅ Backend: $BE_SUMMARY"
