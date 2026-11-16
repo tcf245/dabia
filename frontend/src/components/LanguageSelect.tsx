@@ -13,11 +13,11 @@ const LanguageSelect: React.FC = () => {
         <Menu>
             <MenuButton
                 aria-label={messages.language.label}
-                className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-sm text-[#74746E] transition-colors hover:bg-[#F2F0EF] hover:text-[#2A2A29] focus:outline-none data-[focus]:ring-2 data-[focus]:ring-[#D97757] data-[open]:bg-[#F2F0EF] data-[open]:text-[#2A2A29]"
+                className="flex h-8 items-center gap-1.5 rounded-full px-2 text-sm sm:px-2.5 text-[#74746E] transition-colors hover:bg-[#F2F0EF] hover:text-[#2A2A29] focus:outline-none data-[focus]:ring-2 data-[focus]:ring-[#D97757] data-[open]:bg-[#F2F0EF] data-[open]:text-[#2A2A29]"
             >
                 <Globe size={16} strokeWidth={1.75} />
                 <span className="hidden sm:inline">{messages.languageName}</span>
-                <ChevronDown size={14} className="text-[#A3A39D]" />
+                <ChevronDown size={14} className="hidden text-[#A3A39D] sm:block" />
             </MenuButton>
             <MenuItems
                 transition

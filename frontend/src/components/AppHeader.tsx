@@ -85,7 +85,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogin, onLogout }) => {
                                     to={to}
                                     end={end}
                                     aria-label={label}
-                                    className={({ isActive }) => `flex h-8 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757] sm:px-3.5 ${isActive
+                                    className={({ isActive }) => `flex h-8 items-center gap-1.5 rounded-full px-2 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757] sm:px-3.5 ${isActive
                                         ? 'bg-white text-[#2A2A29] shadow-[0_1px_2px_rgba(42,42,41,0.08)] ring-1 ring-black/[0.04]'
                                         : 'text-[#74746E] hover:text-[#2A2A29]'
                                         }`}
@@ -106,10 +106,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogin, onLogout }) => {
                         <Menu>
                             <MenuButton
                                 aria-label={t.accountMenu}
-                                className="flex items-center gap-1 rounded-full p-0.5 pr-1.5 transition-colors hover:bg-[#F2F0EF] focus:outline-none data-[focus]:ring-2 data-[focus]:ring-[#D97757] data-[open]:bg-[#F2F0EF]"
+                                className="flex items-center gap-1 rounded-full p-0.5 transition-colors sm:pr-1.5 hover:bg-[#F2F0EF] focus:outline-none data-[focus]:ring-2 data-[focus]:ring-[#D97757] data-[open]:bg-[#F2F0EF]"
                             >
                                 <Avatar user={user} size="sm" />
-                                <ChevronDown size={14} className="text-[#A3A39D]" />
+                                <ChevronDown size={14} className="hidden text-[#A3A39D] sm:block" />
                             </MenuButton>
                             <MenuItems
                                 transition
