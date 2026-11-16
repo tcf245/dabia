@@ -2,7 +2,9 @@ import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { useReducedMotion } from 'framer-motion';
 import DemoCard from './DemoCard';
-import { zh } from '../../i18n/welcome';
+import { zh as messages } from '../../i18n/messages/zh';
+
+const zh = messages.welcome;
 
 vi.mock('framer-motion', async (importOriginal) => {
     const actual = await importOriginal<typeof import('framer-motion')>();

@@ -1,6 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import ProficiencyIndicator from './ProficiencyIndicator';
+import { setFallbackLanguage } from '../i18n/context';
+import { zh } from '../i18n/messages/zh';
+
+// These assertions use the Chinese interface.
+beforeEach(() => setFallbackLanguage('zh'));
 
 // Mock framer-motion to be synchronous and non-animated for tests
 vi.mock('framer-motion', () => ({
@@ -64,9 +69,9 @@ describe('ProficiencyIndicator', () => {
 
     test('shows NEW tag only for level 1', () => {
         const { rerender } = render(<ProficiencyIndicator level={1} onClick={vi.fn()} />);
-        expect(screen.getByText('NEW')).toBeInTheDocument();
+        expect(screen.getByText(zh.flashcard.newTag)).toBeInTheDocument();
 
         rerender(<ProficiencyIndicator level={2} onClick={vi.fn()} />);
-        expect(screen.queryByText('NEW')).not.toBeInTheDocument();
+        expect(screen.queryByText(zh.flashcard.newTag)).not.toBeInTheDocument();
     });
 });

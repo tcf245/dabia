@@ -1,0 +1,180 @@
+// Chinese UI strings. This file defines the shape every other language must match (see `Messages`).
+// Level transitions and intervals in the welcome copy follow backend/dabia/core/srs_constants.py.
+
+export interface DemoCardCopy {
+    template: string;
+    word: string;
+    reading: string;
+    hint: string;
+    translation: string;
+    fromLevel: number;
+    toLevel: number;
+    nextReview: string;
+}
+
+export const zh = {
+    /** BCP 47 tag for `<html lang>` and for formatting dates and numbers. */
+    locale: 'zh-CN',
+    languageName: '中文',
+    common: {
+        close: '关闭',
+        cards: (count: string) => `${count} 张卡`,
+    },
+    language: {
+        label: '界面语言',
+    },
+    header: {
+        mainNav: '主导航',
+        learn: '学习',
+        decks: '词库',
+        profile: '我的',
+        accountMenu: '账户菜单',
+        profileAndStats: '我的学习记录',
+        logOut: '退出登录',
+        signIn: '登录',
+    },
+    login: {
+        dialog: '登录',
+        title: '登录 Dabia',
+        subtitle: '首次登录会自动创建账户，学习进度随账户保存。',
+        google: '使用 Google 登录',
+        failed: '登录失败，请重试。',
+    },
+    session: {
+        connectionErrorTitle: '连接失败',
+        connectionError: '连不上服务器。请检查网络，或稍后再试。',
+        retry: '重试',
+        completedTitle: '今天的复习完成了',
+        completedBody: '需要复习的卡片都做完了，辛苦啦！',
+        previous: '上一张',
+        previousTitle: '上一张（←）',
+        dailyGoal: '今日目标',
+        today: '今天',
+    },
+    flashcard: {
+        playAudio: '播放例句',
+        learn: '看答案',
+        submit: '提交',
+        continue: '继续',
+        newTag: '新词',
+    },
+    proficiency: {
+        levels: {
+            1: '没见过的新单词！',
+            2: '这个单词需要多练练！',
+            3: '就要学起来了！',
+            4: '唾手可得！',
+            5: '记忆满点！',
+        } as Record<number, string>,
+        modalTitle: '掌握你的每日词汇',
+        modalBody: 'Dabia 记录你的每一次练习。通过智能间隔算法，我们能识别你对每个单词的熟悉程度，并在最适合的时间提醒你复习。',
+        modalFooter: '让记忆像细胞一样生长，直至达成母语般的条件反射。',
+    },
+    dailyGoal: {
+        celebration: '你做得很棒！',
+        completed: (count: number) => `完成 ${count} 张词卡`,
+        suggestion: '每天 50 张词卡是建议的学习目标。',
+        toLearn: '要学的单词',
+        learned: '已学单词',
+        reinforced: '单词已强化',
+        totalTime: '总耗时',
+        newWords: '新单词',
+        accuracy: '正确率',
+        duration: (minutes: number, seconds: number) => `${minutes} 分 ${seconds} 秒`,
+        continue: '继续',
+    },
+    decks: {
+        loading: '正在加载词库…',
+        title: '词库',
+        subtitle: '选择用于每日复习的词库。',
+        grammar: '语法',
+        vocabulary: '词汇',
+        grammarSuffix: '语法',
+        difficulty: { Beginner: '入门', Intermediate: '中级', Advanced: '中高级', Expert: '高级' } as Record<string, string>,
+        unknownDifficulty: '未分级',
+        grammarDescription: '常用语法句型，每条都配有例句。',
+        vocabularyDescription: '在例句中学单词，配有音频。',
+        saving: '正在保存…',
+    },
+    profile: {
+        title: '我的学习',
+        subtitle: '每一次坚持，都是记忆的生长。',
+        streak: '学习日历',
+        less: '少',
+        more: '多',
+        dayCards: (date: string, count: number) => `${date}：${count} 张卡`,
+        practicedDays: (days: number) => `过去 8 个月里，你学习了 ${days} 天。`,
+        garden: '单词花园',
+        gardenLegend: '橙色是要复习的，灰色是已掌握的',
+    },
+    welcome: {
+        badge: '日语单词 · JLPT N5 到 N1',
+        titleLead: '忘记之前，',
+        titleAccent: '再见一次。',
+        subtitle: 'Dabia 用真实例句教你日语单词，记下你对每个词的掌握程度，在恰当的时间安排复习。',
+        signIn: '使用 Google 登录',
+        signInNote: '免费使用，登录后马上开始第一张卡。',
+        demoLabel: '示例',
+        demoAria: '词卡示例',
+        demoNextReview: (interval: string) => `答对了 · ${interval}后再复习`,
+        demoCards: [
+            {
+                template: '毎朝、__を飲みます。',
+                word: 'コーヒー',
+                reading: 'コーヒー',
+                hint: '咖啡',
+                translation: '每天早上喝咖啡。',
+                fromLevel: 3,
+                toLevel: 4,
+                nextReview: '7 天',
+            },
+            {
+                template: '電車が__しています。',
+                word: '遅延',
+                reading: 'ちえん',
+                hint: '延迟，晚点',
+                translation: '电车晚点了。',
+                fromLevel: 2,
+                toLevel: 3,
+                nextReview: '5 分钟',
+            },
+            {
+                template: '週末は友達と__を見ます。',
+                word: '映画',
+                reading: 'えいが',
+                hint: '电影',
+                translation: '周末和朋友一起看电影。',
+                fromLevel: 4,
+                toLevel: 5,
+                nextReview: '30 天',
+            },
+        ] as DemoCardCopy[],
+        stepsTitle: '一个单词是怎么记住的',
+        steps: [
+            { title: '在例句里认识它', body: '每个单词都配有自然的日语例句、中文释义和例句音频。' },
+            { title: '打字把它想起来', body: '看着释义把空填上。自己回想再打出来，比看一眼答案记得牢。' },
+            { title: '按时再见到它', body: 'Dabia 根据你的答题情况安排下一次复习，间隔从几分钟到一个月。' },
+        ],
+        srsEyebrow: '间隔重复',
+        srsTitle: '五个阶段，从初次见面到长期记忆',
+        srsBody: '答对一次，单词升一级，下次复习的间隔也随之拉长。答错了，几分钟内它就会回来让你再试。',
+        stages: [
+            { name: '新词', interval: '第一次见' },
+            { name: '生疏', interval: '90 秒后再来' },
+            { name: '学习中', interval: '5 分钟后再来' },
+            { name: '熟悉', interval: '7 天后复习' },
+            { name: '掌握', interval: '30 天后复习' },
+        ],
+        decksTitle: '选择你的级别',
+        decksSummary: (words: string) => `共 ${words} 个单词，覆盖 JLPT 各级`,
+        deckUnit: (count: string, grammar: boolean) => (grammar ? `${count} 条语法` : `${count} 词`),
+        ctaTitle: '每天几分钟就够了',
+        ctaBody: '用 Google 登录后，学习进度自动保存，换一台设备也能接着学。',
+        footerOrigin: 'Dabia 这个名字是一个三岁小朋友起的。',
+        footerCreditPrefix: '词汇数据来自 ',
+        footerCreditSuffix: '（CC BY-NC 4.0）',
+    },
+};
+
+/** Every language provides exactly these keys; a missing or extra key is a type error. */
+export type Messages = typeof zh;

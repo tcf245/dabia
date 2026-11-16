@@ -2,6 +2,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import AppHeader from './AppHeader';
+import { en } from '../i18n/messages/en';
 
 const user = { sub: 'u1', name: 'Eric Tan', email: 'eric@example.com', picture: 'https://example.com/a.png' };
 
@@ -19,7 +20,7 @@ describe('AppHeader', () => {
 
         expect(screen.getByRole('link', { name: /dabia/i })).toHaveAttribute('href', '/');
         expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: '登录' }));
+        fireEvent.click(screen.getByRole('button', { name: en.header.signIn }));
         expect(onLogin).toHaveBeenCalledTimes(1);
     });
 

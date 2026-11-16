@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/react';
 import { vi } from 'vitest';
+import { setFallbackLanguage } from '../i18n/context';
 
 // LearningSession tests chain several async fetches and framer-motion transitions;
 // the 1 s default for findBy/waitFor times out on a loaded machine or CI runner.
@@ -47,6 +48,9 @@ vi.stubGlobal('Audio', MockAudio);
 
 // Reset mocks before each test run
 beforeEach(() => {
+  // Component tests render without a LanguageProvider and assert the English interface; tests of the Chinese
+  // interface (the welcome page) switch with setFallbackLanguage('zh'). LanguageProvider has its own tests.
+  setFallbackLanguage('en');
   globalThis.playMock.mockClear();
   globalThis.pauseMock.mockClear();
   globalThis.triggerOnended = () => { };

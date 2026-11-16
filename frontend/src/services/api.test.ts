@@ -75,13 +75,31 @@ describe('api service', () => {
     it('getNextCard calls correct endpoint', async () => {
         mockApi.post.mockResolvedValueOnce({ data: { card: null } });
         await apiService.getNextCard();
-        expect(mockApi.post).toHaveBeenCalledWith('/api/v1/session/next-card', undefined);
+        expect(mockApi.post).toHaveBeenCalledWith('/api/v1/session/next-card', undefined, { params: undefined });
     });
 
     it('getCard calls correct endpoint', async () => {
         mockApi.get.mockResolvedValueOnce({ data: { card_id: '123' } });
         await apiService.getCard('123');
-        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123');
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123', { params: undefined });
+    });
+
+    it('asks for card content in the chosen language', async () => {
+        mockApi.post.mockResolvedValueOnce({ data: {} });
+        mockApi.get.mockResolvedValueOnce({ data: {} });
+        apiService.setContentLanguage('en');
+        await apiService.getNextCard();
+        await apiService.getCard('123');
+        apiService.setContentLanguage(null);
+        expect(mockApi.post).toHaveBeenCalledWith('/api/v1/session/next-card', undefined, { params: { lang: 'en' } });
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123', { params: { lang: 'en' } });
+    });
+
+    it('lists the languages that have card content', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { default: 'zh', languages: [{ code: 'zh', cards: 1 }] } });
+        const result = await apiService.getLanguages();
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/languages');
+        expect(result.languages[0].code).toBe('zh');
     });
 
     describe('interceptors', () => {

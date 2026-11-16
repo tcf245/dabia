@@ -2,6 +2,10 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import LearningSession from './LearningSession';
 import * as api from '../services/api';
+import { en } from '../i18n/messages/en';
+import { zh } from '../i18n/messages/zh';
+import { LanguageProvider } from '../i18n/LanguageProvider';
+import LanguageSelect from '../components/LanguageSelect';
 
 // Mock the API
 vi.mock('../services/api', async (importOriginal) => {
@@ -9,7 +13,9 @@ vi.mock('../services/api', async (importOriginal) => {
     return {
         ...actual,
         getNextCard: vi.fn(),
+        getCard: vi.fn(),
         getDailySummary: vi.fn(),
+        getLanguages: vi.fn().mockRejectedValue(new Error('offline')),
     };
 });
 
@@ -106,8 +112,8 @@ describe('LearningSession', () => {
 
         // Wait for popup to appear
         await waitFor(() => {
-            expect(screen.getByText(/你做得很棒!/i)).toBeInTheDocument();
-            expect(screen.getByText(/完成\s*50\s*张词卡/i)).toBeInTheDocument();
+            expect(screen.getByText(en.dailyGoal.celebration)).toBeInTheDocument();
+            expect(screen.getByText(en.dailyGoal.completed(50))).toBeInTheDocument();
         });
     });
 
@@ -139,11 +145,11 @@ describe('LearningSession', () => {
         await waitFor(() => expect(screen.getByText('h3')).toBeInTheDocument());
 
         // 4. Press Back -> get 'two'
-        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
+        fireEvent.click(screen.getByRole('button', { name: en.session.previous }));
         await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
 
         // 5. Press Back again -> get 'one'
-        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
+        fireEvent.click(screen.getByRole('button', { name: en.session.previous }));
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
 
         // 6. Press Continue -> get 'two'
@@ -155,7 +161,7 @@ describe('LearningSession', () => {
         await waitFor(() => expect(screen.getByText('h3')).toBeInTheDocument());
 
         // 8. Back button should still work
-        expect(screen.getByRole('button', { name: 'Previous card' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: en.session.previous })).toBeInTheDocument();
     });
 
     it('shows error message and allows retry on API failure', async () => {
@@ -248,7 +254,7 @@ describe('LearningSession', () => {
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
+        fireEvent.click(screen.getByRole('button', { name: en.session.previous }));
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
 
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -272,13 +278,13 @@ describe('LearningSession', () => {
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
-        await waitFor(() => expect(screen.getByText(/你做得很棒!/i)).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText(en.dailyGoal.celebration)).toBeInTheDocument());
 
-        const closeBtn = screen.getByRole('button', { name: /继续/i });
+        const closeBtn = screen.getByRole('button', { name: en.dailyGoal.continue });
         fireEvent.click(closeBtn);
 
         await waitFor(() => {
-            expect(screen.queryByText(/你做得很棒!/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(en.dailyGoal.celebration)).not.toBeInTheDocument();
         });
     });
 
@@ -296,6 +302,40 @@ describe('LearningSession', () => {
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(api.getNextCard).toHaveBeenCalledTimes(2));
 
-        fireEvent.click(screen.getByRole('button', { name: 'Previous card' }));
+        fireEvent.click(screen.getByRole('button', { name: en.session.previous }));
+    });
+
+    it('reloads the card on screen in the new language when the language changes', async () => {
+        const card = {
+            card_id: 'c1',
+            deck: { id: 'd', name: 'deck' },
+            target: { word: '高校', hint: '高中' },
+            sentence_template: '妹は__に通っています',
+            reading: 'こうこう',
+            sentence_translation: '妹妹在上高中',
+            sentence_audio_url: null,
+            proficiency_level: 2,
+        };
+        (api.getNextCard as Mock).mockResolvedValue({ card, session_progress: { completed_today: 0, goal_today: 50 } });
+        (api.getCard as Mock).mockResolvedValue({
+            ...card, target: { word: '高校', hint: 'high school' }, sentence_translation: 'My younger sister attends high school.', language: 'en',
+        });
+        localStorage.clear();
+        render(
+            <LanguageProvider initialLanguage="zh">
+                <LanguageSelect />
+                <LearningSession />
+            </LanguageProvider>,
+        );
+        expect(await screen.findByText('高中')).toBeInTheDocument();
+        expect(api.getCard).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: zh.language.label }));
+        fireEvent.click(await screen.findByText('English'));
+
+        expect(await screen.findByText('high school')).toBeInTheDocument();
+        expect(screen.getByText('My younger sister attends high school.')).toBeInTheDocument();
+        expect(api.getCard).toHaveBeenCalledWith('c1');
+        expect(api.getNextCard).toHaveBeenCalledTimes(1); // the session itself does not move on
     });
 });

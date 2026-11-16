@@ -6,7 +6,7 @@ import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { getDecks } from '../services/api';
 import type { Deck } from '../services/api';
 import { deckLabel, isGrammarDeck, sortDecks } from '../utils/decks';
-import { zh as copy } from '../i18n/welcome';
+import { useI18n } from '../i18n/LanguageProvider';
 
 interface WelcomeProps {
     onLoginSuccess: (token: string) => void;
@@ -15,9 +15,8 @@ interface WelcomeProps {
 const STEP_ICONS = [BookOpen, Keyboard, CalendarClock];
 const STAGE_COLORS = ['#F2DCD6', '#E5A087', '#D97757', '#C96642', '#B05030'];
 
-const formatCount = (n: number) => n.toLocaleString('en-US');
 
-const SignInButton: React.FC<{ onClick: () => void; variant?: 'dark' | 'light' }> = ({ onClick, variant = 'dark' }) => (
+const SignInButton: React.FC<{ onClick: () => void; label: string; variant?: 'dark' | 'light' }> = ({ onClick, label, variant = 'dark' }) => (
     <button
         onClick={onClick}
         className={`group inline-flex h-12 items-center justify-center gap-3 rounded-xl px-6 text-[15px] font-medium shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757] focus-visible:ring-offset-2 ${variant === 'dark'
@@ -28,13 +27,16 @@ const SignInButton: React.FC<{ onClick: () => void; variant?: 'dark' | 'light' }
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
             <GoogleIcon size={16} />
         </span>
-        {copy.signIn}
+        {label}
         <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
     </button>
 );
 
 const Welcome: React.FC<WelcomeProps> = ({ onLoginSuccess }) => {
     const { signIn, error } = useGoogleSignIn(onLoginSuccess);
+    const { messages } = useI18n();
+    const copy = messages.welcome;
+    const formatCount = (n: number) => n.toLocaleString(messages.locale);
     const [decks, setDecks] = useState<Deck[]>([]);
 
     useEffect(() => {
@@ -46,7 +48,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onLoginSuccess }) => {
     const wordCount = decks.filter((d) => !isGrammarDeck(d)).reduce((sum, d) => sum + d.count, 0);
 
     return (
-        <div lang="zh-CN" className="welcome w-full">
+        <div lang={messages.locale} className="welcome w-full">
             {/* Hero */}
             <section className="flex flex-col items-center text-center">
                 <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#E6E6E3] bg-white px-3 py-1 text-xs font-medium text-[#74746E]">
@@ -59,7 +61,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onLoginSuccess }) => {
                 </h1>
                 <p className="mt-6 max-w-xl text-lg font-light leading-relaxed text-[#74746E]">{copy.subtitle}</p>
                 <div className="mt-9 flex flex-col items-center gap-3">
-                    <SignInButton onClick={signIn} />
+                    <SignInButton onClick={signIn} label={copy.signIn} />
                     <span className="text-sm text-[#A3A39D]">{copy.signInNote}</span>
                     {error && <span role="alert" className="text-sm text-red-500">{error}</span>}
                 </div>
@@ -134,10 +136,10 @@ const Welcome: React.FC<WelcomeProps> = ({ onLoginSuccess }) => {
                                 <li key={deck.id} className="flex items-center justify-between px-6 py-4">
                                     <div className="flex items-center gap-4">
                                         <span data-testid="deck-label" className="font-serif text-lg text-[#2A2A29] min-w-[7rem]">
-                                            {deckLabel(deck.name).replace(/ Grammar$/, ` ${copy.grammarSuffix}`)}
+                                            {deckLabel(deck.name).replace(/ Grammar$/, ` ${messages.decks.grammarSuffix}`)}
                                         </span>
                                         <span className="rounded-md bg-[#F2F0EF] px-2 py-0.5 text-xs text-[#74746E]">
-                                            {copy.difficulty[deck.difficulty] ?? deck.difficulty}
+                                            {messages.decks.difficulty[deck.difficulty] ?? deck.difficulty}
                                         </span>
                                     </div>
                                     <span className="text-sm tabular-nums text-[#74746E]">
@@ -155,7 +157,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onLoginSuccess }) => {
                 <h2 className="font-serif text-3xl text-white sm:text-4xl">{copy.ctaTitle}</h2>
                 <p className="mx-auto mt-4 max-w-lg font-light text-[#BDBDB7]">{copy.ctaBody}</p>
                 <div className="mt-8 flex flex-col items-center gap-3">
-                    <SignInButton onClick={signIn} variant="light" />
+                    <SignInButton onClick={signIn} label={copy.signIn} variant="light" />
                     {error && <span role="alert" className="text-sm text-red-300">{error}</span>}
                 </div>
             </section>

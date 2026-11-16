@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
 import * as api from '../services/api';
+import { useI18n } from '../i18n/LanguageProvider';
+
+// 2026-11-16 is a Monday; used only to get localized weekday names.
+const weekday = (locale: string, offset: number) =>
+    new Date(Date.UTC(2026, 10, 16 + offset)).toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' });
 
 const Profile = () => {
 
     const [heatmapData, setHeatmapData] = useState<{ date: string; colorClass: string; count: number }[][]>([]);
     const [gardenWords, setGardenWords] = useState<(api.GardenWord & { x: string; y: string; size: string })[]>([]);
     const [activeDays, setActiveDays] = useState(0);
+    const { messages } = useI18n();
+    const t = messages.profile;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -136,18 +143,18 @@ const Profile = () => {
     return (
         <div className="flex flex-col items-center w-full max-w-3xl animate-fade-in">
             <header className="text-center mb-12">
-                <h1 className="font-serif text-5xl font-normal text-[#1A1A1A] mb-4 tracking-tight" style={{ lineHeight: '1' }}>Your Journey</h1>
+                <h1 className="font-serif text-5xl font-normal text-[#1A1A1A] mb-4 tracking-tight" style={{ lineHeight: '1' }}>{t.title}</h1>
                 <p className="text-[#888] text-sm font-light tracking-wider mt-3">
-                    每一次坚持，都是记忆的生长。
+                    {t.subtitle}
                 </p>
             </header>
 
             <section className="bg-white rounded-[20px] border border-[#E6E6E3] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] w-full mb-10">
                 <div className="flex justify-between items-baseline mb-6">
-                    <h2 className="font-serif text-2xl text-[#333333]">Study Streak</h2>
+                    <h2 className="font-serif text-2xl text-[#333333]">{t.streak}</h2>
 
                     <div className="flex items-center gap-2 text-xs text-[#888888] font-light">
-                        <span>Less</span>
+                        <span>{t.less}</span>
                         <div className="flex gap-1">
                             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[var(--paper-gray)]"></div>
                             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[#F2DCD6]"></div>
@@ -155,7 +162,7 @@ const Profile = () => {
                             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[#D97757]"></div>
                             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-[3px] bg-[#B05030]"></div>
                         </div>
-                        <span>More</span>
+                        <span>{t.more}</span>
                     </div>
                 </div>
 
@@ -168,7 +175,7 @@ const Profile = () => {
                             return (
                                 <div key={i} className="w-3 sm:w-4 text-[10px] overflow-visible whitespace-nowrap relative">
                                     {isNewMonth ? (
-                                        <span className="absolute left-0">{firstDayDate.toLocaleString('en-US', { month: 'short' })}</span>
+                                        <span className="absolute left-0">{firstDayDate.toLocaleString(messages.locale, { month: 'short' })}</span>
                                     ) : null}
                                 </div>
                             );
@@ -178,11 +185,11 @@ const Profile = () => {
                     <div className="flex flex-row w-full">
                         <div className="flex flex-col gap-1 mr-2 mt-[0px] text-[10px] text-[#888] h-full justify-start pt-[0px] leading-4">
                             <div className="h-3 sm:h-4"></div>
-                            <div className="h-3 sm:h-4 flex items-center">Mon</div>
+                            <div className="h-3 sm:h-4 flex items-center">{weekday(messages.locale, 0)}</div>
                             <div className="h-3 sm:h-4"></div>
-                            <div className="h-3 sm:h-4 flex items-center">Wed</div>
+                            <div className="h-3 sm:h-4 flex items-center">{weekday(messages.locale, 2)}</div>
                             <div className="h-3 sm:h-4"></div>
-                            <div className="h-3 sm:h-4 flex items-center">Fri</div>
+                            <div className="h-3 sm:h-4 flex items-center">{weekday(messages.locale, 4)}</div>
                             <div className="h-3 sm:h-4"></div>
                         </div>
 
@@ -197,7 +204,7 @@ const Profile = () => {
                                             <div className={`absolute bottom-full mb-2 px-2 py-1 bg-[#2A2A29] text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-sm
                                                 ${weekIndex < 2 ? 'left-0' : (weekIndex >= heatmapData.length - 4 ? 'right-0' : 'left-1/2 -translate-x-1/2')}
                                             `}>
-                                                {day.date}: {day.count} cards
+                                                {t.dayCards(day.date, day.count)}
                                             </div>
                                         </div>
                                     ))}
@@ -209,15 +216,15 @@ const Profile = () => {
 
                 <div className="mt-8 pt-6 border-t border-dashed border-[#F0F0F0] text-center">
                     <p className="text-[#888888] font-serif italic text-sm tracking-wide">
-                        "You practiced {activeDays} days in the last 8 months."
+                        {t.practicedDays(activeDays)}
                     </p>
                 </div>
             </section>
 
             <section className="relative h-80 w-full bg-white rounded-[20px] border border-[#E6E6E3] shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden">
                 <div className="absolute top-8 left-10 z-20 pointer-events-none">
-                    <h2 className="font-serif text-2xl text-[#333]">Vocabulary Garden</h2>
-                    <p className="text-sm text-[#555] mt-2 font-light">需复习 (Review) & 已掌握 (Mastered)</p>
+                    <h2 className="font-serif text-2xl text-[#333]">{t.garden}</h2>
+                    <p className="text-sm text-[#555] mt-2 font-light">{t.gardenLegend}</p>
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>

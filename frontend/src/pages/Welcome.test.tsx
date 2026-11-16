@@ -4,6 +4,11 @@ import Welcome from './Welcome';
 import { deckLabel } from '../utils/decks';
 import * as api from '../services/api';
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
+import { setFallbackLanguage } from '../i18n/context';
+import { en } from '../i18n/messages/en';
+
+// These assertions use the Chinese interface.
+beforeEach(() => setFallbackLanguage('zh'));
 
 vi.mock('../services/api', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../services/api')>();
@@ -81,6 +86,25 @@ describe('Welcome', () => {
         (useGoogleSignIn as Mock).mockReturnValue({ signIn, error: 'Login failed' });
         await renderWelcome();
         expect(screen.getAllByText('Login failed').length).toBeGreaterThan(0);
+    });
+});
+
+describe('Welcome in English', () => {
+    beforeEach(() => {
+        setFallbackLanguage('en');
+        (useGoogleSignIn as Mock).mockReturnValue({ signIn: vi.fn(), error: null });
+        (api.getDecks as Mock).mockResolvedValue(decks);
+    });
+
+    it('shows the English copy, English demo cards and English deck counts', async () => {
+        await renderWelcome();
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(en.welcome.titleLead);
+        expect(screen.getAllByRole('button', { name: new RegExp(en.welcome.signIn) }).length).toBe(2);
+        expect(screen.getByText(en.welcome.demoCards[0].hint)).toBeInTheDocument();
+        expect(screen.getByText(en.welcome.decksSummary('5,652'))).toBeInTheDocument();
+        expect(screen.getByText('N2 Grammar')).toBeInTheDocument();
+        expect(screen.getByText(en.welcome.deckUnit('160', true))).toBeInTheDocument();
+        expect(document.querySelector('.welcome')).toHaveAttribute('lang', 'en-US');
     });
 });
 

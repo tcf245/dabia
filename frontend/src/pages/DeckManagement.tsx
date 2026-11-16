@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { Layers } from 'lucide-react';
 import * as api from '../services/api';
 import { deckDescription, deckTitle, isGrammarDeck, sortDecks } from '../utils/decks';
+import { useI18n } from '../i18n/LanguageProvider';
 const DeckManagement = () => {
     const [decks, setDecks] = useState<api.Deck[]>([]);
     const [selectedDeckIds, setSelectedDeckIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const { messages } = useI18n();
+    const t = messages.decks;
 
     useEffect(() => {
         const loadData = async () => {
@@ -51,7 +54,7 @@ const DeckManagement = () => {
                      <div className="animate-spin text-[#D97757]">
                         <Layers size={32} />
                      </div>
-                     <p className="text-[#888888] font-light">Loading library...</p>
+                     <p className="text-[#888888] font-light">{t.loading}</p>
                 </div>
             </div>
         );
@@ -61,10 +64,10 @@ const DeckManagement = () => {
         <div className="pb-24 w-full max-w-4xl mx-auto animate-fade-in">
           <header className="text-center mb-12">
             <h1 className="font-serif text-5xl font-normal text-[#1A1A1A] mb-4 tracking-tight" style={{ lineHeight: '1' }}>
-              Library
+              {t.title}
             </h1>
             <p className="text-[#888] text-sm font-light tracking-wider mt-3">
-              选择用于每日复习的词库。
+              {t.subtitle}
             </p>
           </header>
 
@@ -78,7 +81,7 @@ const DeckManagement = () => {
                   key={deck.id}
                   role="switch"
                   aria-checked={isActive}
-                  aria-label={deckTitle(deck.name)}
+                  aria-label={deckTitle(deck.name, t.grammarSuffix)}
                   tabIndex={0}
                   onClick={() => handleToggle(deck.id)}
                   onKeyDown={(e) => {
@@ -98,13 +101,13 @@ const DeckManagement = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-6">
                       <span className="inline-block mb-3 px-2 py-0.5 rounded-md bg-[#F2F0EF] text-[#74746E] text-[10px] font-medium uppercase tracking-wider">
-                        {grammar ? 'Grammar' : 'Vocabulary'}
+                        {grammar ? t.grammar : t.vocabulary}
                       </span>
                       <h3 className={`font-serif text-xl font-bold mb-2 ${isActive ? 'text-[#D97757]' : 'text-[#2A2A29]'}`}>
-                        {deckTitle(deck.name)}
+                        {deckTitle(deck.name, t.grammarSuffix)}
                       </h3>
                       <p className="text-[#74746E] text-sm font-light leading-relaxed line-clamp-2">
-                        {deckDescription(deck)}
+                        {deckDescription(deck, t)}
                       </p>
                     </div>
 
@@ -122,10 +125,10 @@ const DeckManagement = () => {
 
                   <div className="mt-5 pt-4 border-t border-[#F2F0EF] flex items-center justify-between">
                     <span className="text-xs text-[#74746E] tabular-nums">
-                      {deck.count.toLocaleString('en-US')} cards
+                      {messages.common.cards(deck.count.toLocaleString(messages.locale))}
                     </span>
                     <span className="text-xs font-medium text-[#74746E]">
-                      {deck.difficulty || 'Unknown'}
+                      {deck.difficulty ? (t.difficulty[deck.difficulty] ?? deck.difficulty) : t.unknownDifficulty}
                     </span>
                   </div>
                 </div>
@@ -136,7 +139,7 @@ const DeckManagement = () => {
            {saving && (
                 <div className="fixed bottom-6 right-6 bg-[#2A2A29] text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-3 animate-fade-in z-50">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span className="text-sm font-medium tracking-wide">Saving changes...</span>
+                    <span className="text-sm font-medium tracking-wide">{t.saving}</span>
                 </div>
             )}
         </div>

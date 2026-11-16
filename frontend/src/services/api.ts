@@ -45,6 +45,13 @@ api.interceptors.response.use(
   }
 );
 
+// Learner language for card content (hint and sentence translation); set by the LanguageProvider.
+let contentLanguage: string | null = null;
+export const setContentLanguage = (language: string | null) => {
+  contentLanguage = language;
+};
+const languageParams = () => (contentLanguage ? { lang: contentLanguage } : undefined);
+
 // Define types for API requests and responses
 export interface PreviousAnswer {
   cardId: string;
@@ -74,6 +81,8 @@ export interface Card {
   sentence_translation: string | null;
   sentence_audio_url: string | null;
   proficiency_level: number;
+  /** Language the hint was served in, after the backend's fallback (e.g. 'zh' for an untranslated card). */
+  language?: string;
 }
 
 export interface SessionProgress {
@@ -126,12 +135,12 @@ export const updateDeckSettings = async (settings: DeckSettings): Promise<DeckSe
 };
 
 export const getNextCard = async (answer?: PreviousAnswer): Promise<NextCardResponse> => {
-  const response = await api.post<NextCardResponse>('/api/v1/session/next-card', answer);
+  const response = await api.post<NextCardResponse>('/api/v1/session/next-card', answer, { params: languageParams() });
   return response.data;
 };
 
 export const getCard = async (cardId: string): Promise<Card> => {
-  const response = await api.get<Card>(`/api/v1/cards/${cardId}`);
+  const response = await api.get<Card>(`/api/v1/cards/${cardId}`, { params: languageParams() });
   return response.data;
 };
 
@@ -162,3 +171,20 @@ export const getDailySummary = async (): Promise<DailyStats> => {
   const response = await api.get<DailyStats>('/api/v1/stats/daily-summary');
   return response.data;
 };
+
+export interface LanguageInfo {
+  code: string;
+  cards: number;
+}
+
+export interface LanguagesResponse {
+  default: string;
+  languages: LanguageInfo[];
+}
+
+/** Learner languages that have card content. Public, so the welcome page can use it before sign-in. */
+export const getLanguages = async (): Promise<LanguagesResponse> => {
+  const response = await api.get<LanguagesResponse>('/api/v1/languages');
+  return response.data;
+};
+
