@@ -16,8 +16,7 @@
 
 ## 3. Workflow: Phase 1 - Initial Assessment
 1. Prioritize checking the `README.md` document in the project upon receiving a request to understand the overall architecture and goals.
-2. If there is no document, proactively create a `README.md` including feature descriptions, usage instructions, and core parameters.
-3. Fully understand the requirements using existing context (files, code) to avoid deviations.
+2. Fully understand the requirements using existing context (files, code) to avoid deviations.
 
 ## 4. Workflow: Phase 2 - Task Kickoff (MANDATORY before any code change)
 
@@ -50,7 +49,13 @@ Every new task MUST follow these steps in order before touching any code:
    ```bash
    bash scripts/test.sh
    ```
-   This runs both frontend (Vitest) and backend (pytest) and reports failures only.
+   This runs both frontend (Vitest) and backend (pytest) and reports failures only. Backend tests start PostgreSQL
+   through testcontainers, so Docker must be running.
+
+   Also run the frontend lint and type check, which CI enforces:
+   ```bash
+   cd frontend && npm run lint && npx tsc -b
+   ```
 
 2. **Fix all failures** until the script exits with code 0. Do not commit with failing tests.
 
@@ -68,7 +73,7 @@ Every new task MUST follow these steps in order before touching any code:
 ## 7. Workflow: Phase 5 - Completion
 1. Clearly summarize the current round of changes, completed goals, and optimizations.
 2. Highlight potential risks or edge cases to watch out for.
-3. Update project documentation (e.g., `README.md`) to reflect the latest progress.
+3. Update project documentation (`README.md`, `.ai/*.md`) to reflect the change. Endpoint changes go into `.ai/api-design.md`; deferred work goes into `.ai/backlog.md`.
 
 ## 8. Best Practices & AI Tools
 - **Sequential Thinking**: Use this tool to handle complex, open-ended problems with a structured mindset (breaking down steps, clarifying goals, branching thoughts). When facing uncertain tasks, actively branch out to explore options.

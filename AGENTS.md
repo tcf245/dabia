@@ -11,6 +11,7 @@ Read these files before starting any task:
 | `.ai/ui-design.md` | Color palette, typography, design language |
 | `.ai/api-design.md` | API endpoint specifications |
 | `.ai/decisions/` | Architecture Decision Records (why, not just what) |
+| `.ai/backlog.md` | Parked features and follow-ups |
 
 ## Quick Commands
 
@@ -23,6 +24,9 @@ cd frontend && npm run dev
 
 # Tests
 bash scripts/test.sh
+
+# Frontend lint and type check (CI runs both)
+cd frontend && npm run lint && npx tsc -b
 ```
 
 ## Task Kickoff Checklist (MANDATORY for every new task)
@@ -42,8 +46,9 @@ git checkout -b <type>/<short-desc>      # e.g. feat/ fix/ refactor/
 Before opening a PR:
 
 ```bash
-# 3. Run full test suite (frontend + backend)
+# 3. Run full test suite (frontend + backend) and frontend lint
 bash scripts/test.sh                     # must exit 0
+(cd frontend && npm run lint)            # must report no problems
 
 # 4. Commit
 git commit -m "feat(scope): one concise sentence"
