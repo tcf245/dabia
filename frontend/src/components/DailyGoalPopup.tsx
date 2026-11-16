@@ -25,7 +25,7 @@ const DailyGoalPopup: React.FC<DailyGoalPopupProps> = ({ isOpen, onClose, initia
                 .then(setStats)
                 .catch(console.error);
         }
-    }, [isOpen]);
+    }, [isOpen, stats, initialStats]);
 
     if (!isOpen) return null;
 
