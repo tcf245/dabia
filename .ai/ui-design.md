@@ -1,7 +1,7 @@
 # Dabia UI Design System & Specifications
 
 ## 1. Core Design Language
-- **Reference**: `docs/dev_logs/2025-12-20_UI_Specification_Update.md`
+- **Reference**: this file is the source of truth. The original write-up (`docs/dev_logs/2025-12-20_UI_Specification_Update.md`) is a local-only dev log and not in git.
 - **Theme Concept**: "Warm Minimalist" & "Intellectual". 
 - **Accents**: Terracotta / Burnt Orange.
 - **Deprecated Themes**: "Sora-iro" (Sky Blue) theme is **DEPRECATED**. Do not use sora colors in the project. Any existing references to sora should be ignored or removed.

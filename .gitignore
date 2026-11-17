@@ -1,4 +1,7 @@
 # General
+.vercel/
+.wrangler/
+node_modules/
 .DS_Store
 nohup.out
 tmp/**
@@ -94,6 +97,7 @@ backend/.ruff_cache/
 backend/.pypirc
 backend/tmp/
 backend/scripts/analysis_data/
+backend/static/
 
 # Frontend (Node)
 frontend/node_modules/
@@ -108,6 +112,7 @@ yarn-error.log*
 .pnp/
 .pnp.js
 frontend/coverage/
+frontend/public/_review/
 
 # Gemini Context
 .gemini/

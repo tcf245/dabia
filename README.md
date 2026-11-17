@@ -12,12 +12,23 @@ The core of Dabia is a 5-stage Spaced Repetition System (SRS) designed for incre
 
 The system manages your study sessions by mixing short-term reinforcement (intervals of seconds and minutes) with long-term retention (intervals of days and weeks), ensuring that your vocabulary grows naturally and stays permanent.
 
+### Languages
+- **Interface**: Chinese and English, switchable from anywhere in the app.
+- **Card content**: hints and sentence translations are served in the learner's language (Chinese and English today). A card without a translation falls back to Chinese, and a new language is added by importing translations, not by changing code.
+
 ### Tech Stack
 - **Backend**: FastAPI (Python 3.12), PostgreSQL, SQLAlchemy (Async).
 - **Frontend**: React 19, Vite, Tailwind CSS v4, TypeScript.
+- **Hosting**: Vercel (frontend and backend), Cloudflare R2 (audio).
 
 ### Documentation for AI
 If you are using an AI agent (like Cursor, Claude, or ChatGPT) to work on this project, comprehensive architectural details, coding rules, and state maps are maintained in the `.ai/` directory.
+
+### Tests
+```bash
+bash scripts/test.sh                       # frontend + backend (backend tests need Docker)
+cd frontend && npm run lint && npx tsc -b  # lint and type check
+```
 
 ### Quick Start
 1. **Backend**:

@@ -41,8 +41,9 @@ We follow the **[Conventional Commits](https://www.conventionalcommits.org/en/v1
 ## Coding Standards
 
 - **Language**: All code and comments must be in **English**.
-- **Linting**: Ensure code passes linting checks before committing.
-- **Testing**: Run all relevant tests before pushing changes. New features should include corresponding tests.
+- **Linting**: `cd frontend && npm run lint && npx tsc -b` must pass with no problems; CI enforces both.
+- **Testing**: `bash scripts/test.sh` runs frontend and backend tests and must exit 0 (backend tests need Docker). New features should include corresponding tests, and coverage must stay at or above 80%.
+- **Documentation**: Update `.ai/api-design.md` with any endpoint change and `.ai/backlog.md` with deferred work.
 
 ## Database Migrations
 

@@ -24,18 +24,23 @@ The core of Dabia is the Spaced Repetition System.
     > **Any change to the SRS logic MUST be applied to both files simultaneously.**
 
 ## 4. Key Database Models
-- **User**: ID (UUID), Email, Google_ID, Review Logs (One-to-Many).
-- **Card**: Static content (Question, Answer, Audio).
+- **User**: ID (UUID), Email, Google_ID, name and avatar, `active_deck_ids` (the decks the scheduler draws from), Review Logs (One-to-Many).
+- **Deck**: Name, description, difficulty and tags (inferred from the name when empty).
+- **Card**: Static content (target word, reading, sentence, furigana, relative audio paths).
 - **CardTranslation**: Learner-language hint and sentence translation per card and language (`zh` is the original). See ADR 003.
 - **UserCardAssociation**: Tracks the proficiency level of a specific card for a specific user.
 - **ReviewLog**: Immutable history of every review attempt (timestamp, duration, rating).
 
 ## 5. Environment Variables
-- `backend/.env`: `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `SECRET_KEY`
+Names only; values live in `.env` files locally and in Vercel project settings for deployments.
+- `backend/.env` (read by `backend/dabia/core/config.py`):
+    - `DATABASE_URL` (required)
+    - `SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (dev defaults exist; must be set in deployments)
+    - `STORAGE_PROVIDER` (`r2` default, or `gcp`), `R2_PUBLIC_URL`, `R2_MEDIA_PATH`, `GCP_BUCKET_NAME`, `GCP_MEDIA_PATH`
 - `frontend/.env`: `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`
 
 ## 6. API Design
-See `.ai/api-design.md` for full endpoint specifications and request/response models.
+See `.ai/api-design.md` for every endpoint with its request/response models.
 
 ## 7. Architecture Decisions
 See `.ai/decisions/` for the rationale behind key design choices:
@@ -44,6 +49,12 @@ See `.ai/decisions/` for the rationale behind key design choices:
 - `003-card-content-i18n.md` — how cards are served in more than one learner language, and how to add one
 
 ## 8. Deployment
-- **Frontend**: Static build to Vercel/Netlify.
-- **Backend**: Docker container.
-- **Database**: Managed PostgreSQL.
+- **Frontend**: Vercel project `dabia-frontend`, static Vite build (`frontend/vercel.json`).
+- **Backend**: Vercel project `dabia-backend`, Python serverless function (`backend/vercel.json` routes everything to `backend/api/index.py`). Its install step runs `uv sync && uv run alembic upgrade head`, so migrations apply on deploy; the app also attempts `alembic upgrade head` on startup.
+- **Media**: Card and sentence audio live in Cloudflare R2 behind `R2_PUBLIC_URL`; the database stores relative paths and `core/storage.py` builds the URLs. Generated audio is uploaded to R2, not committed.
+- **Database**: Managed PostgreSQL (`DATABASE_URL`). Local development uses `backend/docker-compose.yml`.
+- **Previews**: every PR gets Vercel preview deployments for both projects.
+- Operational details (DB imports, R2 uploads, secrets) are in Eric's private Dabia runbook, outside the repo.
+
+## 9. Backlog
+Parked features and follow-ups are tracked in `.ai/backlog.md`.
