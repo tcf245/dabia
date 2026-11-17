@@ -40,7 +40,7 @@ const Profile = () => {
                 heatmap.forEach((d) => daysMap.set(d.date, d));
 
                 let activeDaysCount = 0;
-                let iterDate = new Date(startDate);
+                const iterDate = new Date(startDate);
 
                 // Group by weeks for better layout control
                 const weeks: { date: string; colorClass: string; count: number }[][] = [];

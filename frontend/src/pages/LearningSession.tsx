@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, PartyPopper, ArrowLeft } from 'lucide-react';
 import Flashcard from '../components/Flashcard';
 import SkeletonFlashcard from '../components/SkeletonFlashcard';
@@ -18,14 +18,14 @@ const LearningSession: React.FC = () => {
   const [future, setFuture] = useState<Card[]>([]);
   const [isViewingPrevious, setIsViewingPrevious] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   const [isDailyGoalPopupOpen, setIsDailyGoalPopupOpen] = useState(false);
   const hasShownDailyGoal = React.useRef(false);
 
-  const fetchNextCard = async (previousAnswer?: PreviousAnswer) => {
+  const fetchNextCard = useCallback(async (previousAnswer?: PreviousAnswer) => {
     setLoading(true);
-    setError(null);
+    setError(false);
     try {
       const response = await getNextCard(previousAnswer);
       setCurrentCard(response.card);
@@ -42,16 +42,16 @@ const LearningSession: React.FC = () => {
         hasShownDailyGoal.current = true;
       }
     } catch (err) {
-      setError(t.connectionError);
+      setError(true);
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNextCard();
-  }, []);
+  }, [fetchNextCard]);
 
   // Switching language mid-session reloads the card on screen in the new language; the rest follow as they come.
   const shownLanguage = React.useRef(language);
@@ -66,20 +66,7 @@ const LearningSession: React.FC = () => {
           : shown
       )))
       .catch(console.error);
-  }, [language]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        if (!loading && history.length > 0) {
-          handlePreviousClick();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [loading, history]);
+  }, [language, currentCard]);
 
   const handleSubmitAnswer = (cardId: string, isCorrect: boolean, responseTime: number) => {
     if (currentCard) {
@@ -99,7 +86,7 @@ const LearningSession: React.FC = () => {
     fetchNextCard(previousAnswer);
   };
 
-  const handlePreviousClick = () => {
+  const handlePreviousClick = useCallback(() => {
     if (history.length === 0) return;
 
     const prevCard = history[history.length - 1];
@@ -109,7 +96,20 @@ const LearningSession: React.FC = () => {
     setHistory(prev => prev.slice(0, -1));
     setCurrentCard(prevCard);
     setIsViewingPrevious(true);
-  };
+  }, [history, currentCard]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        if (!loading && history.length > 0) {
+          handlePreviousClick();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [loading, history, handlePreviousClick]);
 
   const handleContinue = () => {
     const nextCard = future[0];
@@ -141,7 +141,7 @@ const LearningSession: React.FC = () => {
         icon={<AlertTriangle className="text-destructive" size={48} />}
         title={t.connectionErrorTitle}
       >
-        <p className="mb-6">{error}</p>
+        <p className="mb-6">{t.connectionError}</p>
         <button
           onClick={() => fetchNextCard()}
           className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"

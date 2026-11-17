@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
+import type { Mock } from 'vitest';
 import * as apiService from './api';
 
 vi.mock('axios', () => {
@@ -20,7 +21,13 @@ vi.mock('axios', () => {
 });
 
 // Access the mocked axios instance
-const mockApi: any = (axios.create as any)();
+interface MockAxiosInstance {
+    get: Mock;
+    post: Mock;
+    put: Mock;
+    interceptors: { request: { use: Mock }; response: { use: Mock } };
+}
+const mockApi = (axios.create as unknown as () => MockAxiosInstance)();
 
 describe('api service', () => {
     beforeEach(() => {
@@ -103,9 +110,11 @@ describe('api service', () => {
     });
 
     describe('interceptors', () => {
-        let requestInterceptor: any;
-        let responseInterceptor: any;
-        let responseErrorInterceptor: any;
+        type RequestConfig = { headers: Record<string, string> };
+        type Response = { headers: Record<string, string>; data: unknown };
+        let requestInterceptor: (config: RequestConfig) => RequestConfig;
+        let responseInterceptor: (response: Response) => Response;
+        let responseErrorInterceptor: (error: unknown) => Promise<never>;
 
         beforeEach(() => {
             // Find the interceptors
@@ -123,7 +132,7 @@ describe('api service', () => {
                 removeItem: vi.fn(),
             });
 
-            const config = { headers: {} } as any;
+            const config: RequestConfig = { headers: {} };
             const updatedConfig = requestInterceptor(config);
 
             expect(updatedConfig.headers.Authorization).toBe('Bearer fake-token');

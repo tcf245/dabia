@@ -45,9 +45,9 @@ const mockSettings: api.DeckSettings = {
 describe('DeckManagement', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (api.getDecks as any).mockResolvedValue(mockDecks);
-        (api.getDeckSettings as any).mockResolvedValue(mockSettings);
-        (api.updateDeckSettings as any).mockResolvedValue({ active_deck_ids: ['1', '2'] });
+        vi.mocked(api.getDecks).mockResolvedValue(mockDecks);
+        vi.mocked(api.getDeckSettings).mockResolvedValue(mockSettings);
+        vi.mocked(api.updateDeckSettings).mockResolvedValue({ active_deck_ids: ['1', '2'] });
     });
 
     it('renders loading state initially', async () => {
@@ -86,7 +86,7 @@ describe('DeckManagement', () => {
     });
 
     it('toggles deck selection (select)', async () => {
-        (api.getDeckSettings as any).mockResolvedValueOnce({ active_deck_ids: ['1'] });
+        vi.mocked(api.getDeckSettings).mockResolvedValueOnce({ active_deck_ids: ['1'] });
         render(<DeckManagement />);
 
         await waitFor(() => expect(screen.getByText('Basic Japanese')).toBeInTheDocument());
@@ -107,7 +107,7 @@ describe('DeckManagement', () => {
 
     it('handles toggle error gracefully', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-        (api.updateDeckSettings as any).mockRejectedValueOnce(new Error('Update failed'));
+        vi.mocked(api.updateDeckSettings).mockRejectedValueOnce(new Error('Update failed'));
 
         render(<DeckManagement />);
         await waitFor(() => expect(screen.getByText('Basic Japanese')).toBeInTheDocument());
@@ -127,7 +127,7 @@ describe('DeckManagement', () => {
 
     it('handles initial load error', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-        (api.getDecks as any).mockRejectedValueOnce(new Error('Load failed'));
+        vi.mocked(api.getDecks).mockRejectedValueOnce(new Error('Load failed'));
 
         render(<DeckManagement />);
 

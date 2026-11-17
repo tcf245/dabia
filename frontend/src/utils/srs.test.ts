@@ -37,7 +37,7 @@ describe('srs utility', () => {
 
         it('should handle undefined or 0 current level as NEW', () => {
             expect(calculateNextProficiency(0, true)).toBe(PROFICIENCY_MASTERED);
-            // @ts-ignore
+            // @ts-expect-error undefined is not a valid level; the function must treat it as NEW
             expect(calculateNextProficiency(undefined, false)).toBe(PROFICIENCY_HARD);
         });
     });

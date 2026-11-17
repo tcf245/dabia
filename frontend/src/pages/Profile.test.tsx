@@ -34,8 +34,8 @@ describe('Profile Page', () => {
             { date: makeDate(4), count: 0, level: 0 },
         ];
 
-        (api.getProfileHeatmap as any).mockResolvedValue(testData);
-        (api.getProfileGarden as any).mockResolvedValue([]);
+        vi.mocked(api.getProfileHeatmap).mockResolvedValue(testData);
+        vi.mocked(api.getProfileGarden).mockResolvedValue([]);
 
         wrap(<Profile />);
 
@@ -70,8 +70,8 @@ describe('Profile Page', () => {
             { text: '水', romaji: 'mizu', type: 'review' },
         ];
 
-        (api.getProfileHeatmap as any).mockResolvedValue([]);
-        (api.getProfileGarden as any).mockResolvedValue(mockGarden);
+        vi.mocked(api.getProfileHeatmap).mockResolvedValue([]);
+        vi.mocked(api.getProfileGarden).mockResolvedValue(mockGarden);
 
         wrap(<Profile />);
 
@@ -83,8 +83,8 @@ describe('Profile Page', () => {
 
     it('handles API fetch error gracefully', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-        (api.getProfileHeatmap as any).mockRejectedValue(new Error('API Failure'));
-        (api.getProfileGarden as any).mockResolvedValue([]);
+        vi.mocked(api.getProfileHeatmap).mockRejectedValue(new Error('API Failure'));
+        vi.mocked(api.getProfileGarden).mockResolvedValue([]);
 
         wrap(<Profile />);
 

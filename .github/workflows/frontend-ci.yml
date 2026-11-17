@@ -31,6 +31,16 @@ jobs:
           cd frontend
           npm ci
 
+      - name: Lint
+        run: |
+          cd frontend
+          npm run lint -- --max-warnings=0
+
+      - name: Type check
+        run: |
+          cd frontend
+          npx tsc -b
+
       - name: Run Tests with Coverage
         run: |
           cd frontend

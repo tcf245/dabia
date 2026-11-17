@@ -18,7 +18,7 @@ export type UseFlashcardLogicProps = BaseProps & FlashcardModeProps;
 
 export const useFlashcardLogic = (props: UseFlashcardLogicProps) => {
   const { card, mode = 'quiz', onSubmit } = props;
-  const onContinue = (props as any).onContinue;
+  const onContinue = props.mode === 'review' ? props.onContinue : undefined;
 
   const [userInput, setUserInput] = useState('');
   const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
