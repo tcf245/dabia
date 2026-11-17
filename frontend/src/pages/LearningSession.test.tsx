@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import LearningSession from './LearningSession';
 import * as api from '../services/api';
@@ -6,6 +6,13 @@ import { en } from '../i18n/messages/en';
 import { zh } from '../i18n/messages/zh';
 import { LanguageProvider } from '../i18n/LanguageProvider';
 import LanguageSelect from '../components/LanguageSelect';
+
+// A new card clears the answer box in an effect that React may run a moment after the card is on screen.
+// Typing in that gap gets wiped (CI flake: the button stayed "Learn"), so let pending effects run first.
+const typeAnswer = async (value: string) => {
+    await act(async () => {});
+    fireEvent.change(screen.getByRole('textbox'), { target: { value } });
+};
 
 // Mock the API
 vi.mock('../services/api', async (importOriginal) => {
@@ -100,11 +107,8 @@ describe('LearningSession', () => {
             expect(screen.getByText('hint')).toBeInTheDocument();
         });
 
-        // Simulate answering correctly
-        const input = screen.getByRole('textbox');
-        
         // Type answer FIRST, so button becomes "Submit"
-        fireEvent.change(input, { target: { value: 'test' } });
+        await typeAnswer('test');
         
         // NOW find the button
         const submitBtn = screen.getByRole('button', { name: /submit/i });
@@ -135,12 +139,12 @@ describe('LearningSession', () => {
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
 
         // 2. Answer 'one' -> get 'two'
-        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'one' } });
+        await typeAnswer('one');
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
 
         // 3. Answer 'two' -> get 'three'
-        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'two' } });
+        await typeAnswer('two');
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(screen.getByText('h3')).toBeInTheDocument());
 
@@ -207,7 +211,7 @@ describe('LearningSession', () => {
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
 
         // Answer card 1
-        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'one' } });
+        await typeAnswer('one');
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
         // Wait for card 2 AND ensure loading state is cleared
@@ -250,7 +254,7 @@ describe('LearningSession', () => {
         render(<LearningSession />);
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
 
-        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'one' } });
+        await typeAnswer('one');
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(screen.getByText('h2')).toBeInTheDocument());
 
@@ -275,7 +279,7 @@ describe('LearningSession', () => {
         render(<LearningSession />);
         await waitFor(() => expect(screen.getByRole('textbox')).toBeInTheDocument());
 
-        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
+        await typeAnswer('test');
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
         await waitFor(() => expect(screen.getByText(en.dailyGoal.celebration)).toBeInTheDocument());
@@ -298,7 +302,7 @@ describe('LearningSession', () => {
         // We can't easily trigger the unreachable branches via the UI without mocking the child component.
         // But we can check that they are indeed safe.
         
-        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
+        await typeAnswer('test');
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
         await waitFor(() => expect(api.getNextCard).toHaveBeenCalledTimes(2));
 
