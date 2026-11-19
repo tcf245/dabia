@@ -34,7 +34,7 @@ describe('furigana utils', () => {
   it('handles space-delimited tokens and empty input', () => {
     expect(parseFurigana('')).toEqual([]);
     expect(parseFurigana('これは 何[なに]')).toEqual([
-      { text: 'これは ' },
+      { text: 'これは' },
       { text: '何', reading: 'なに' },
     ]);
   });
@@ -75,5 +75,35 @@ describe('furigana utils', () => {
     const parsed = parseFurigana('これ[これ]は[は]何[なに]ですか[ですか]？');
     expect(highlightSegments(parsed, '猫')).toEqual(parsed);
     expect(highlightSegments(parsed, '')).toEqual(parsed);
+  });
+
+  // Real card data is Anki style: a space marks where a furigana base starts, and <b> marks the target word.
+  it('drops Anki separator spaces and never shows them', () => {
+    const plain = (input: string) => parseFurigana(input).map((seg) => seg.text).join('');
+    expect(plain('建設現場[けんせつげんば]の 荒[あら]い 力仕事[ちからしごと]は 体[からだ]にこたえる'))
+      .toBe('建設現場の荒い力仕事は体にこたえる');
+    expect(parseFurigana('の 荒[あら]い')).toEqual([{ text: 'の' }, { text: '荒', reading: 'あら' }, { text: 'い' }]);
+  });
+
+  it('turns <b> tags into highlighted segments instead of showing them', () => {
+    const segments = parseFurigana('石[いし]の<b> 段[だん]</b>');
+    expect(segments.map((seg) => seg.text).join('')).toBe('石の段');
+    expect(segments).toContainEqual({ text: '段', reading: 'だん', highlighted: true });
+    expect(segments.filter((seg) => seg.highlighted)).toHaveLength(1);
+  });
+
+  it('keeps plain words inside <b> highlighted', () => {
+    const segments = parseFurigana('<b>ただ 今[いま]</b> 家[いえ]に 着[つ]いた');
+    expect(segments.map((seg) => seg.text).join('')).toBe('ただ今家に着いた');
+    expect(segments.filter((seg) => seg.highlighted).map((seg) => seg.text).join('')).toBe('ただ今');
+  });
+
+  it('prefers the <b> marker over searching for the target word', () => {
+    const segments = buildSentenceSegments('みっともない格好', '<b>みっともない</b> 格好[かっこう]', '格好');
+    expect(segments.filter((seg) => seg.highlighted).map((seg) => seg.text)).toEqual(['みっともない']);
+  });
+
+  it('strips other markup such as <br>', () => {
+    expect(parseFurigana('猫[ねこ]<br>だ').map((seg) => seg.text).join('')).toBe('猫だ');
   });
 });

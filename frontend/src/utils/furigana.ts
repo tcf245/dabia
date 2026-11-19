@@ -21,7 +21,8 @@ const pushToken = (
   const lastSpaceIndex = rawBase.search(/\s(?=\S*$)/);
   let token = rawBase;
   if (lastSpaceIndex !== -1) {
-    const leading = rawBase.slice(0, lastSpaceIndex + 1);
+    // The space is Anki's marker for where the furigana base starts; it is never displayed.
+    const leading = rawBase.slice(0, lastSpaceIndex).replace(/\s+/g, '');
     if (leading) {
       segments.push({ text: leading });
     }
@@ -50,13 +51,7 @@ const pushToken = (
   segments.push({ text: token, reading });
 };
 
-/**
- * Parses Dabia's `sentence_furigana` format (e.g. `これ[これ]は[は]何[なに]ですか[ですか]？`)
- * into ruby-ready segments, omitting `<ruby>` readings identical to the surface text.
- */
-export const parseFurigana = (input: string): FuriganaSegment[] => {
-  if (!input) return [];
-
+const parsePlain = (input: string): FuriganaSegment[] => {
   const segments: FuriganaSegment[] = [];
   let cursor = 0;
   TOKEN_PATTERN.lastIndex = 0;
@@ -74,6 +69,33 @@ export const parseFurigana = (input: string): FuriganaSegment[] => {
     segments.push({ text: input.slice(cursor) });
   }
 
+  // Remaining ASCII spaces are Anki separators too (e.g. before a <b> tag or at the start).
+  return segments
+    .map((seg) => (seg.reading ? seg : { ...seg, text: seg.text.replace(/ +/g, '') }))
+    .filter((seg) => seg.text);
+};
+
+/**
+ * Parses Dabia's `sentence_furigana` (Anki style, e.g. `石[いし]の<b> 段[だん]</b>`) into ruby-ready segments.
+ * A space marks where a furigana base starts and is not displayed; `<b>…</b>` marks the target word and becomes
+ * `highlighted`; other markup is dropped. Readings identical to the surface text are omitted.
+ */
+export const parseFurigana = (input: string): FuriganaSegment[] => {
+  if (!input) return [];
+
+  const segments: FuriganaSegment[] = [];
+  let bold = false;
+  for (const part of input.split(/(<\/?b>)/i)) {
+    if (/^<b>$/i.test(part)) {
+      bold = true;
+    } else if (/^<\/b>$/i.test(part)) {
+      bold = false;
+    } else if (part) {
+      for (const seg of parsePlain(part.replace(/<[^>]*>/g, ''))) {
+        segments.push(bold ? { ...seg, highlighted: true } : seg);
+      }
+    }
+  }
   return segments;
 };
 
@@ -138,5 +160,7 @@ export const buildSentenceSegments = (
     : sentence
       ? [{ text: sentence }]
       : [];
+  // The data's own <b> marker is more precise than searching for the dictionary form of the word.
+  if (base.some((seg) => seg.highlighted)) return base;
   return targetWord ? highlightSegments(base, targetWord) : base;
 };
