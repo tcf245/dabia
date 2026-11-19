@@ -68,21 +68,21 @@ describe('dictionaries', () => {
         const calls: string[] = [];
         const walk = (node: unknown, path: string) => {
             if (typeof node === 'function') {
-                // Message functions take numbers, strings or arrays; use the first sample set that works.
+                // Message functions take strings, numbers or arrays; use the first sample set that renders text.
                 const samples = [
+                    Array.from({ length: node.length }, () => 'x'),
                     Array.from({ length: node.length }, (_, i) => (i === 0 ? 3 : i + 1)),
                     Array.from({ length: node.length }, () => [1, 2]),
-                    Array.from({ length: node.length }, () => 'x'),
                 ];
                 const fn = node as (...a: unknown[]) => unknown;
                 let text: unknown;
                 for (const args of samples) {
                     try {
                         text = fn(...args);
-                        break;
                     } catch {
-                        // try the next sample set
+                        continue;
                     }
+                    if (typeof text === 'string') break;
                 }
                 expect(typeof text, path).toBe('string');
                 expect((text as string).trim(), path).not.toBe('');
