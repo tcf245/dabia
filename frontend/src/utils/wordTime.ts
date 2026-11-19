@@ -16,14 +16,15 @@ export const formatRelativeTime = (
   const timestamp = Date.parse(iso);
   if (Number.isNaN(timestamp)) return '';
 
-  const diffSeconds = Math.round((timestamp - now) / 1000);
+  const diffMs = timestamp - now;
+  const diffSeconds = Math.round(diffMs / 1000);
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
 
   for (const { unit, seconds } of RELATIVE_UNITS) {
     if (Math.abs(diffSeconds) >= seconds || unit === 'second') {
       let amount = Math.round(diffSeconds / seconds);
       if (amount === 0) {
-        amount = diffSeconds >= 0 ? 1 : -1;
+        amount = diffMs >= 0 ? 1 : -1; // the rounded value can be -0, so use the raw sign
       }
       return rtf.format(amount, unit);
     }

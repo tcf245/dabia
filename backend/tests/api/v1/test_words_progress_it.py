@@ -140,3 +140,15 @@ def test_no_active_decks_and_no_params_returns_empty(db_session: Session, user):
         "total": 0, "mastered": 0, "learning": 0, "not_started": 0,
         "learning_by_level": {"1": 0, "2": 0, "3": 0, "4": 0},
     }
+
+
+def test_malformed_stored_deck_ids_are_skipped(db_session: Session, user):
+    deck, cards = make_deck(db_session, "valid", 2)
+    learn(db_session, user, cards, [5])
+    user.active_deck_ids = ["not-a-uuid", str(deck.id)]
+    db_session.commit()
+
+    response = client.get("/api/v1/words/progress")
+
+    assert response.status_code == 200
+    assert [d["deck_id"] for d in response.json()["decks"]] == [str(deck.id)]

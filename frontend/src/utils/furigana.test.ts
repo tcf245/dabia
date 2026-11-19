@@ -106,4 +106,13 @@ describe('furigana utils', () => {
   it('strips other markup such as <br>', () => {
     expect(parseFurigana('猫[ねこ]<br>だ').map((seg) => seg.text).join('')).toBe('猫だ');
   });
+
+  it('shows a spaced kana token without ruby when its reading is itself', () => {
+    expect(parseFurigana('の これ[これ]')).toEqual([{ text: 'の' }, { text: 'これ' }]);
+  });
+
+  it('highlights a whole ruby segment when the target word covers only part of it', () => {
+    const segments = [{ text: '食べ', reading: 'たべ' }, { text: 'る' }];
+    expect(highlightSegments(segments, '食')).toEqual([{ text: '食べ', reading: 'たべ', highlighted: true }, { text: 'る' }]);
+  });
 });
