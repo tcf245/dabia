@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import WordGarden from './WordGarden';
@@ -201,5 +201,72 @@ describe('WordGarden', () => {
         renderGarden([]);
 
         expect(screen.getByText('Words you study will appear here.')).toBeInTheDocument();
+    });
+
+    it('hides the tooltip again when the pointer leaves a word', () => {
+        renderGarden();
+        const learningBtn = screen.getByRole('button', { name: '食べる, Learning, level 2' });
+
+        fireEvent.mouseEnter(learningBtn);
+        expect(screen.getByRole('tooltip')).toHaveTextContent('to eat');
+
+        fireEvent.mouseLeave(learningBtn);
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('re-lays out the words 150ms after the canvas is resized, ignoring empty sizes', () => {
+        vi.useFakeTimers();
+        let notify: ResizeObserverCallback = () => {};
+        const disconnect = vi.fn();
+        class FakeResizeObserver {
+            constructor(callback: ResizeObserverCallback) {
+                notify = callback;
+            }
+            observe = vi.fn();
+            unobserve = vi.fn();
+            disconnect = disconnect;
+        }
+        Object.defineProperty(globalThis, 'ResizeObserver', { configurable: true, writable: true, value: FakeResizeObserver });
+        const resize = (width: number, height: number) =>
+            act(() => {
+                notify([{ contentRect: { width, height } } as ResizeObserverEntry], {} as ResizeObserver);
+                vi.advanceTimersByTime(150);
+            });
+
+        try {
+            const { unmount } = renderGarden();
+            const position = () => screen.getByRole('button', { name: '花, Mastered, level 5' }).style.left;
+            const initial = position();
+
+            resize(0, 0);
+            expect(position()).toBe(initial);
+
+            resize(320, 200);
+            const narrow = parseFloat(position());
+            expect(narrow).toBeLessThanOrEqual(320);
+
+            resize(320, 200);  // same size again: nothing changes
+            expect(parseFloat(position())).toBe(narrow);
+
+            unmount();
+            expect(disconnect).toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('shows at most 8 words on a phone-sized screen', () => {
+        const many: GardenWord[] = Array.from({ length: 14 }, (_, i) => ({
+            card_id: `c${i}`, text: `語${i}`, reading: 'ご', romaji: 'ご', hint: null, level: i < 8 ? 3 : 5,
+            type: i < 8 ? 'review' : 'learned',
+        }));
+        const width = window.innerWidth;
+        Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 390 });
+        try {
+            renderGarden(many);
+            expect(screen.getAllByRole('button', { name: /level/ }).length).toBeLessThanOrEqual(8);
+        } finally {
+            Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: width });
+        }
     });
 });

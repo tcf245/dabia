@@ -6,6 +6,7 @@ import {
     computeGardenBlobs,
     computeGardenLayout,
     computeWordMotion,
+    estimateWordBox,
     type GardenLayoutInput,
 } from './gardenLayout';
 
@@ -130,5 +131,23 @@ describe('gardenLayout', () => {
         const blobsRepeat = computeGardenBlobs('seed-1');
         expect(blobs).toEqual(blobsRepeat);
         expect(blobs).toHaveLength(2);
+    });
+
+    it('estimates a smaller box when a word has no reading line', () => {
+        const withReading = estimateWordBox({ text: '花', reading: 'はな', fontSize: 20 });
+        const without = estimateWordBox({ text: '花', reading: undefined, fontSize: 20 });
+        expect(without.height).toBe(withReading.height - 16);
+        expect(estimateWordBox({ text: 'abc', reading: undefined, fontSize: 20 }).width)
+            .toBeLessThan(estimateWordBox({ text: '花花花', reading: undefined, fontSize: 20 }).width);
+    });
+
+    it('places same-sized words in input order', () => {
+        const twins: GardenLayoutInput[] = [
+            { id: 'a', text: '花', fontSize: 20 },
+            { id: 'b', text: '木', fontSize: 20 },
+        ];
+        const first = computeGardenLayout(600, 300, twins, 'seed').map((p) => p.id);
+        expect(first.sort()).toEqual(['a', 'b']);
+        expect(computeGardenLayout(600, 300, twins, 'seed')).toEqual(computeGardenLayout(600, 300, twins, 'seed'));
     });
 });
