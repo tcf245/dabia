@@ -7,6 +7,7 @@ import { en } from '../i18n/messages/en';
 
 vi.mock('../services/api', () => ({
   getWordsProgress: vi.fn(),
+  getWords: vi.fn(),
 }));
 
 const LocationProbe = () => {
@@ -21,6 +22,30 @@ const renderPage = (initialEntry = '/words') =>
       <LocationProbe />
     </MemoryRouter>,
   );
+
+const makeWord = (id: string, word: string, overrides: Partial<api.WordItem> = {}): api.WordItem => ({
+  card_id: id,
+  deck: { id: 'd1', name: 'eggrolls-JLPT10k-v3::1-N4+N5' },
+  word,
+  reading: 'よみ',
+  hint: `${word} meaning`,
+  sentence: `${word}の例文です。`,
+  sentence_furigana: `${word}[よみ]の[の]例文[れいぶん]です[です]。`,
+  sentence_translation: `Sentence for ${word}.`,
+  audio_url: null,
+  sentence_audio_url: null,
+  language: 'en',
+  proficiency_level: 2,
+  status: 'learning',
+  first_seen_at: '2026-10-02T12:00:00Z',
+  last_reviewed_at: '2026-11-16T12:00:00Z',
+  next_review_at: '2026-11-20T12:00:00Z',
+  review_count: 4,
+  correct_count: 3,
+  accuracy: 75,
+  lapses_count: 1,
+  ...overrides,
+});
 
 const multiDeckResponse: api.WordsProgressResponse = {
   decks: [
@@ -67,7 +92,15 @@ const multiDeckResponse: api.WordsProgressResponse = {
 describe('MyWords', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(api.getWordsProgress).mockReset();
+    vi.mocked(api.getWords).mockReset();
     vi.mocked(api.getWordsProgress).mockResolvedValue(multiDeckResponse);
+    vi.mocked(api.getWords).mockResolvedValue({
+      total: 1,
+      limit: 50,
+      offset: 0,
+      items: [makeWord('c1', '何')],
+    });
   });
 
   it('renders a loading skeleton and requests progress with includeStudied once', async () => {
@@ -91,7 +124,7 @@ describe('MyWords', () => {
     );
   });
 
-  it('defaults to the first active deck and formats deck options cleanly', async () => {
+  it('defaults to the first active deck and Learning tab, fetching words with status=learning', async () => {
     renderPage('/words');
 
     const select = (await screen.findByLabelText(en.words.deckLabel)) as HTMLSelectElement;
@@ -103,6 +136,26 @@ describe('MyWords', () => {
     expect(screen.getByRole('option', { name: en.words.allActiveDecks })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: en.words.otherDecks })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Custom Deck' })).toBeInTheDocument();
+
+    const allTab = screen.getByRole('tab', { name: /All/i });
+    const learningTab = screen.getByRole('tab', { name: /Learning/i });
+    const masteredTab = screen.getByRole('tab', { name: /Mastered/i });
+    expect(learningTab).toHaveAttribute('aria-selected', 'true');
+    expect(allTab).toHaveTextContent('612');
+    expect(learningTab).toHaveTextContent('292');
+    expect(masteredTab).toHaveTextContent('320');
+
+    await waitFor(() =>
+      expect(api.getWords).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deckIds: ['d1'],
+          status: 'learning',
+          sort: 'last_reviewed',
+          offset: 0,
+        }),
+      ),
+    );
+    expect(await screen.findByText('何')).toBeInTheDocument();
   });
 
   it('selects the deck specified in the ?deck= query parameter', async () => {
@@ -113,7 +166,7 @@ describe('MyWords', () => {
     expect(screen.getByText('Learned 60 / 100 words')).toBeInTheDocument();
   });
 
-  it('sums active decks only when ?deck=all is selected', async () => {
+  it('sums active decks only when ?deck=all is selected and sends active deck IDs to getWords', async () => {
     renderPage('/words?deck=all');
 
     const select = (await screen.findByLabelText(en.words.deckLabel)) as HTMLSelectElement;
@@ -121,6 +174,15 @@ describe('MyWords', () => {
     // Active decks d1 (612/1500) + d2 (50/200) = 662 / 1700, excluding d3 (100 total in response.aggregate)
     expect(screen.getByText('Learned 662 / 1,700 words')).toBeInTheDocument();
     expect(screen.getByText('38.9%')).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(api.getWords).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deckIds: ['d1', 'd2'],
+          status: 'learning',
+        }),
+      ),
+    );
 
     fireEvent.focus(screen.getByRole('button', { name: /learning/i }));
     const tooltip = screen.getByRole('tooltip');
@@ -142,6 +204,11 @@ describe('MyWords', () => {
     fireEvent.change(select, { target: { value: 'all' } });
     expect(screen.getByTestId('location-search')).toHaveTextContent('?deck=all');
     expect(screen.getByText('Learned 662 / 1,700 words')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(api.getWords).toHaveBeenLastCalledWith(
+        expect.objectContaining({ deckIds: ['d1', 'd2'] }),
+      ),
+    );
   });
 
   it('hides All active decks when only one deck is active', async () => {
@@ -207,6 +274,7 @@ describe('MyWords', () => {
     expect(screen.getByText('0.0%')).toBeInTheDocument();
     expect(screen.getByText(en.words.notStartedDeck)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: en.words.startLearning })).toHaveAttribute('href', '/');
+    expect(api.getWords).not.toHaveBeenCalled();
   });
 
   it('falls back to the first studied deck when no decks are active', async () => {
@@ -238,5 +306,202 @@ describe('MyWords', () => {
     expect(api.getWordsProgress).toHaveBeenCalledTimes(2);
 
     consoleSpy.mockRestore();
+  });
+
+  it('updates URL, hides level chips, and refetches when switching status tabs', async () => {
+    vi.mocked(api.getWords)
+      .mockResolvedValueOnce({ total: 1, limit: 50, offset: 0, items: [makeWord('c1', '何')] })
+      .mockResolvedValueOnce({ total: 0, limit: 50, offset: 0, items: [] });
+
+    renderPage('/words?level=1,2');
+
+    await screen.findByText('何');
+    expect(screen.getByRole('button', { name: 'L1' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'L2' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('tab', { name: /Mastered/i }));
+
+    expect(screen.getByTestId('location-search')).toHaveTextContent('status=mastered');
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('level=');
+    expect(screen.queryByRole('button', { name: 'L1' })).not.toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(api.getWords).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'mastered', levels: undefined }),
+      ),
+    );
+    expect(await screen.findByText(en.words.emptyMastered)).toBeInTheDocument();
+  });
+
+  it('multi-selects level chips on Learning tab and sends level filter', async () => {
+    renderPage('/words');
+
+    await screen.findByText('何');
+    fireEvent.click(screen.getByRole('button', { name: 'L1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'L3' }));
+
+    expect(screen.getByTestId('location-search')).toHaveTextContent('level=1%2C3');
+    await waitFor(() =>
+      expect(api.getWords).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'learning', levels: [1, 3] }),
+      ),
+    );
+  });
+
+  it('searches with q, switches sort to Best match, and shows clear-search empty state', async () => {
+    vi.mocked(api.getWords)
+      .mockResolvedValueOnce({ total: 1, limit: 50, offset: 0, items: [makeWord('c1', '何')] })
+      .mockResolvedValueOnce({ total: 0, limit: 50, offset: 0, items: [] })
+      .mockResolvedValueOnce({ total: 1, limit: 50, offset: 0, items: [makeWord('c1', '何')] });
+
+    renderPage('/words');
+    await screen.findByText('何');
+
+    const input = screen.getByPlaceholderText(en.words.searchPlaceholder);
+    fireEvent.change(input, { target: { value: 'missingword' } });
+
+    const sortSelect = screen.getByLabelText(en.words.sortLabel) as HTMLSelectElement;
+    expect(sortSelect.value).toBe('relevance');
+    expect(screen.getByRole('option', { name: en.words.sort.relevance })).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(api.getWords).toHaveBeenLastCalledWith(
+        expect.objectContaining({ q: 'missingword', sort: 'relevance' }),
+      ),
+    );
+    expect(await screen.findByText(en.words.emptySearch)).toBeInTheDocument();
+
+    // Clear search from the empty state
+    const clearButtons = screen.getAllByRole('button', { name: en.words.clearSearch });
+    fireEvent.click(clearButtons[clearButtons.length - 1]);
+
+    expect((screen.getByPlaceholderText(en.words.searchPlaceholder) as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('option', { name: en.words.sort.relevance })).not.toBeInTheDocument();
+    expect(sortSelect.value).toBe('last_reviewed');
+    await waitFor(() => expect(api.getWords).toHaveBeenCalledTimes(3));
+  });
+
+  it('expands only one word card at a time and closes on Escape', async () => {
+    vi.mocked(api.getWords).mockResolvedValueOnce({
+      total: 2,
+      limit: 50,
+      offset: 0,
+      items: [makeWord('c1', '何'), makeWord('c2', '花')],
+    });
+
+    renderPage('/words');
+
+    const card1Btn = (await screen.findByText('何')).closest('button')!;
+    const card2Btn = screen.getByText('花').closest('button')!;
+
+    fireEvent.click(card1Btn);
+    expect(card1Btn).toHaveAttribute('aria-expanded', 'true');
+    expect(card2Btn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('Sentence for 何.')).toBeInTheDocument();
+
+    fireEvent.click(card2Btn);
+    expect(card1Btn).toHaveAttribute('aria-expanded', 'false');
+    expect(card2Btn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByText('Sentence for 何.')).not.toBeInTheDocument();
+    expect(screen.getByText('Sentence for 花.')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(card2Btn).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('appends next offset when Load more is clicked and shows list error retry', async () => {
+    vi.mocked(api.getWords)
+      .mockResolvedValueOnce({
+        total: 2,
+        limit: 50,
+        offset: 0,
+        items: [makeWord('c1', '何')],
+      })
+      .mockRejectedValueOnce(new Error('list error'))
+      .mockResolvedValueOnce({
+        total: 2,
+        limit: 50,
+        offset: 1,
+        items: [makeWord('c2', '花')],
+      });
+
+    renderPage('/words');
+
+    expect(await screen.findByText('何')).toBeInTheDocument();
+    expect(screen.getByText('Showing 1 / 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: en.words.loadMore }));
+    expect(await screen.findByText(en.words.listLoadError)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: en.words.retry }));
+    expect(await screen.findByText('花')).toBeInTheDocument();
+    expect(screen.getByText('Showing 2 / 2')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: en.words.loadMore })).not.toBeInTheDocument();
+  });
+
+  it('updates sort query param and refetches when selecting a sort option, and manages audio in WordGrid', async () => {
+    vi.mocked(api.getWords).mockResolvedValue({
+      total: 1,
+      limit: 50,
+      offset: 0,
+      items: [
+        makeWord('c1', '何', {
+          audio_url: 'https://cdn.example.com/w.mp3',
+          sentence_audio_url: 'https://cdn.example.com/s.mp3',
+        }),
+      ],
+    });
+
+    renderPage('/words');
+    const cardBtn = (await screen.findByText('何')).closest('button')!;
+
+    fireEvent.click(cardBtn);
+    fireEvent.click(screen.getByRole('button', { name: en.words.wordAudio }));
+    expect(globalThis.playMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: en.words.sentenceAudio }));
+    expect(globalThis.pauseMock).toHaveBeenCalled();
+    expect(globalThis.playMock).toHaveBeenCalledTimes(2);
+
+    const sortSelect = screen.getByLabelText(en.words.sortLabel) as HTMLSelectElement;
+    fireEvent.change(sortSelect, { target: { value: 'level' } });
+    expect(screen.getByTestId('location-search')).toHaveTextContent('sort=level');
+    await waitFor(() =>
+      expect(api.getWords).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sort: 'level' }),
+      ),
+    );
+  });
+
+  it('removes the level filter when the last chip is turned off', async () => {
+    renderPage('/words');
+    await screen.findByText('何');
+
+    fireEvent.click(screen.getByRole('button', { name: 'L2' }));
+    expect(screen.getByTestId('location-search')).toHaveTextContent('level=2');
+    fireEvent.click(screen.getByRole('button', { name: 'L2' }));
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('level=');
+  });
+
+  it('clears the level filter from the empty state', async () => {
+    vi.mocked(api.getWords).mockResolvedValue({ total: 0, limit: 50, offset: 0, items: [] });
+    renderPage('/words?status=learning&level=1');
+
+    fireEvent.click(await screen.findByRole('button', { name: en.words.clearFilter }));
+
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('level=');
+  });
+
+  it('drops the Best match sort when the search box is emptied by typing', async () => {
+    renderPage('/words');
+    await screen.findByText('何');
+    const input = screen.getByPlaceholderText(en.words.searchPlaceholder);
+
+    fireEvent.change(input, { target: { value: 'tabe' } });
+    expect(screen.getByTestId('location-search')).toHaveTextContent('sort=relevance');
+    fireEvent.change(input, { target: { value: '' } });
+
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('sort=');
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('q=');
   });
 });

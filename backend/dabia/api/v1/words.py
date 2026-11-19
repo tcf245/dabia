@@ -1,20 +1,26 @@
-"""The learner's own words: progress per deck (and, in later PRs, the word list and CSV export).
+"""The learner's own words: progress per deck, the word list (and, in a later PR, the CSV export).
 
 A card is Mastered at level 5, Learning at levels 1-4, and Not started when the user has no association row for it.
 See .ai/specs/word-review.md section 2.
 """
 import uuid
-from typing import Optional
+from dataclasses import dataclass
+from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import case, func
+from sqlalchemy.orm import Session, joinedload
 
 from dabia import models
 from dabia.api.deps import get_current_user
+from dabia.core.i18n import language_chain, localize_many
 from dabia.core.srs_constants import PROFICIENCY_MASTERED
+from dabia.core.storage import storage_provider
+from dabia.core.word_search import Candidate, score
 from dabia.database import get_db
-from dabia.schemas.words import DeckProgress, ProgressCounts, WordsProgressResponse
+from dabia.schemas.words import (
+    DeckProgress, ProgressCounts, WordDeck, WordItem, WordsListResponse, WordsProgressResponse,
+)
 
 router = APIRouter()
 
@@ -47,6 +53,204 @@ def add_level(counts: ProgressCounts, level: int, count: int) -> None:
     elif level >= 1:
         counts.learning += count
         counts.learning_by_level[str(level)] += count
+
+
+SortKey = Literal["relevance", "last_reviewed", "next_review", "level", "first_seen", "lapses"]
+DEFAULT_ORDER = {
+    "relevance": "desc", "last_reviewed": "desc", "next_review": "asc", "level": "asc", "first_seen": "asc",
+    "lapses": "desc",
+}
+
+
+@dataclass
+class WordFilters:
+    """The filters shared by the list and the export, so both return exactly the same rows."""
+    deck_id: Optional[list[uuid.UUID]] = None
+    all_decks: bool = False
+    status: Literal["all", "learning", "mastered"] = "all"
+    level: Optional[list[int]] = None
+    q: Optional[str] = None
+    sort: Optional[SortKey] = None
+    order: Optional[Literal["asc", "desc"]] = None
+    lang: Optional[str] = None
+
+
+def word_filters(
+    deck_id: Optional[list[uuid.UUID]] = Query(None),
+    all_decks: bool = False,
+    status: Literal["all", "learning", "mastered"] = "all",
+    level: Optional[list[int]] = Query(None),
+    q: Optional[str] = Query(None, max_length=64),
+    sort: Optional[SortKey] = None,
+    order: Optional[Literal["asc", "desc"]] = None,
+    lang: Optional[str] = None,
+) -> WordFilters:
+    if level and (status != "learning" or any(not 1 <= value <= 4 for value in level)):
+        raise HTTPException(status_code=422, detail="level takes 1-4 and only applies to status=learning")
+    query = (q or "").strip() or None
+    if sort == "relevance" and not query:
+        raise HTTPException(status_code=422, detail="sort=relevance needs a search query")
+    return WordFilters(deck_id, all_decks, status, level, query, sort, order, lang)
+
+
+def _sort_value(row, sort: str):
+    """A comparable value for one sort key; missing timestamps sort last whatever the order."""
+    value = {
+        "last_reviewed": row.last_reviewed_at,
+        "next_review": row.next_review_at,
+        "level": row.proficiency_level,
+        "first_seen": row.created_at,
+        "lapses": row.lapses_count,
+    }[sort]
+    return value
+
+
+def select_word_ids(db: Session, user: models.User, filters: WordFilters) -> list[uuid.UUID]:
+    """Card IDs of the user's learned words matching the filters, in display order."""
+    if filters.all_decks:
+        deck_ids = studied_deck_ids(db, user.id)
+    else:
+        deck_ids = list(filters.deck_id) if filters.deck_id else active_deck_ids(user)
+    if not deck_ids:
+        return []
+
+    uca = models.UserCardAssociation
+    query = (
+        db.query(
+            models.Card.id, models.Card.target_word, models.Card.reading, models.Card.hint,
+            uca.proficiency_level, uca.last_reviewed_at, uca.next_review_at, uca.created_at, uca.lapses_count,
+        )
+        .join(uca, uca.card_id == models.Card.id)
+        .filter(uca.user_id == user.id, uca.proficiency_level >= 1, models.Card.deck_id.in_(deck_ids))
+    )
+    if filters.status == "mastered":
+        query = query.filter(uca.proficiency_level >= PROFICIENCY_MASTERED)
+    elif filters.status == "learning":
+        query = query.filter(uca.proficiency_level < PROFICIENCY_MASTERED)
+        if filters.level:
+            query = query.filter(uca.proficiency_level.in_(filters.level))
+    rows = query.all()
+
+    scores: dict[uuid.UUID, float] = {}
+    if filters.q:
+        meanings = localized_hints(db, rows, filters.lang)
+        for row in rows:
+            value = score(filters.q, Candidate(row.target_word, row.reading, meanings.get(row.id)))
+            if value > 0:
+                scores[row.id] = value
+        rows = [row for row in rows if row.id in scores]
+
+    sort = filters.sort or ("relevance" if filters.q else "last_reviewed")
+    descending = (filters.order or DEFAULT_ORDER[sort]) == "desc"
+    secondary = "last_reviewed"
+
+    def key(row):
+        primary = scores[row.id] if sort == "relevance" else _sort_value(row, sort)
+        tie = _sort_value(row, secondary) if sort == "relevance" else None
+        return primary, tie
+
+    # Stable multi-pass sort: card id, then the secondary key (relevance only), then the primary key.
+    rows.sort(key=lambda row: str(row.id))
+    if sort == "relevance":
+        rows = _sorted_nulls_last(rows, lambda row: key(row)[1], descending=True)
+    rows = _sorted_nulls_last(rows, lambda row: key(row)[0], descending=descending)
+    return [row.id for row in rows]
+
+
+def _sorted_nulls_last(rows, value, descending: bool):
+    present = [row for row in rows if value(row) is not None]
+    missing = [row for row in rows if value(row) is None]
+    return sorted(present, key=value, reverse=descending) + missing
+
+
+def localized_hints(db: Session, rows, lang: Optional[str]) -> dict[uuid.UUID, Optional[str]]:
+    """Served meaning per card for matching, with the same fallback as the cards themselves."""
+    chain = language_chain(lang)
+    best: dict[uuid.UUID, tuple[int, str]] = {}
+    ids = [row.id for row in rows]
+    for start in range(0, len(ids), 1000):
+        for card_id, language, hint in db.query(
+            models.CardTranslation.card_id, models.CardTranslation.language, models.CardTranslation.hint,
+        ).filter(
+            models.CardTranslation.card_id.in_(ids[start:start + 1000]),
+            models.CardTranslation.language.in_(chain),
+            models.CardTranslation.hint.isnot(None),
+        ):
+            rank = chain.index(language)
+            if hint and (card_id not in best or rank < best[card_id][0]):
+                best[card_id] = (rank, hint)
+    return {row.id: best[row.id][1] if row.id in best else row.hint for row in rows}
+
+
+def load_words(db: Session, user: models.User, card_ids: list[uuid.UUID], lang: Optional[str]) -> list[WordItem]:
+    """Full items for the given cards, in the given order."""
+    if not card_ids:
+        return []
+    uca = models.UserCardAssociation
+    pairs = (
+        db.query(models.Card, uca)
+        .join(uca, uca.card_id == models.Card.id)
+        .options(joinedload(models.Card.deck))
+        .filter(uca.user_id == user.id, models.Card.id.in_(card_ids))
+        .all()
+    )
+    by_id = {card.id: (card, assoc) for card, assoc in pairs}
+    content = localize_many(db, [card for card, _ in pairs], lang)
+    reviews = {
+        card_id: (total, correct or 0)
+        for card_id, total, correct in db.query(
+            models.ReviewLog.card_id,
+            func.count(models.ReviewLog.id),
+            func.sum(case((models.ReviewLog.is_correct.is_(True), 1), else_=0)),
+        )
+        .filter(models.ReviewLog.user_id == user.id, models.ReviewLog.card_id.in_(card_ids))
+        .group_by(models.ReviewLog.card_id)
+    }
+
+    items = []
+    for card_id in card_ids:
+        card, assoc = by_id[card_id]
+        localized = content[card_id]
+        total, correct = reviews.get(card_id, (0, 0))
+        items.append(WordItem(
+            card_id=card.id,
+            deck=WordDeck(id=card.deck.id, name=card.deck.name),
+            word=card.target_word,
+            reading=card.reading,
+            hint=localized.hint,
+            sentence=card.sentence,
+            sentence_furigana=card.sentence_furigana,
+            sentence_translation=localized.sentence_translation,
+            audio_url=storage_provider.get_url(card.audio_url) if card.audio_url else None,
+            sentence_audio_url=storage_provider.get_url(card.sentence_audio_url) if card.sentence_audio_url else None,
+            language=localized.language,
+            proficiency_level=assoc.proficiency_level,
+            status="mastered" if assoc.proficiency_level >= PROFICIENCY_MASTERED else "learning",
+            first_seen_at=assoc.created_at,
+            last_reviewed_at=assoc.last_reviewed_at,
+            next_review_at=assoc.next_review_at,
+            review_count=total,
+            correct_count=correct,
+            accuracy=round(100 * correct / total, 1) if total else None,
+            lapses_count=assoc.lapses_count,
+        ))
+    return items
+
+
+@router.get("", response_model=WordsListResponse)
+def list_words(
+    filters: WordFilters = Depends(word_filters),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """The user's learned words, filtered, searched and sorted, one page at a time."""
+    ids = select_word_ids(db, current_user, filters)
+    page = ids[offset:offset + limit]
+    return WordsListResponse(
+        total=len(ids), limit=limit, offset=offset, items=load_words(db, current_user, page, filters.lang),
+    )
 
 
 @router.get("/progress", response_model=WordsProgressResponse)

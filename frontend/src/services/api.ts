@@ -223,4 +223,97 @@ export const getWordsProgress = async (
   return response.data;
 };
 
+export type WordStatus = 'learning' | 'mastered';
+export type WordsStatusFilter = 'all' | 'learning' | 'mastered';
+export type WordsSortKey =
+  | 'relevance'
+  | 'last_reviewed'
+  | 'next_review'
+  | 'level'
+  | 'first_seen'
+  | 'lapses';
+export type WordsSortOrder = 'asc' | 'desc';
+
+export interface WordItem {
+  card_id: string;
+  deck: DeckInfo;
+  word: string;
+  reading: string | null;
+  hint: string | null;
+  sentence: string | null;
+  sentence_furigana: string | null;
+  sentence_translation: string | null;
+  audio_url: string | null;
+  sentence_audio_url: string | null;
+  language: string;
+  proficiency_level: number;
+  status: WordStatus;
+  first_seen_at: string | null;
+  last_reviewed_at: string | null;
+  next_review_at: string | null;
+  review_count: number;
+  correct_count: number;
+  accuracy: number | null;
+  lapses_count: number;
+}
+
+export interface WordsListResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  items: WordItem[];
+}
+
+export interface WordsQuery {
+  deckIds?: string[];
+  allDecks?: boolean;
+  status?: WordsStatusFilter;
+  levels?: number[];
+  q?: string;
+  sort?: WordsSortKey;
+  order?: WordsSortOrder;
+  limit?: number;
+  offset?: number;
+}
+
+export const getWords = async (query: WordsQuery = {}): Promise<WordsListResponse> => {
+  const search = new URLSearchParams();
+  for (const id of query.deckIds ?? []) {
+    search.append('deck_id', id);
+  }
+  if (query.allDecks !== undefined) {
+    search.set('all_decks', String(query.allDecks));
+  }
+  if (query.status !== undefined) {
+    search.set('status', query.status);
+  }
+  for (const level of query.levels ?? []) {
+    search.append('level', String(level));
+  }
+  const trimmedQ = query.q?.trim();
+  if (trimmedQ) {
+    search.set('q', trimmedQ);
+  }
+  if (query.sort !== undefined) {
+    search.set('sort', query.sort);
+  }
+  if (query.order !== undefined) {
+    search.set('order', query.order);
+  }
+  if (query.limit !== undefined) {
+    search.set('limit', String(query.limit));
+  }
+  if (query.offset !== undefined) {
+    search.set('offset', String(query.offset));
+  }
+  const lang = languageParams()?.lang;
+  if (lang) {
+    search.set('lang', lang);
+  }
+  const response = await api.get<WordsListResponse>('/api/v1/words', {
+    params: search,
+  });
+  return response.data;
+};
+
 

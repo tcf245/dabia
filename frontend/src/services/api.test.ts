@@ -144,6 +144,55 @@ describe('api service', () => {
         expect(params.toString()).toBe('');
     });
 
+    it('getWords sends repeated deck_id and level, filters, paging, and content language', async () => {
+        const payload: apiService.WordsListResponse = {
+            total: 1,
+            limit: 50,
+            offset: 0,
+            items: [],
+        };
+        mockApi.get.mockResolvedValueOnce({ data: payload });
+
+        apiService.setContentLanguage('en');
+        const result = await apiService.getWords({
+            deckIds: ['d1', 'd2'],
+            allDecks: false,
+            status: 'learning',
+            levels: [1, 3],
+            q: 'taberu',
+            sort: 'relevance',
+            order: 'desc',
+            limit: 50,
+            offset: 100,
+        });
+        apiService.setContentLanguage(null);
+
+        expect(result).toEqual(payload);
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/words', {
+            params: expect.any(URLSearchParams),
+        });
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.getAll('deck_id')).toEqual(['d1', 'd2']);
+        expect(params.get('all_decks')).toBe('false');
+        expect(params.get('status')).toBe('learning');
+        expect(params.getAll('level')).toEqual(['1', '3']);
+        expect(params.get('q')).toBe('taberu');
+        expect(params.get('sort')).toBe('relevance');
+        expect(params.get('order')).toBe('desc');
+        expect(params.get('limit')).toBe('50');
+        expect(params.get('offset')).toBe('100');
+        expect(params.get('lang')).toBe('en');
+    });
+
+    it('getWords handles empty query cleanly', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { total: 0, limit: 50, offset: 0, items: [] } });
+
+        await apiService.getWords();
+
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.toString()).toBe('');
+    });
+
     describe('interceptors', () => {
         type RequestConfig = { headers: Record<string, string> };
         type Response = { headers: Record<string, string>; data: unknown };
