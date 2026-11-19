@@ -262,4 +262,84 @@ describe('ExportButton', () => {
       window.removeEventListener('dabia:unauthorized', unauthorizedHandler);
     }
   });
+
+  it('switches to the export button when the user signs in from another tab', () => {
+    localStorage.removeItem('token');
+    render(<ExportButton {...defaultProps} />);
+    expect(screen.getByRole('button', { name: en.words.export.signIn })).toBeInTheDocument();
+
+    localStorage.setItem('token', 'from-other-tab');
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'token' }));
+    });
+
+    expect(screen.getByRole('button', { name: en.words.export.button })).toBeInTheDocument();
+  });
+
+  it('treats unreadable storage as signed out', () => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('storage blocked');
+    });
+    try {
+      render(<ExportButton {...defaultProps} />);
+      expect(screen.getByRole('button', { name: en.words.export.signIn })).toBeInTheDocument();
+    } finally {
+      getItem.mockRestore();
+    }
+  });
+
+  it('closes the popover when the trigger is clicked again', () => {
+    render(<ExportButton {...defaultProps} />);
+    const trigger = screen.getByRole('button', { name: en.words.export.button });
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('stays open on outside clicks and trigger clicks while an export is running', async () => {
+    let finish: (val: { filename: string }) => void = () => {};
+    vi.mocked(api.exportWords).mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    render(
+      <div>
+        <ExportButton {...defaultProps} />
+        <div data-testid="outside">Outside</div>
+      </div>,
+    );
+    const trigger = screen.getByRole('button', { name: en.words.export.button });
+    fireEvent.click(trigger);
+    const exportBtn = screen.getByRole('button', { name: en.words.export.confirm });
+    fireEvent.click(exportBtn);
+    fireEvent.click(exportBtn);  // a second click while running is ignored
+
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    fireEvent.click(screen.getByTestId('outside'));
+    fireEvent.click(trigger);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(api.exportWords).toHaveBeenCalledTimes(1);
+
+    await act(async () => finish({ filename: 'x.csv' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['succeeds', (settle: { resolve: (v: { filename: string }) => void }) => settle.resolve({ filename: 'x.csv' })],
+    ['fails', (settle: { reject: (e: Error) => void }) => settle.reject(new Error('network'))],
+  ])('ignores the result when the page is left before the export %s', async (_, settleWith) => {
+    const settle = {} as { resolve: (v: { filename: string }) => void; reject: (e: Error) => void };
+    vi.mocked(api.exportWords).mockReturnValueOnce(
+      new Promise((resolve, reject) => { settle.resolve = resolve; settle.reject = reject; }),
+    );
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { unmount } = render(<ExportButton {...defaultProps} />);
+    fireEvent.click(screen.getByRole('button', { name: en.words.export.button }));
+    fireEvent.click(screen.getByRole('button', { name: en.words.export.confirm }));
+
+    unmount();
+    await act(async () => (settleWith as (s: typeof settle) => void)(settle));
+
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
 });

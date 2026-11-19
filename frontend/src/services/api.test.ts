@@ -295,6 +295,14 @@ describe('api service', () => {
             expect(result).toEqual({ filename: 'dabia-words-日本語.csv' });
         });
 
+        it('falls back to the default filename when the response has no headers', async () => {
+            mockApi.get.mockResolvedValueOnce({ data: 'word,reading', headers: undefined });
+
+            const result = await apiService.exportWords();
+
+            expect(result).toEqual({ filename: 'dabia-words.csv' });
+        });
+
         it('reads filename="..." from AxiosHeaders-like headers when filename* is absent', async () => {
             mockApi.get.mockResolvedValueOnce({
                 data: new Blob(['csv']),
