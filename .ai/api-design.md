@@ -31,6 +31,7 @@ Update this file in the same PR as any endpoint change.
 | GET | `/api/v1/profile/heatmap` | optional | Reviews per day, last 365 days |
 | GET | `/api/v1/profile/garden` | optional | Words for the profile word garden |
 | GET | `/api/v1/words` | optional | The user's learned words: filter, fuzzy search, sort, page |
+| GET | `/api/v1/words/export` | required | The same rows as `/words`, all pages, as CSV |
 | GET | `/api/v1/words/progress` | optional | Mastered / Learning / Not started counts per deck |
 | GET | `/api/v1/languages` | none | Learner languages cards can be served in |
 | POST | `/api/v1/auth/login/google` | none | Exchange a Google auth code for a JWT |
@@ -227,6 +228,19 @@ The user's learned words (levels 1–5), one page at a time.
 - Search scores: exact word/reading 100, prefix 80, substring (word, reading or meaning) 60, typo match on the
   meaning below 50 (`core/word_search.py`).
 - `accuracy` is `null` when the card has no review logs.
+
+### `GET /api/v1/words/export`
+
+The same rows as `GET /api/v1/words` for the same filters (`deck_id`, `all_decks`, `status`, `level`, `q`, `sort`,
+`order`, `lang`), all pages, as CSV. No `limit`/`offset`.
+
+- **Auth**: a signed-in user; the demo user gets `401` `{"detail": "Sign in to export"}`.
+- `Content-Type: text/csv; charset=utf-8`, UTF-8 BOM, CRLF, RFC 4180 quoting.
+- `Content-Disposition: attachment; filename="dabia-words-<deck-slug|selected-decks|all-decks>[-<status>]-<YYYYMMDD>.csv"`
+  (also as `filename*`); the header is listed in CORS `expose_headers`.
+- Columns: `word, reading, meaning, meaning_language, status, level, deck, sentence, sentence_translation,
+  first_seen_at, last_reviewed_at, next_review_at, review_count, correct_count, accuracy, lapses, card_id`.
+- Cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` so spreadsheets do not run them.
 
 ### `GET /api/v1/words/progress`
 
