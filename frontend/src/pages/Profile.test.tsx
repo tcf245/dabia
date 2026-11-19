@@ -66,8 +66,8 @@ describe('Profile Page', () => {
 
     it('renders vocabulary garden with items', async () => {
         const mockGarden: api.GardenWord[] = [
-            { text: '花', romaji: 'hana', type: 'learned' },
-            { text: '水', romaji: 'mizu', type: 'review' },
+            { card_id: 'c1', text: '花', reading: 'はな', romaji: 'はな', hint: 'flower', level: 5, type: 'learned' },
+            { card_id: 'c2', text: '水', reading: 'みず', romaji: 'みず', hint: 'water', level: 2, type: 'review' },
         ];
 
         vi.mocked(api.getProfileHeatmap).mockResolvedValue([]);
@@ -76,9 +76,9 @@ describe('Profile Page', () => {
         wrap(<Profile />);
 
         expect(await screen.findByText('花')).toBeInTheDocument();
-        expect(screen.getByText('hana')).toBeInTheDocument();
+        expect(screen.getByText('はな')).toBeInTheDocument();
         expect(screen.getByText('水')).toBeInTheDocument();
-        expect(screen.getByText('mizu')).toBeInTheDocument();
+        expect(screen.getByText('みず')).toBeInTheDocument();
     });
 
     it('handles API fetch error gracefully', async () => {

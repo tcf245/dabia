@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from dabia import models
 from dabia.api.deps import get_current_user_id
-from dabia.core.i18n import language_chain, resolve_language
+from dabia.core.i18n import language_chain, localize, localize_many, resolve_language
 from dabia.database import get_db
 from dabia.main import app
 
@@ -224,3 +224,94 @@ def test_the_english_import_matches_cards_by_guid_and_can_be_rolled_back(db_engi
             conn.execute(sa.text("DELETE FROM card_translations WHERE card_id = :c"), {"c": card_id})
             conn.execute(sa.text("DELETE FROM cards WHERE id = :c"), {"c": card_id})
             conn.execute(sa.text("DELETE FROM decks WHERE id = :d"), {"d": deck_id})
+
+
+def test_localize_many_empty_input_issues_no_queries(db_session: Session):
+    query_count = 0
+    bind = db_session.get_bind()
+
+    def count_query(*_args, **_kwargs):
+        nonlocal query_count
+        query_count += 1
+
+    sa.event.listen(bind, "before_cursor_execute", count_query)
+    try:
+        assert localize_many(db_session, [], "en") == {}
+    finally:
+        sa.event.remove(bind, "before_cursor_execute", count_query)
+
+    assert query_count == 0
+
+
+def test_localize_many_issues_one_query_and_matches_localize(db_session: Session):
+    deck = models.Deck(id=uuid.uuid4(), name=f"I18n Many Deck {uuid.uuid4()}")
+    db_session.add(deck)
+    db_session.flush()
+
+    card_full = models.Card(
+        id=uuid.uuid4(),
+        deck_id=deck.id,
+        sentence_template="__",
+        target_word="花",
+        reading="はな",
+        hint="花朵",
+        sentence_translation="这是一朵花。",
+    )
+    card_partial = models.Card(
+        id=uuid.uuid4(),
+        deck_id=deck.id,
+        sentence_template="__",
+        target_word="水",
+        reading="みず",
+        hint="水",
+        sentence_translation="我想喝水。",
+    )
+    card_regional = models.Card(
+        id=uuid.uuid4(),
+        deck_id=deck.id,
+        sentence_template="__",
+        target_word="高校",
+        reading="こうこう",
+        hint="高中",
+        sentence_translation="妹妹在上高中。",
+    )
+    card_bare = models.Card(
+        id=uuid.uuid4(),
+        deck_id=deck.id,
+        sentence_template="__",
+        target_word="山",
+        reading="やま",
+        hint="山",
+        sentence_translation="那座山很高。",
+    )
+    cards = [card_full, card_partial, card_regional, card_bare]
+    db_session.add_all(cards)
+    db_session.add_all([
+        models.CardTranslation(card_id=card_full.id, language="zh", hint="花朵", sentence_translation="这是一朵花。"),
+        models.CardTranslation(card_id=card_full.id, language="en", hint="flower", sentence_translation="This is a flower."),
+        models.CardTranslation(card_id=card_partial.id, language="zh", hint="水", sentence_translation="我想喝水。"),
+        models.CardTranslation(card_id=card_partial.id, language="en", hint="water", sentence_translation=None),
+        models.CardTranslation(card_id=card_regional.id, language="zh", hint="高中", sentence_translation="妹妹在上高中。"),
+        models.CardTranslation(card_id=card_regional.id, language="pt", hint="secundario", sentence_translation=None),
+        models.CardTranslation(card_id=card_regional.id, language="pt-br", hint="ensino medio", sentence_translation=None),
+    ])
+    db_session.commit()
+
+    bind = db_session.get_bind()
+    for requested in ("en", "pt-BR", None):
+        expected = {c.id: localize(db_session, c, requested) for c in cards}
+
+        query_count = 0
+
+        def count_query(*_args, **_kwargs):
+            nonlocal query_count
+            query_count += 1
+
+        sa.event.listen(bind, "before_cursor_execute", count_query)
+        try:
+            actual = localize_many(db_session, cards, requested)
+        finally:
+            sa.event.remove(bind, "before_cursor_execute", count_query)
+
+        assert query_count == 1
+        assert actual == expected

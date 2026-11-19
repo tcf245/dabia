@@ -152,8 +152,13 @@ export interface HeatmapDay {
 }
 
 export interface GardenWord {
+  card_id: string;
   text: string;
-  romaji: string | null;
+  reading: string | null;
+  /** @deprecated Alias of reading; kept for one release. */
+  romaji?: string | null;
+  hint: string | null;
+  level: number;
   type: 'review' | 'learned';
 }
 
@@ -163,7 +168,7 @@ export const getProfileHeatmap = async (): Promise<HeatmapDay[]> => {
 }
 
 export const getProfileGarden = async (): Promise<GardenWord[]> => {
-  const response = await api.get<GardenWord[]>('/api/v1/profile/garden');
+  const response = await api.get<GardenWord[]>('/api/v1/profile/garden', { params: languageParams() });
   return response.data;
 }
 

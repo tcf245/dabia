@@ -95,7 +95,12 @@ export const en: Messages = {
         dayCards: (date, count) => `${date}: ${count} cards`,
         practicedDays: (days) => `You practiced ${days} days in the last 8 months.`,
         garden: 'Vocabulary garden',
-        gardenLegend: 'Orange words are due for review; grey ones are mastered.',
+        gardenLearning: 'Learning',
+        gardenMastered: 'Mastered',
+        gardenViewAll: 'View all',
+        gardenEmpty: 'Words you study will appear here.',
+        gardenWordAria: (word, mastered, level) =>
+            `${word}, ${mastered ? 'Mastered' : 'Learning'}, level ${level}`,
     },
     words: {
         title: 'My Words',

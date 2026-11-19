@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List, Optional
+from typing import Annotated, List, Optional
 from datetime import datetime, timedelta
 import uuid
 
 from dabia.database import get_db
 from dabia.api.deps import get_current_user_id
+from dabia.core.i18n import localize_many
+from dabia.core.srs_constants import PROFICIENCY_MASTERED, PROFICIENCY_NEW
 from dabia.models.review_log import ReviewLog
 from dabia.models.user_card_association import UserCardAssociation
 from dabia.models.card import Card
@@ -20,13 +22,13 @@ class HeatmapDay(BaseModel):
     level: int # 0-4 intensity
 
 class GardenWord(BaseModel):
+    card_id: uuid.UUID
     text: str
-    romaji: Optional[str] = None
+    reading: Optional[str] = None
+    romaji: Optional[str] = None  # deprecated alias of reading; kept for one release
+    hint: Optional[str] = None
+    level: int
     type: str # 'review' | 'learned'
-    # x, y, size passed from FE or calculated here? 
-    # The FE design implies successful rendering relies on having these, 
-    # but initially we can let FE handle layout if we just return the list.
-    # However, to be helpful, let's just return the data and let FE randomize positions.
 
 @router.get("/heatmap", response_model=List[HeatmapDay])
 def get_heatmap(
@@ -80,48 +82,50 @@ def get_heatmap(
 
 @router.get("/garden", response_model=List[GardenWord])
 def get_garden(
+    lang: Annotated[Optional[str], Query(description="Learner language (BCP 47, e.g. en, pt-BR) for hint; falls back to the base language, then zh")] = None,
     db: Session = Depends(get_db),
-    current_user_id: uuid.UUID = Depends(get_current_user_id)
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
 ):
-    # Fetch words:
-    # 1. Recent reviews (Review)
-    # 2. Mastered words (Learned)
-    
-    # Fetch recent active cards (e.g. reviewed recently or due soon)
-    active_cards = (
+    learning_rows = (
         db.query(Card, UserCardAssociation)
         .join(UserCardAssociation, Card.id == UserCardAssociation.card_id)
-        .filter(UserCardAssociation.user_id == current_user_id)
-        # Filter for active stuff, e.g. proficiency < 4 or due soon
-        .filter(UserCardAssociation.proficiency_level < 4)
-        .limit(10)
+        .filter(
+            UserCardAssociation.user_id == current_user_id,
+            UserCardAssociation.proficiency_level >= PROFICIENCY_NEW,
+            UserCardAssociation.proficiency_level < PROFICIENCY_MASTERED,
+        )
+        .order_by(UserCardAssociation.next_review_at.asc(), Card.id.asc())
+        .limit(8)
         .all()
     )
-    
-    # Fetch mastered cards
-    mastered_cards = (
+
+    mastered_rows = (
         db.query(Card, UserCardAssociation)
         .join(UserCardAssociation, Card.id == UserCardAssociation.card_id)
-        .filter(UserCardAssociation.user_id == current_user_id)
-        .filter(UserCardAssociation.proficiency_level >= 4)
-        .limit(10)
+        .filter(
+            UserCardAssociation.user_id == current_user_id,
+            UserCardAssociation.proficiency_level >= PROFICIENCY_MASTERED,
+        )
+        .order_by(UserCardAssociation.last_reviewed_at.desc().nullslast(), Card.id.asc())
+        .limit(6)
         .all()
     )
-    
-    garden_words = []
-    
-    for card, assoc in active_cards:
-        garden_words.append(GardenWord(
+
+    all_cards = [card for card, _ in learning_rows] + [card for card, _ in mastered_rows]
+    localized = localize_many(db, all_cards, lang)
+
+    def to_garden_word(card: Card, assoc: UserCardAssociation, word_type: str) -> GardenWord:
+        return GardenWord(
+            card_id=card.id,
             text=card.target_word,
+            reading=card.reading,
             romaji=card.reading,
-            type='review'
-        ))
-        
-    for card, assoc in mastered_cards:
-        garden_words.append(GardenWord(
-            text=card.target_word,
-            romaji=card.reading,
-            type='learned'
-        ))
-        
-    return garden_words
+            hint=localized[card.id].hint,
+            level=assoc.proficiency_level,
+            type=word_type,
+        )
+
+    return [
+        *(to_garden_word(card, assoc, "review") for card, assoc in learning_rows),
+        *(to_garden_word(card, assoc, "learned") for card, assoc in mastered_rows),
+    ]

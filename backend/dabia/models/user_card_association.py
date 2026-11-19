@@ -10,7 +10,7 @@ class UserCardAssociation(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
     card_id = Column(UUID(as_uuid=True), ForeignKey("cards.id"), primary_key=True)
 
-    # 0: New, 1: Needs Practice, 2: Time to Learn, 3: Within Reach, 4: Mastered
+    # No row = never seen; 1: New, 2: Hard, 3: Learning, 4: Easy, 5: Mastered
     proficiency_level = Column(Integer, default=0, nullable=False)
     next_review_at = Column(DateTime, default=func.now(), nullable=False, index=True)
     last_reviewed_at = Column(DateTime, nullable=True)
