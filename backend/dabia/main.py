@@ -73,7 +73,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Refresh-Token"], # Allow frontend to read refreshed tokens
+    expose_headers=["X-Refresh-Token", "Content-Disposition"],  # refreshed tokens; export filenames
 )
 
 from dabia.core.middleware import LoggingMiddleware
