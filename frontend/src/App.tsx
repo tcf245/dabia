@@ -7,6 +7,7 @@ import AppHeader from './components/AppHeader';
 import { useEscapeKey } from './hooks/useEscapeKey';
 import Profile from './pages/Profile';
 import DeckManagement from './pages/DeckManagement';
+import MyWords from './pages/MyWords';
 import Welcome from './pages/Welcome';
 import { useI18n } from './i18n/LanguageProvider';
 
@@ -112,6 +113,7 @@ function App() {
           <Routes>
             <Route path="/" element={token ? <LearningSession /> : <Welcome onLoginSuccess={handleLoginSuccess} />} />
             <Route path="/decks" element={<DeckManagement />} />
+            <Route path="/words" element={<MyWords />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>

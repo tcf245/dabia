@@ -109,6 +109,41 @@ describe('api service', () => {
         expect(result.languages[0].code).toBe('zh');
     });
 
+    it('getWordsProgress sends repeated deck_id entries and include_studied', async () => {
+        const payload: apiService.WordsProgressResponse = {
+            decks: [],
+            aggregate: {
+                total: 0,
+                mastered: 0,
+                learning: 0,
+                not_started: 0,
+                learning_by_level: { '1': 0, '2': 0, '3': 0, '4': 0 },
+            },
+        };
+        mockApi.get.mockResolvedValueOnce({ data: payload });
+
+        const result = await apiService.getWordsProgress({
+            deckIds: ['d1', 'd2'],
+            includeStudied: true,
+        });
+
+        expect(result).toEqual(payload);
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/words/progress', {
+            params: expect.any(URLSearchParams),
+        });
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.toString()).toBe('deck_id=d1&deck_id=d2&include_studied=true');
+    });
+
+    it('getWordsProgress handles empty params cleanly', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { decks: [], aggregate: {} } });
+
+        await apiService.getWordsProgress();
+
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.toString()).toBe('');
+    });
+
     describe('interceptors', () => {
         type RequestConfig = { headers: Record<string, string> };
         type Response = { headers: Record<string, string>; data: unknown };

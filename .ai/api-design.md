@@ -30,6 +30,7 @@ Update this file in the same PR as any endpoint change.
 | GET | `/api/v1/stats/daily-summary` | optional | Today's study summary |
 | GET | `/api/v1/profile/heatmap` | optional | Reviews per day, last 365 days |
 | GET | `/api/v1/profile/garden` | optional | Words for the profile word garden |
+| GET | `/api/v1/words/progress` | optional | Mastered / Learning / Not started counts per deck |
 | GET | `/api/v1/languages` | none | Learner languages cards can be served in |
 | POST | `/api/v1/auth/login/google` | none | Exchange a Google auth code for a JWT |
 | GET | `/api/v1/health-check` | none | Database connectivity check |
@@ -181,6 +182,43 @@ Up to 10 words still being learned (`type: "review"`, proficiency < 4) and up to
 ```json
 [{ "text": "花", "romaji": "hana", "type": "learned" }]
 ```
+
+## Words
+
+The learner's own words. A card is **Mastered** at level 5, **Learning** at levels 1–4, and **Not started** when the
+user has no association row for it (see `.ai/specs/word-review.md`).
+
+### `GET /api/v1/words/progress`
+
+Progress counts for each requested deck, plus their sum.
+
+**Query**: `deck_id` (UUID, repeatable; default: the user's active decks; unknown IDs are ignored),
+`include_studied` (bool, default `false`: also return non-active decks that have at least one learned word, after
+the requested ones).
+
+```json
+{
+  "decks": [
+    {
+      "deck_id": "73d6cb04-617c-433b-9af7-7cf73304f0cd",
+      "name": "eggrolls-JLPT10k-v3::1-N4+N5",
+      "is_active": true,
+      "total": 1500,
+      "mastered": 320,
+      "learning": 292,
+      "not_started": 888,
+      "learning_by_level": { "1": 40, "2": 61, "3": 88, "4": 103 }
+    }
+  ],
+  "aggregate": {
+    "total": 1500, "mastered": 320, "learning": 292, "not_started": 888,
+    "learning_by_level": { "1": 40, "2": 61, "3": 88, "4": 103 }
+  }
+}
+```
+
+- `aggregate` sums every returned deck (including studied ones when `include_studied` is set).
+- No active decks and no `deck_id`: `decks` is empty and every count is 0.
 
 ## Languages
 
