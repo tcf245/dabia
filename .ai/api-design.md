@@ -30,6 +30,7 @@ Update this file in the same PR as any endpoint change.
 | GET | `/api/v1/stats/daily-summary` | optional | Today's study summary |
 | GET | `/api/v1/profile/heatmap` | optional | Reviews per day, last 365 days |
 | GET | `/api/v1/profile/garden` | optional | Words for the profile word garden |
+| GET | `/api/v1/words` | optional | The user's learned words: filter, fuzzy search, sort, page |
 | GET | `/api/v1/words/progress` | optional | Mastered / Learning / Not started counts per deck |
 | GET | `/api/v1/languages` | none | Learner languages cards can be served in |
 | POST | `/api/v1/auth/login/google` | none | Exchange a Google auth code for a JWT |
@@ -187,6 +188,45 @@ Up to 10 words still being learned (`type: "review"`, proficiency < 4) and up to
 
 The learner's own words. A card is **Mastered** at level 5, **Learning** at levels 1–4, and **Not started** when the
 user has no association row for it (see `.ai/specs/word-review.md`).
+
+### `GET /api/v1/words`
+
+The user's learned words (levels 1–5), one page at a time.
+
+**Query**
+
+| Param | Default | Notes |
+|---|---|---|
+| `deck_id` (UUID, repeatable) | active decks | |
+| `all_decks` (bool) | `false` | every deck the user has learned words in; overrides `deck_id` |
+| `status` | `all` | `all`, `learning` (1–4), `mastered` (5) |
+| `level` (int 1–4, repeatable) | — | only with `status=learning`, else `422` |
+| `q` (≤ 64 chars) | — | fuzzy: kanji, kana (katakana folded), romaji, meaning, typos in the meaning |
+| `sort` | `relevance` with `q`, else `last_reviewed` | `relevance`, `last_reviewed`, `next_review`, `level`, `first_seen`, `lapses`; `relevance` without `q` → `422` |
+| `order` | per sort | `asc`/`desc`; defaults: `last_reviewed` desc, `next_review` asc, `level` asc, `first_seen` asc, `lapses` desc |
+| `limit` / `offset` | 50 / 0 | `limit` 1–100 |
+| `lang` | — | see Conventions |
+
+```json
+{
+  "total": 292, "limit": 50, "offset": 0,
+  "items": [{
+    "card_id": "f6e5d4c3-...", "deck": { "id": "73d6cb04-...", "name": "eggrolls-JLPT10k-v3::1-N4+N5" },
+    "word": "何", "reading": "なに", "hint": "What?",
+    "sentence": "これは何ですか？", "sentence_furigana": "これ[これ]は[は]何[なに]ですか[ですか]？",
+    "sentence_translation": "What is this?",
+    "audio_url": "https://<r2-public-url>/medias/002.mp3", "sentence_audio_url": "https://<r2-public-url>/medias/sentence_002.mp3",
+    "language": "en", "proficiency_level": 2, "status": "learning",
+    "first_seen_at": "2026-10-02T08:14:00Z", "last_reviewed_at": "2026-11-16T12:01:33Z", "next_review_at": "2026-11-16T12:03:03Z",
+    "review_count": 9, "correct_count": 6, "accuracy": 66.7, "lapses_count": 2
+  }]
+}
+```
+
+- Missing timestamps sort last in either order; ties are broken by card id, so paging is stable.
+- Search scores: exact word/reading 100, prefix 80, substring (word, reading or meaning) 60, typo match on the
+  meaning below 50 (`core/word_search.py`).
+- `accuracy` is `null` when the card has no review logs.
 
 ### `GET /api/v1/words/progress`
 
