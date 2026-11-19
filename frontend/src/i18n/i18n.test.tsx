@@ -68,8 +68,22 @@ describe('dictionaries', () => {
         const calls: string[] = [];
         const walk = (node: unknown, path: string) => {
             if (typeof node === 'function') {
-                const args = Array.from({ length: node.length }, (_, i) => (i === 0 ? 3 : i + 1));
-                const text = (node as (...a: unknown[]) => unknown)(...args);
+                // Message functions take numbers, strings or arrays; use the first sample set that works.
+                const samples = [
+                    Array.from({ length: node.length }, (_, i) => (i === 0 ? 3 : i + 1)),
+                    Array.from({ length: node.length }, () => [1, 2]),
+                    Array.from({ length: node.length }, () => 'x'),
+                ];
+                const fn = node as (...a: unknown[]) => unknown;
+                let text: unknown;
+                for (const args of samples) {
+                    try {
+                        text = fn(...args);
+                        break;
+                    } catch {
+                        // try the next sample set
+                    }
+                }
                 expect(typeof text, path).toBe('string');
                 expect((text as string).trim(), path).not.toBe('');
                 expect(text as string, path).not.toMatch(/undefined|NaN|\[object/);
