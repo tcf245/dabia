@@ -472,4 +472,36 @@ describe('MyWords', () => {
       ),
     );
   });
+
+  it('removes the level filter when the last chip is turned off', async () => {
+    renderPage('/words');
+    await screen.findByText('何');
+
+    fireEvent.click(screen.getByRole('button', { name: 'L2' }));
+    expect(screen.getByTestId('location-search')).toHaveTextContent('level=2');
+    fireEvent.click(screen.getByRole('button', { name: 'L2' }));
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('level=');
+  });
+
+  it('clears the level filter from the empty state', async () => {
+    vi.mocked(api.getWords).mockResolvedValue({ total: 0, limit: 50, offset: 0, items: [] });
+    renderPage('/words?status=learning&level=1');
+
+    fireEvent.click(await screen.findByRole('button', { name: en.words.clearFilter }));
+
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('level=');
+  });
+
+  it('drops the Best match sort when the search box is emptied by typing', async () => {
+    renderPage('/words');
+    await screen.findByText('何');
+    const input = screen.getByPlaceholderText(en.words.searchPlaceholder);
+
+    fireEvent.change(input, { target: { value: 'tabe' } });
+    expect(screen.getByTestId('location-search')).toHaveTextContent('sort=relevance');
+    fireEvent.change(input, { target: { value: '' } });
+
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('sort=');
+    expect(screen.getByTestId('location-search')).not.toHaveTextContent('q=');
+  });
 });

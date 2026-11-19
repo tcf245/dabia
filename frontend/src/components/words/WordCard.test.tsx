@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WordCard from './WordCard';
 import type { WordItem } from '../../services/api';
 import { en } from '../../i18n/messages/en';
@@ -141,5 +141,30 @@ describe('WordCard', () => {
     expect(
       screen.getByText('首次学习 10月2日 · 复习 9 次 · 正确率 67% · 遗忘 2 次'),
     ).toBeInTheDocument();
+  });
+
+  it('clears the playing state when standalone audio ends or fails', async () => {
+    render(<WordCard item={baseItem} expanded={true} onToggle={vi.fn()} />);
+    const wordBtn = screen.getByRole('button', { name: en.words.wordAudio });
+
+    fireEvent.click(wordBtn);
+    expect(wordBtn.className).toContain('bg-[#F2DCD6]');
+    act(() => globalThis.triggerOnended());
+    expect(wordBtn.className).not.toContain('bg-[#F2DCD6]');
+
+    globalThis.playMock.mockImplementationOnce(() => Promise.reject(new Error('blocked')));
+    fireEvent.click(wordBtn);
+    await waitFor(() => expect(wordBtn.className).not.toContain('bg-[#F2DCD6]'));
+  });
+
+  it('falls back to the last due time, then to the status, when nothing else is known', () => {
+    const now = Date.parse('2026-11-19T12:00:00Z');
+    const overdue: WordItem = { ...baseItem, last_reviewed_at: null, next_review_at: '2026-11-19T10:00:00Z' };
+    const { rerender } = render(<WordCard item={overdue} expanded={false} onToggle={vi.fn()} now={now} />);
+    expect(screen.getByText(/2 hours ago/)).toBeInTheDocument();
+
+    const unknown: WordItem = { ...baseItem, last_reviewed_at: null, next_review_at: null };
+    rerender(<WordCard item={unknown} expanded={false} onToggle={vi.fn()} now={now} />);
+    expect(screen.getByText(en.words.learning)).toBeInTheDocument();
   });
 });
