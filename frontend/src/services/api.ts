@@ -188,3 +188,39 @@ export const getLanguages = async (): Promise<LanguagesResponse> => {
   return response.data;
 };
 
+export interface ProgressCounts {
+  total: number;
+  mastered: number;
+  learning: number;
+  not_started: number;
+  learning_by_level: Record<string, number>;
+}
+
+export interface DeckProgress extends ProgressCounts {
+  deck_id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface WordsProgressResponse {
+  decks: DeckProgress[];
+  aggregate: ProgressCounts;
+}
+
+export const getWordsProgress = async (
+  params: { deckIds?: string[]; includeStudied?: boolean } = {},
+): Promise<WordsProgressResponse> => {
+  const search = new URLSearchParams();
+  for (const id of params.deckIds ?? []) {
+    search.append('deck_id', id);
+  }
+  if (params.includeStudied !== undefined) {
+    search.set('include_studied', String(params.includeStudied));
+  }
+  const response = await api.get<WordsProgressResponse>('/api/v1/words/progress', {
+    params: search,
+  });
+  return response.data;
+};
+
+

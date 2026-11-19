@@ -28,10 +28,25 @@ describe('AppHeader', () => {
         renderHeader({ user }, '/decks');
 
         const nav = screen.getByRole('navigation', { name: 'Main' });
+        const links = within(nav).getAllByRole('link');
+        expect(links.map((link) => link.getAttribute('href'))).toEqual([
+            '/',
+            '/decks',
+            '/words',
+            '/profile',
+        ]);
         expect(within(nav).getByRole('link', { name: 'Learn' })).toHaveAttribute('href', '/');
         expect(within(nav).getByRole('link', { name: 'Decks' })).toHaveAttribute('aria-current', 'page');
         expect(within(nav).getByRole('link', { name: 'Learn' })).not.toHaveAttribute('aria-current');
+        expect(within(nav).getByRole('link', { name: 'My Words' })).toHaveAttribute('href', '/words');
         expect(within(nav).getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+    });
+
+    it('marks My Words as active on /words', () => {
+        renderHeader({ user }, '/words');
+
+        const nav = screen.getByRole('navigation', { name: 'Main' });
+        expect(within(nav).getByRole('link', { name: 'My Words' })).toHaveAttribute('aria-current', 'page');
     });
 
     it('opens an account menu with the user details and logs out', async () => {
