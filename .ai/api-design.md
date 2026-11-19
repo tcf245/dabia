@@ -175,12 +175,27 @@ Reviews per day for the last 365 days; only days with activity are returned.
 
 ### `GET /api/v1/profile/garden`
 
-Up to 10 words still being learned (`type: "review"`, proficiency < 4) and up to 10 well-known words
-(`type: "learned"`, proficiency ≥ 4). The frontend lays them out.
+Up to 8 learning words (`type: "review"`, proficiency 1–4, ordered by `next_review_at` ascending) and up to 6 mastered
+words (`type: "learned"`, proficiency 5, ordered by `last_reviewed_at` descending with nulls last). The frontend lays
+them out.
+
+**Query**: `lang` (optional), see Conventions (localizes `hint`).
 
 ```json
-[{ "text": "花", "romaji": "hana", "type": "learned" }]
+[
+  {
+    "card_id": "f6e5d4c3-b2a1-4f5e-8d9c-1a2b3c4d5e6f",
+    "text": "花",
+    "reading": "はな",
+    "romaji": "はな",
+    "hint": "flower",
+    "level": 5,
+    "type": "learned"
+  }
+]
 ```
+
+`romaji` is a deprecated alias of `reading` kept for one release.
 
 ## Languages
 

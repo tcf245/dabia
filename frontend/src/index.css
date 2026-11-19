@@ -81,19 +81,59 @@
   }
 }
 
-/* Float animation for Garden words */
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translate(-50%, -50%) translateY(0px);
+/* Entrance and idle drift animations for Garden words */
+@keyframes garden-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
 
-  55% {
-    transform: translate(-50%, -50%) translateY(-8px);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite alternate;
+.garden-enter {
+  animation: garden-enter 400ms ease-out var(--enter-delay, 0ms) both;
+}
+
+@keyframes garden-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate3d(var(--dx, 5px), calc(var(--dy, 5px) * -0.5), 0) rotate(var(--rot, 1deg));
+  }
+
+  50% {
+    transform: translate3d(calc(var(--dx, 5px) * -0.4), var(--dy, 5px), 0) rotate(calc(var(--rot, 1deg) * -0.6));
+  }
+
+  75% {
+    transform: translate3d(calc(var(--dx, 5px) * -0.8), calc(var(--dy, 5px) * -0.7), 0) rotate(calc(var(--rot, 1deg) * 0.5));
+  }
+}
+
+.garden-drift {
+  animation: garden-drift var(--dur, 8s) ease-in-out var(--delay, 0s) infinite;
+  will-change: transform;
+}
+
+.garden-word:hover .garden-drift,
+.garden-word:focus-visible .garden-drift {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-enter,
+  .garden-drift {
+    animation: none !important;
+  }
+
+  .garden-word-lift {
+    transform: none !important;
+  }
 }

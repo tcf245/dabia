@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as api from '../services/api';
 import { useI18n } from '../i18n/LanguageProvider';
+import WordGarden from '../components/garden/WordGarden';
 
 // 2026-11-16 is a Monday; used only to get localized weekday names.
 const weekday = (locale: string, offset: number) =>
@@ -9,18 +10,21 @@ const weekday = (locale: string, offset: number) =>
 const Profile = () => {
 
     const [heatmapData, setHeatmapData] = useState<{ date: string; colorClass: string; count: number }[][]>([]);
-    const [gardenWords, setGardenWords] = useState<(api.GardenWord & { x: string; y: string; size: string })[]>([]);
+    const [gardenWords, setGardenWords] = useState<api.GardenWord[]>([]);
     const [activeDays, setActiveDays] = useState(0);
-    const { messages } = useI18n();
+    const { language, messages } = useI18n();
     const t = messages.profile;
 
     useEffect(() => {
+        let active = true;
+
         const fetchData = async () => {
             try {
                 const [heatmap, garden] = await Promise.all([
                     api.getProfileHeatmap(),
                     api.getProfileGarden()
                 ]);
+                if (!active) return;
 
                 // -------------------------------------------------------------
                 // 1. Process Heatmap Data (GitHub Style)
@@ -84,53 +88,7 @@ const Profile = () => {
 
                 setHeatmapData(weeks);
                 setActiveDays(activeDaysCount);
-
-
-                // -------------------------------------------------------------
-                // 2. Process Garden Grid (Clean Layout)
-                // -------------------------------------------------------------
-                const COLS = 3;
-                const ROWS = 3;
-                const validSlots: { r: number, c: number }[] = [];
-
-                for (let r = 0; r < ROWS; r++) {
-                    for (let c = 0; c < COLS; c++) {
-                        if (r === 0 && c === 0) continue;
-                        validSlots.push({ r, c });
-                    }
-                }
-
-                const shuffledSlots = validSlots.sort(() => 0.5 - Math.random());
-                const gardenSubset = garden.slice(0, 8);
-
-                const newWords = gardenSubset.map((w, i) => {
-                    const slot = shuffledSlots[i];
-                    const PADDING_LEFT = 10;
-                    const PADDING_RIGHT = 10;
-                    const PADDING_TOP = 30;
-                    const PADDING_BOTTOM = 10;
-
-                    const safeWidth = 100 - PADDING_LEFT - PADDING_RIGHT;
-                    const safeHeight = 100 - PADDING_TOP - PADDING_BOTTOM;
-
-                    const cellWidth = safeWidth / COLS;
-                    const cellHeight = safeHeight / ROWS;
-
-                    const centerX = PADDING_LEFT + slot.c * cellWidth + cellWidth / 2;
-                    const centerY = PADDING_TOP + slot.r * cellHeight + cellHeight / 2;
-
-                    const jitterX = (Math.random() - 0.5) * (cellWidth * 0.4);
-                    const jitterY = (Math.random() - 0.5) * (cellHeight * 0.4);
-
-                    const x = Math.max(PADDING_LEFT, Math.min(100 - PADDING_RIGHT, centerX + jitterX));
-                    const y = Math.max(PADDING_TOP, Math.min(100 - PADDING_BOTTOM, centerY + jitterY));
-
-                    const sizes = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
-                    const size = sizes[Math.floor(Math.random() * sizes.length)];
-
-                    return { ...w, x: `${x}%`, y: `${y}%`, size };
-                });
-                setGardenWords(newWords);
+                setGardenWords(garden);
 
             } catch (error) {
                 console.error("Failed to fetch profile data", error);
@@ -138,7 +96,11 @@ const Profile = () => {
         };
 
         fetchData();
-    }, []);
+
+        return () => {
+            active = false;
+        };
+    }, [language]);
 
     return (
         <div className="flex flex-col items-center w-full max-w-3xl animate-fade-in">
@@ -221,43 +183,7 @@ const Profile = () => {
                 </div>
             </section>
 
-            <section className="relative h-80 w-full bg-white rounded-[20px] border border-[#E6E6E3] shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden">
-                <div className="absolute top-8 left-10 z-20 pointer-events-none">
-                    <h2 className="font-serif text-2xl text-[#333]">{t.garden}</h2>
-                    <p className="text-sm text-[#555] mt-2 font-light">{t.gardenLegend}</p>
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>
-
-                <div className="absolute inset-0">
-                    {gardenWords.map((word, i) => {
-                        const duration = 3 + Math.random() * 4;
-                        return (
-                            <div
-                                key={i}
-                                className="absolute flex flex-col items-center justify-center cursor-pointer hover:opacity-100 transition-opacity animate-float"
-                                style={{
-                                    left: word.x,
-                                    top: word.y,
-                                    transform: 'translate(-50%, -50%)',
-                                    animationDuration: `${duration}s`,
-                                    opacity: word.type === 'review' ? 1 : 0.5,
-                                }}
-                            >
-                                <span className={`font-serif ${word.size} ${word.type === 'review' ? 'text-[#D97757] font-medium' : 'text-[#555]'} select-none`}>
-                                    {word.text}
-                                </span>
-                                <span className="font-sans text-[10px] text-[#999] tracking-[0.2em] uppercase mt-1 select-none">
-                                    {word.romaji}
-                                </span>
-                                {word.type === 'review' && (
-                                    <span className="w-1 h-1 bg-[#D97757] rounded-full mt-1"></span>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            </section>
+            <WordGarden words={gardenWords} />
         </div>
     );
 };

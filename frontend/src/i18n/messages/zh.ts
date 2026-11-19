@@ -105,7 +105,12 @@ export const zh = {
         dayCards: (date: string, count: number) => `${date}：${count} 张卡`,
         practicedDays: (days: number) => `过去 8 个月里，你学习了 ${days} 天。`,
         garden: '单词花园',
-        gardenLegend: '橙色是要复习的，灰色是已掌握的',
+        gardenLearning: '学习中',
+        gardenMastered: '已掌握',
+        gardenViewAll: '查看全部',
+        gardenEmpty: '开始学习后，你学过的单词会出现在这里。',
+        gardenWordAria: (word: string, mastered: boolean, level: number) =>
+            `${word}，${mastered ? '已掌握' : '学习中'}，等级 ${level}`,
     },
     welcome: {
         badge: '日语单词 · JLPT N5 到 N1',

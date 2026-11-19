@@ -76,7 +76,7 @@ describe('api service', () => {
     it('getProfileGarden calls correct endpoint', async () => {
         mockApi.get.mockResolvedValueOnce({ data: [] });
         await apiService.getProfileGarden();
-        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/profile/garden');
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/profile/garden', { params: undefined });
     });
 
     it('getNextCard calls correct endpoint', async () => {
@@ -94,12 +94,15 @@ describe('api service', () => {
     it('asks for card content in the chosen language', async () => {
         mockApi.post.mockResolvedValueOnce({ data: {} });
         mockApi.get.mockResolvedValueOnce({ data: {} });
+        mockApi.get.mockResolvedValueOnce({ data: [] });
         apiService.setContentLanguage('en');
         await apiService.getNextCard();
         await apiService.getCard('123');
+        await apiService.getProfileGarden();
         apiService.setContentLanguage(null);
         expect(mockApi.post).toHaveBeenCalledWith('/api/v1/session/next-card', undefined, { params: { lang: 'en' } });
         expect(mockApi.get).toHaveBeenCalledWith('/api/v1/cards/123', { params: { lang: 'en' } });
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/profile/garden', { params: { lang: 'en' } });
     });
 
     it('lists the languages that have card content', async () => {
