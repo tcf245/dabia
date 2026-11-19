@@ -414,12 +414,10 @@ Implementation notes:
    | word, reading or meaning contains the query | 60 |
    | trigram similarity on the meaning (typo tolerance, threshold 0.3) | 50 × similarity |
 
-4. *Engine*: Postgres `pg_trgm` (`word_similarity`) through a new Alembic migration
-   (`CREATE EXTENSION IF NOT EXISTS pg_trgm`). Readings are compared after
-   `translate(reading, <katakana>, <hiragana>)`. **To verify in PR 2**: whether the managed PROD/STG database
-   allows the extension (`SELECT * FROM pg_available_extensions WHERE name = 'pg_trgm'`). If it does not, the same
-   scoring runs in Python over the candidate rows (`rapidfuzz` for the similarity), which stays well under 100ms
-   at 10k rows. The API contract does not change either way.
+4. *Engine*: plain Python over the candidate rows (`core/word_search.py`, no new dependency, no database
+   extension): the candidate set is small, and keeping scoring in one place makes the list and the export agree.
+   Trigram similarity is computed per word of the meaning, like `pg_trgm`'s `word_similarity`. If the heaviest
+   user's list ever gets slow, move the substring tiers into SQL and keep the trigram step in Python.
 5. The localized meaning used for matching is the one served (same `language_chain` fallback).
 
 ### 5.3 `GET /api/v1/words/export`
@@ -436,7 +434,8 @@ exactly the rows the list would show.
 - Body starts with a UTF-8 BOM so Excel opens Japanese correctly; CRLF line endings; RFC 4180 quoting via Python's
   `csv` module.
 - **CSV injection guard**: any cell starting with `=`, `+`, `-`, `@`, tab or CR is prefixed with `'`.
-- Built with `StreamingResponse` from a generator that pages through the query 500 rows at a time.
+- Built in memory, loading 500 rows at a time, and returned as one response (Vercel's Python runtime buffers
+  responses anyway, and a generator would outlive the request's database session).
 - Add `Content-Disposition` to `expose_headers` in `main.py` so the frontend can read the filename.
 
 **Columns** (header row in English, stable names for scripts):
@@ -554,13 +553,13 @@ Coverage must stay ≥ 80%; `bash scripts/test.sh` and `npm run lint && npx tsc 
 | PR | Branch | Contents | Done when |
 |---|---|---|---|
 | 1 | `feat/words-progress` | `/words/progress` API, `DeckProgressBar`, `/words` route + nav with the bar and deck selector only | Bar matches a hand-run SQL count on STG for a real user |
-| 2 | `feat/words-list` | `/words` list API, `localize_many`, fuzzy search (+ `pg_trgm` migration if allowed), tabs/filters/sort, scope notice, compact card grid | Browsing, search, paging and audio work on the Vercel preview |
+| 2 | `feat/words-list` | `/words` list API, `localize_many`, fuzzy search, tabs/filters/sort, scope notice, compact card grid | Browsing, search, paging and audio work on the Vercel preview |
 | 3 | `feat/words-export` | `/words/export`, CORS header, export popover | CSV of each scope from preview opens correctly in Excel/Numbers and `pandas.read_csv` |
 | 4 | `feat/garden-refresh` | Garden API change (§5.6), `gardenLayout`, `WordGarden` redesign | No overlap or clipping at 320/390/768/1280px widths on preview (screenshots in PR) |
 | 5 (optional) | `feat/deck-card-progress` | 4px bar + "View words" link on Decks page | Visual check on preview |
 
 PR 4 does not depend on PRs 1–3 and can run in parallel. No data import or R2 change is involved; the only possible
-migrations are the `pg_trgm` extension (PR 2) and the optional index in §5.4.
+migration is the optional index in §5.4.
 
 **Work split (Claude + agy)**: Claude owns this spec, the API contracts, the query builder and fuzzy-search
 scoring, the garden layout algorithm, test acceptance, review, and PR/deploy verification. Well-scoped execution goes
@@ -586,7 +585,7 @@ to agy (Gemini, via `agy-delegate`) with a written task per item, each checked b
 |---|---|---|
 | Vercel Python function response limit (~4.5 MB) for very large exports | Export of "all decks" for a heavy user could fail | 10k rows × ~250 B ≈ 2.5 MB fits today; measure on STG with a seeded 10k-word user; if close, drop the sentence columns from "all decks" exports or move export to a background job writing to R2 |
 | List query slow on large histories | Laggy page | Page-scoped aggregates, `localize_many`, `EXPLAIN ANALYZE` on PROD-sized data |
-| `pg_trgm` not allowed on the managed DB | Typo tolerance needs another engine | Python scoring fallback (§5.2), same API |
+| Search over a very large history | Slower search | Python scoring is linear in the user's learned words; move substring tiers to SQL if needed (§5.2) |
 | Garden layout drops words on very narrow screens | Fewer words on phones | Accepted: 8-word cap on phones, collisions never allowed |
 | Demo user data is shared by all signed-out visitors | Signed-out list shows other visitors' progress | Read-only and same as other demo pages today; export blocked |
 
@@ -600,4 +599,5 @@ to agy (Gemini, via `agy-delegate`) with a written task per item, each checked b
 4. Align the profile garden to the same definition, and refresh its visuals in the same direction: more refined
    and lively, never hidden by the title or the card edge (§4.11, §5.6).
 
-Open questions: none blocking. Next decision point is the `pg_trgm` check at the start of PR 2.
+Open questions: none blocking. Implementation note (2026-11-19): fuzzy scoring runs in Python, so no `pg_trgm`
+extension is needed.

@@ -11,6 +11,7 @@ from dabia.api.v1 import profile as profile_router
 from dabia.api.v1 import stats as stats_router
 from dabia.api.v1 import decks as decks_router
 from dabia.api.v1 import languages as languages_router
+from dabia.api.v1 import words as words_router
 from dabia.core.logging import logger
 import os
 from alembic.config import Config
@@ -72,7 +73,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Refresh-Token"], # Allow frontend to read refreshed tokens
+    expose_headers=["X-Refresh-Token", "Content-Disposition"],  # refreshed tokens; export filenames
 )
 
 from dabia.core.middleware import LoggingMiddleware
@@ -89,6 +90,7 @@ app.include_router(profile_router.router, prefix="/api/v1/profile", tags=["Profi
 app.include_router(stats_router.router, prefix="/api/v1/stats", tags=["Stats"])
 app.include_router(decks_router.router, prefix="/api/v1/decks", tags=["Decks"])
 app.include_router(languages_router.router, prefix="/api/v1/languages", tags=["Languages"])
+app.include_router(words_router.router, prefix="/api/v1/words", tags=["Words"])
 
 
 @app.get("/")

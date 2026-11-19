@@ -193,3 +193,209 @@ export const getLanguages = async (): Promise<LanguagesResponse> => {
   return response.data;
 };
 
+export interface ProgressCounts {
+  total: number;
+  mastered: number;
+  learning: number;
+  not_started: number;
+  learning_by_level: Record<string, number>;
+}
+
+export interface DeckProgress extends ProgressCounts {
+  deck_id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface WordsProgressResponse {
+  decks: DeckProgress[];
+  aggregate: ProgressCounts;
+}
+
+export const getWordsProgress = async (
+  params: { deckIds?: string[]; includeStudied?: boolean } = {},
+): Promise<WordsProgressResponse> => {
+  const search = new URLSearchParams();
+  for (const id of params.deckIds ?? []) {
+    search.append('deck_id', id);
+  }
+  if (params.includeStudied !== undefined) {
+    search.set('include_studied', String(params.includeStudied));
+  }
+  const response = await api.get<WordsProgressResponse>('/api/v1/words/progress', {
+    params: search,
+  });
+  return response.data;
+};
+
+export type WordStatus = 'learning' | 'mastered';
+export type WordsStatusFilter = 'all' | 'learning' | 'mastered';
+export type WordsSortKey =
+  | 'relevance'
+  | 'last_reviewed'
+  | 'next_review'
+  | 'level'
+  | 'first_seen'
+  | 'lapses';
+export type WordsSortOrder = 'asc' | 'desc';
+
+export interface WordItem {
+  card_id: string;
+  deck: DeckInfo;
+  word: string;
+  reading: string | null;
+  hint: string | null;
+  sentence: string | null;
+  sentence_furigana: string | null;
+  sentence_translation: string | null;
+  audio_url: string | null;
+  sentence_audio_url: string | null;
+  language: string;
+  proficiency_level: number;
+  status: WordStatus;
+  first_seen_at: string | null;
+  last_reviewed_at: string | null;
+  next_review_at: string | null;
+  review_count: number;
+  correct_count: number;
+  accuracy: number | null;
+  lapses_count: number;
+}
+
+export interface WordsListResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  items: WordItem[];
+}
+
+export interface WordsQuery {
+  deckIds?: string[];
+  allDecks?: boolean;
+  status?: WordsStatusFilter;
+  levels?: number[];
+  q?: string;
+  sort?: WordsSortKey;
+  order?: WordsSortOrder;
+  limit?: number;
+  offset?: number;
+}
+
+export type WordsExportQuery = Omit<WordsQuery, 'limit' | 'offset'>;
+
+const buildWordsFilterParams = (query: WordsExportQuery): URLSearchParams => {
+  const search = new URLSearchParams();
+  for (const id of query.deckIds ?? []) {
+    search.append('deck_id', id);
+  }
+  if (query.allDecks !== undefined) {
+    search.set('all_decks', String(query.allDecks));
+  }
+  if (query.status !== undefined) {
+    search.set('status', query.status);
+  }
+  for (const level of query.levels ?? []) {
+    search.append('level', String(level));
+  }
+  const trimmedQ = query.q?.trim();
+  if (trimmedQ) {
+    search.set('q', trimmedQ);
+  }
+  if (query.sort !== undefined) {
+    search.set('sort', query.sort);
+  }
+  if (query.order !== undefined) {
+    search.set('order', query.order);
+  }
+  const lang = languageParams()?.lang;
+  if (lang) {
+    search.set('lang', lang);
+  }
+  return search;
+};
+
+export const getWords = async (query: WordsQuery = {}): Promise<WordsListResponse> => {
+  const search = buildWordsFilterParams(query);
+  if (query.limit !== undefined) {
+    search.set('limit', String(query.limit));
+  }
+  if (query.offset !== undefined) {
+    search.set('offset', String(query.offset));
+  }
+  const response = await api.get<WordsListResponse>('/api/v1/words', {
+    params: search,
+  });
+  return response.data;
+};
+
+const DEFAULT_EXPORT_FILENAME = 'dabia-words.csv';
+
+const getResponseHeader = (headers: unknown, name: string): string | undefined => {
+  if (!headers || typeof headers !== 'object') return undefined;
+  const maybeGet = (headers as { get?: (key: string) => unknown }).get;
+  if (typeof maybeGet === 'function') {
+    const value = maybeGet.call(headers, name);
+    if (typeof value === 'string') return value;
+  }
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
+    if (key.toLowerCase() === target && typeof value === 'string') {
+      return value;
+    }
+  }
+  return undefined;
+};
+
+const parseExportFilename = (contentDisposition?: string): string => {
+  if (!contentDisposition) return DEFAULT_EXPORT_FILENAME;
+
+  const starMatch = contentDisposition.match(
+    /filename\*\s*=\s*(?:UTF-8''|[^']*'[^']*')([^;\r\n]+)/i,
+  );
+  if (starMatch?.[1]) {
+    const raw = starMatch[1].trim().replace(/^"(.*)"$/, '$1');
+    try {
+      const decoded = decodeURIComponent(raw).trim();
+      if (decoded) return decoded;
+    } catch {
+      // Fall through to plain filename parsing when percent-encoding is malformed.
+    }
+  }
+
+  const plainMatch = contentDisposition.match(
+    /(?:^|[;\s])filename\s*=\s*(?:"([^"]+)"|([^;\r\n]+))/i,
+  );
+  const plain = (plainMatch?.[1] ?? plainMatch?.[2])?.trim();
+  return plain || DEFAULT_EXPORT_FILENAME;
+};
+
+/** Downloads the user's learned words matching `query` as a UTF-8 CSV file. */
+export const exportWords = async (
+  query: WordsExportQuery = {},
+): Promise<{ filename: string }> => {
+  const search = buildWordsFilterParams(query);
+  const response = await api.get<Blob>('/api/v1/words/export', {
+    params: search,
+    responseType: 'blob',
+  });
+  const contentDisposition = getResponseHeader(response.headers, 'content-disposition');
+  const filename = parseExportFilename(contentDisposition);
+  const blob =
+    response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+  return { filename };
+};
+
+

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 import type { Mock } from 'vitest';
 import * as apiService from './api';
@@ -110,6 +110,243 @@ describe('api service', () => {
         const result = await apiService.getLanguages();
         expect(mockApi.get).toHaveBeenCalledWith('/api/v1/languages');
         expect(result.languages[0].code).toBe('zh');
+    });
+
+    it('getWordsProgress sends repeated deck_id entries and include_studied', async () => {
+        const payload: apiService.WordsProgressResponse = {
+            decks: [],
+            aggregate: {
+                total: 0,
+                mastered: 0,
+                learning: 0,
+                not_started: 0,
+                learning_by_level: { '1': 0, '2': 0, '3': 0, '4': 0 },
+            },
+        };
+        mockApi.get.mockResolvedValueOnce({ data: payload });
+
+        const result = await apiService.getWordsProgress({
+            deckIds: ['d1', 'd2'],
+            includeStudied: true,
+        });
+
+        expect(result).toEqual(payload);
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/words/progress', {
+            params: expect.any(URLSearchParams),
+        });
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.toString()).toBe('deck_id=d1&deck_id=d2&include_studied=true');
+    });
+
+    it('getWordsProgress handles empty params cleanly', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { decks: [], aggregate: {} } });
+
+        await apiService.getWordsProgress();
+
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.toString()).toBe('');
+    });
+
+    it('getWords sends repeated deck_id and level, filters, paging, and content language', async () => {
+        const payload: apiService.WordsListResponse = {
+            total: 1,
+            limit: 50,
+            offset: 0,
+            items: [],
+        };
+        mockApi.get.mockResolvedValueOnce({ data: payload });
+
+        apiService.setContentLanguage('en');
+        const result = await apiService.getWords({
+            deckIds: ['d1', 'd2'],
+            allDecks: false,
+            status: 'learning',
+            levels: [1, 3],
+            q: 'taberu',
+            sort: 'relevance',
+            order: 'desc',
+            limit: 50,
+            offset: 100,
+        });
+        apiService.setContentLanguage(null);
+
+        expect(result).toEqual(payload);
+        expect(mockApi.get).toHaveBeenCalledWith('/api/v1/words', {
+            params: expect.any(URLSearchParams),
+        });
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.getAll('deck_id')).toEqual(['d1', 'd2']);
+        expect(params.get('all_decks')).toBe('false');
+        expect(params.get('status')).toBe('learning');
+        expect(params.getAll('level')).toEqual(['1', '3']);
+        expect(params.get('q')).toBe('taberu');
+        expect(params.get('sort')).toBe('relevance');
+        expect(params.get('order')).toBe('desc');
+        expect(params.get('limit')).toBe('50');
+        expect(params.get('offset')).toBe('100');
+        expect(params.get('lang')).toBe('en');
+    });
+
+    it('getWords handles empty query cleanly', async () => {
+        mockApi.get.mockResolvedValueOnce({ data: { total: 0, limit: 50, offset: 0, items: [] } });
+
+        await apiService.getWords();
+
+        const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+        expect(params.toString()).toBe('');
+    });
+
+    describe('exportWords', () => {
+        let originalCreateObjectURL: typeof URL.createObjectURL | undefined;
+        let originalRevokeObjectURL: typeof URL.revokeObjectURL | undefined;
+        let createObjectURLMock: Mock;
+        let revokeObjectURLMock: Mock;
+        let clickSpy: ReturnType<typeof vi.spyOn>;
+
+        beforeEach(() => {
+            originalCreateObjectURL = URL.createObjectURL;
+            originalRevokeObjectURL = URL.revokeObjectURL;
+            createObjectURLMock = vi.fn().mockReturnValue('blob:http://localhost/test-blob');
+            revokeObjectURLMock = vi.fn();
+            URL.createObjectURL = createObjectURLMock;
+            URL.revokeObjectURL = revokeObjectURLMock;
+            clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+        });
+
+        afterEach(() => {
+            clickSpy.mockRestore();
+            if (originalCreateObjectURL) {
+                URL.createObjectURL = originalCreateObjectURL;
+            } else {
+                delete (URL as Partial<typeof URL>).createObjectURL;
+            }
+            if (originalRevokeObjectURL) {
+                URL.revokeObjectURL = originalRevokeObjectURL;
+            } else {
+                delete (URL as Partial<typeof URL>).revokeObjectURL;
+            }
+            apiService.setContentLanguage(null);
+            document.body.innerHTML = '';
+        });
+
+        it('calls /api/v1/words/export with blob responseType, filter params, lang, and downloads via anchor', async () => {
+            const csvBlob = new Blob(['word,reading\n何,なに\n'], { type: 'text/csv;charset=utf-8' });
+            let anchorInBodyOnClick = false;
+            let clickedHref = '';
+            let clickedDownload = '';
+            clickSpy.mockImplementation(function (this: HTMLAnchorElement) {
+                anchorInBodyOnClick = document.body.contains(this);
+                clickedHref = this.href;
+                clickedDownload = this.download;
+            });
+
+            mockApi.get.mockResolvedValueOnce({
+                data: csvBlob,
+                headers: {
+                    'content-disposition': 'attachment; filename="dabia-words-n5-20261119.csv"',
+                },
+            });
+
+            apiService.setContentLanguage('en');
+            const result = await apiService.exportWords({
+                deckIds: ['d1', 'd2'],
+                allDecks: false,
+                status: 'learning',
+                levels: [1, 4],
+                q: '  taberu  ',
+                sort: 'relevance',
+                order: 'desc',
+            });
+
+            expect(result).toEqual({ filename: 'dabia-words-n5-20261119.csv' });
+            expect(mockApi.get).toHaveBeenCalledWith('/api/v1/words/export', {
+                params: expect.any(URLSearchParams),
+                responseType: 'blob',
+            });
+            const [{ params }] = mockApi.get.mock.calls[0].slice(1) as [{ params: URLSearchParams }];
+            expect(params.getAll('deck_id')).toEqual(['d1', 'd2']);
+            expect(params.get('all_decks')).toBe('false');
+            expect(params.get('status')).toBe('learning');
+            expect(params.getAll('level')).toEqual(['1', '4']);
+            expect(params.get('q')).toBe('taberu');
+            expect(params.get('sort')).toBe('relevance');
+            expect(params.get('order')).toBe('desc');
+            expect(params.get('lang')).toBe('en');
+            expect(params.has('limit')).toBe(false);
+            expect(params.has('offset')).toBe(false);
+
+            expect(createObjectURLMock).toHaveBeenCalledWith(csvBlob);
+            expect(clickSpy).toHaveBeenCalledTimes(1);
+            expect(anchorInBodyOnClick).toBe(true);
+            expect(clickedHref).toBe('blob:http://localhost/test-blob');
+            expect(clickedDownload).toBe('dabia-words-n5-20261119.csv');
+            expect(document.body.querySelectorAll('a')).toHaveLength(0);
+            expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:http://localhost/test-blob');
+        });
+
+        it('prefers and decodes filename*=UTF-8 over plain filename', async () => {
+            mockApi.get.mockResolvedValueOnce({
+                data: new Blob(['csv']),
+                headers: {
+                    'Content-Disposition':
+                        "attachment; filename=\"fallback.csv\"; filename*=UTF-8''dabia-words-%E6%97%A5%E6%9C%AC%E8%AA%9E.csv",
+                },
+            });
+
+            const result = await apiService.exportWords();
+
+            expect(result).toEqual({ filename: 'dabia-words-日本語.csv' });
+        });
+
+        it('falls back to the default filename when the response has no headers', async () => {
+            mockApi.get.mockResolvedValueOnce({ data: 'word,reading', headers: undefined });
+
+            const result = await apiService.exportWords();
+
+            expect(result).toEqual({ filename: 'dabia-words.csv' });
+        });
+
+        it('reads filename="..." from AxiosHeaders-like headers when filename* is absent', async () => {
+            mockApi.get.mockResolvedValueOnce({
+                data: new Blob(['csv']),
+                headers: {
+                    get: (name: string) =>
+                        name.toLowerCase() === 'content-disposition'
+                            ? 'attachment; filename="dabia-words-all-decks-20261119.csv"'
+                            : undefined,
+                },
+            });
+
+            const result = await apiService.exportWords({ allDecks: true, status: 'all' });
+
+            expect(result).toEqual({ filename: 'dabia-words-all-decks-20261119.csv' });
+        });
+
+        it('falls back to dabia-words.csv when Content-Disposition is missing', async () => {
+            mockApi.get.mockResolvedValueOnce({
+                data: new Blob(['csv']),
+                headers: {},
+            });
+
+            const result = await apiService.exportWords();
+
+            expect(result).toEqual({ filename: 'dabia-words.csv' });
+            expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:http://localhost/test-blob');
+        });
+
+        it('cleans up anchor and revokes object URL even if click fails', async () => {
+            clickSpy.mockImplementation(() => {
+                throw new Error('click blocked');
+            });
+            mockApi.get.mockResolvedValueOnce({
+                data: new Blob(['csv']),
+                headers: {},
+            });
+
+            await expect(apiService.exportWords()).rejects.toThrow('click blocked');
+            expect(document.body.querySelectorAll('a')).toHaveLength(0);
+            expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:http://localhost/test-blob');
+        });
     });
 
     describe('interceptors', () => {

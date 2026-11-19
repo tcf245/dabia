@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { BookOpen, ChevronDown, Layers, LogOut, UserRound } from 'lucide-react';
+import { BookMarked, BookOpen, ChevronDown, Layers, LogOut, UserRound } from 'lucide-react';
 import LanguageSelect from './LanguageSelect';
 import { useI18n } from '../i18n/LanguageProvider';
 import type { Messages } from '../i18n';
@@ -22,6 +22,7 @@ interface AppHeaderProps {
 const NAV_ITEMS: { to: string; label: keyof Messages['header']; icon: typeof BookOpen; end: boolean }[] = [
     { to: '/', label: 'learn', icon: BookOpen, end: true },
     { to: '/decks', label: 'decks', icon: Layers, end: false },
+    { to: '/words', label: 'words', icon: BookMarked, end: false },
     { to: '/profile', label: 'profile', icon: UserRound, end: false },
 ];
 

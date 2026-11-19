@@ -137,3 +137,32 @@
     transform: none !important;
   }
 }
+
+/* First-mount fill animation for DeckProgressBar (no replay on deck switch). */
+@keyframes progress-width-in {
+  from {
+    width: 0%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-progress-width {
+    animation: progress-width-in 300ms ease-out;
+  }
+
+  .animate-expand-in {
+    animation: expand-in 200ms ease-out;
+  }
+}
+
+@keyframes expand-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

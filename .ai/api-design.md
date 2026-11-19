@@ -30,6 +30,9 @@ Update this file in the same PR as any endpoint change.
 | GET | `/api/v1/stats/daily-summary` | optional | Today's study summary |
 | GET | `/api/v1/profile/heatmap` | optional | Reviews per day, last 365 days |
 | GET | `/api/v1/profile/garden` | optional | Words for the profile word garden |
+| GET | `/api/v1/words` | optional | The user's learned words: filter, fuzzy search, sort, page |
+| GET | `/api/v1/words/export` | required | The same rows as `/words`, all pages, as CSV |
+| GET | `/api/v1/words/progress` | optional | Mastered / Learning / Not started counts per deck |
 | GET | `/api/v1/languages` | none | Learner languages cards can be served in |
 | POST | `/api/v1/auth/login/google` | none | Exchange a Google auth code for a JWT |
 | GET | `/api/v1/health-check` | none | Database connectivity check |
@@ -196,6 +199,95 @@ them out.
 ```
 
 `romaji` is a deprecated alias of `reading` kept for one release.
+
+## Words
+
+The learner's own words. A card is **Mastered** at level 5, **Learning** at levels 1–4, and **Not started** when the
+user has no association row for it (see `.ai/specs/word-review.md`).
+
+### `GET /api/v1/words`
+
+The user's learned words (levels 1–5), one page at a time.
+
+**Query**
+
+| Param | Default | Notes |
+|---|---|---|
+| `deck_id` (UUID, repeatable) | active decks | |
+| `all_decks` (bool) | `false` | every deck the user has learned words in; overrides `deck_id` |
+| `status` | `all` | `all`, `learning` (1–4), `mastered` (5) |
+| `level` (int 1–4, repeatable) | — | only with `status=learning`, else `422` |
+| `q` (≤ 64 chars) | — | fuzzy: kanji, kana (katakana folded), romaji, meaning, typos in the meaning |
+| `sort` | `relevance` with `q`, else `last_reviewed` | `relevance`, `last_reviewed`, `next_review`, `level`, `first_seen`, `lapses`; `relevance` without `q` → `422` |
+| `order` | per sort | `asc`/`desc`; defaults: `last_reviewed` desc, `next_review` asc, `level` asc, `first_seen` asc, `lapses` desc |
+| `limit` / `offset` | 50 / 0 | `limit` 1–100 |
+| `lang` | — | see Conventions |
+
+```json
+{
+  "total": 292, "limit": 50, "offset": 0,
+  "items": [{
+    "card_id": "f6e5d4c3-...", "deck": { "id": "73d6cb04-...", "name": "eggrolls-JLPT10k-v3::1-N4+N5" },
+    "word": "何", "reading": "なに", "hint": "What?",
+    "sentence": "これは何ですか？", "sentence_furigana": "これ[これ]は[は]何[なに]ですか[ですか]？",
+    "sentence_translation": "What is this?",
+    "audio_url": "https://<r2-public-url>/medias/002.mp3", "sentence_audio_url": "https://<r2-public-url>/medias/sentence_002.mp3",
+    "language": "en", "proficiency_level": 2, "status": "learning",
+    "first_seen_at": "2026-10-02T08:14:00Z", "last_reviewed_at": "2026-11-16T12:01:33Z", "next_review_at": "2026-11-16T12:03:03Z",
+    "review_count": 9, "correct_count": 6, "accuracy": 66.7, "lapses_count": 2
+  }]
+}
+```
+
+- Missing timestamps sort last in either order; ties are broken by card id, so paging is stable.
+- Search scores: exact word/reading 100, prefix 80, substring (word, reading or meaning) 60, typo match on the
+  meaning below 50 (`core/word_search.py`).
+- `accuracy` is `null` when the card has no review logs.
+
+### `GET /api/v1/words/export`
+
+The same rows as `GET /api/v1/words` for the same filters (`deck_id`, `all_decks`, `status`, `level`, `q`, `sort`,
+`order`, `lang`), all pages, as CSV. No `limit`/`offset`.
+
+- **Auth**: a signed-in user; the demo user gets `401` `{"detail": "Sign in to export"}`.
+- `Content-Type: text/csv; charset=utf-8`, UTF-8 BOM, CRLF, RFC 4180 quoting.
+- `Content-Disposition: attachment; filename="dabia-words-<deck-slug|selected-decks|all-decks>[-<status>]-<YYYYMMDD>.csv"`
+  (also as `filename*`); the header is listed in CORS `expose_headers`.
+- Columns: `word, reading, meaning, meaning_language, status, level, deck, sentence, sentence_translation,
+  first_seen_at, last_reviewed_at, next_review_at, review_count, correct_count, accuracy, lapses, card_id`.
+- Cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` so spreadsheets do not run them.
+
+### `GET /api/v1/words/progress`
+
+Progress counts for each requested deck, plus their sum.
+
+**Query**: `deck_id` (UUID, repeatable; default: the user's active decks; unknown IDs are ignored),
+`include_studied` (bool, default `false`: also return non-active decks that have at least one learned word, after
+the requested ones).
+
+```json
+{
+  "decks": [
+    {
+      "deck_id": "73d6cb04-617c-433b-9af7-7cf73304f0cd",
+      "name": "eggrolls-JLPT10k-v3::1-N4+N5",
+      "is_active": true,
+      "total": 1500,
+      "mastered": 320,
+      "learning": 292,
+      "not_started": 888,
+      "learning_by_level": { "1": 40, "2": 61, "3": 88, "4": 103 }
+    }
+  ],
+  "aggregate": {
+    "total": 1500, "mastered": 320, "learning": 292, "not_started": 888,
+    "learning_by_level": { "1": 40, "2": 61, "3": 88, "4": 103 }
+  }
+}
+```
+
+- `aggregate` sums every returned deck (including studied ones when `include_studied` is set).
+- No active decks and no `deck_id`: `decks` is empty and every count is 0.
 
 ## Languages
 

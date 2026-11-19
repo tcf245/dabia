@@ -9,6 +9,7 @@ beforeEach(() => setFallbackLanguage('zh'));
 
 vi.mock('./pages/Welcome', () => ({ default: () => <div>welcome-page</div> }));
 vi.mock('./pages/LearningSession', () => ({ default: () => <div>learning-session</div> }));
+vi.mock('./pages/MyWords', () => ({ default: () => <div>my-words-page</div> }));
 vi.mock('./components/Login', () => ({ default: () => null }));
 vi.mock('jwt-decode', () => ({ jwtDecode: () => ({ sub: 'u1', name: 'Tester' }) }));
 
@@ -33,6 +34,11 @@ describe('App routing', () => {
         renderAt('/');
         expect(screen.getByText('learning-session')).toBeInTheDocument();
         expect(screen.queryByText('welcome-page')).not.toBeInTheDocument();
+    });
+
+    it('renders the My Words page at /words', () => {
+        renderAt('/words');
+        expect(screen.getByText('my-words-page')).toBeInTheDocument();
     });
 
     it('opens the login modal from the header and closes it by Escape, button or backdrop', () => {

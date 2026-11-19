@@ -6,9 +6,8 @@ one is a data import (see .ai/decisions/003-card-content-i18n.md). Language code
 field by field, so a card that is not yet translated still shows its meaning instead of nothing.
 """
 import re
-import uuid
 from dataclasses import dataclass
-from typing import Iterable, Optional
+from typing import Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -49,12 +48,8 @@ class LocalizedContent:
     language: str  # the language of the hint actually served, after any fallback
 
 
-def _resolve_card(
-    card: models.Card,
-    rows_by_language: dict[str, models.CardTranslation],
-    chain: list[str],
-) -> LocalizedContent:
-    found = [rows_by_language[language] for language in chain if language in rows_by_language]
+def _pick(card: models.Card, rows: dict[str, models.CardTranslation], chain: list[str]) -> LocalizedContent:
+    found = [rows[language] for language in chain if language in rows]
 
     def first(field: str) -> Optional[str]:
         values = [getattr(row, field) for row in found if getattr(row, field)]
@@ -64,33 +59,28 @@ def _resolve_card(
     return LocalizedContent(first("hint"), first("sentence_translation"), served)
 
 
-def localize_many(
-    db: Session,
-    cards: Iterable[models.Card],
-    requested: Optional[str],
-) -> dict[uuid.UUID, LocalizedContent]:
-    """Load card translations for all given cards in one query and apply the fallback chain per card."""
-    card_list = list(cards)
-    if not card_list:
-        return {}
-
-    chain = language_chain(requested)
-    card_ids = list(dict.fromkeys(card.id for card in card_list))
-    rows_by_card: dict[uuid.UUID, dict[str, models.CardTranslation]] = {}
-    for row in db.query(models.CardTranslation).filter(
-        models.CardTranslation.card_id.in_(card_ids),
-        models.CardTranslation.language.in_(chain),
-    ):
-        rows_by_card.setdefault(row.card_id, {})[row.language] = row
-
-    return {
-        card.id: _resolve_card(card, rows_by_card.get(card.id, {}), chain)
-        for card in card_list
-    }
-
-
 def localize(db: Session, card: models.Card, requested: Optional[str]) -> LocalizedContent:
-    return localize_many(db, [card], requested)[card.id]
+    chain = language_chain(requested)
+    rows = {
+        row.language: row
+        for row in db.query(models.CardTranslation).filter(
+            models.CardTranslation.card_id == card.id, models.CardTranslation.language.in_(chain),
+        )
+    }
+    return _pick(card, rows, chain)
+
+
+def localize_many(db: Session, cards: list[models.Card], requested: Optional[str]) -> dict:
+    """`localize` for many cards with one query: {card_id: LocalizedContent}."""
+    if not cards:
+        return {}
+    chain = language_chain(requested)
+    by_card: dict = {card.id: {} for card in cards}
+    for row in db.query(models.CardTranslation).filter(
+        models.CardTranslation.card_id.in_(list(by_card)), models.CardTranslation.language.in_(chain),
+    ):
+        by_card[row.card_id][row.language] = row
+    return {card.id: _pick(card, by_card[card.id], chain) for card in cards}
 
 
 def available_languages(db: Session) -> list[tuple[str, int]]:
