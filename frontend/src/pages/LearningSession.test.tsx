@@ -214,16 +214,17 @@ describe('LearningSession', () => {
         await typeAnswer('one');
         fireEvent.click(screen.getByRole('button', { name: /submit/i }));
 
-        // Wait for card 2 AND ensure loading state is cleared
+        // Wait for card 2 and the Previous button (proving loading finished and undo is available)
         await waitFor(() => {
             expect(screen.getByText('h2')).toBeInTheDocument();
-            expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', { name: en.session.previous })).toBeEnabled();
         });
 
-        // Press ArrowLeft (Need to wrap in act for React 18+ state updates triggered by window events)
-        await waitFor(() => {
-            fireEvent.keyDown(window, { key: 'ArrowLeft' });
-        });
+        // Flush pending passive effects so the ArrowLeft keydown listener has re-subscribed with the new state
+        await act(async () => {});
+
+        // Press ArrowLeft once outside waitFor
+        fireEvent.keyDown(window, { key: 'ArrowLeft' });
 
         // Should go back to h1
         await waitFor(() => expect(screen.getByText('h1')).toBeInTheDocument());
