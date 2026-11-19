@@ -64,6 +64,25 @@ describe('dictionaries', () => {
         }
     });
 
+    it('every message function renders a non-empty string in every language', () => {
+        const calls: string[] = [];
+        const walk = (node: unknown, path: string) => {
+            if (typeof node === 'function') {
+                const args = Array.from({ length: node.length }, (_, i) => (i === 0 ? 3 : i + 1));
+                const text = (node as (...a: unknown[]) => unknown)(...args);
+                expect(typeof text, path).toBe('string');
+                expect((text as string).trim(), path).not.toBe('');
+                expect(text as string, path).not.toMatch(/undefined|NaN|\[object/);
+                calls.push(path);
+            } else if (node && typeof node === 'object') {
+                for (const [key, value] of Object.entries(node)) walk(value, `${path}.${key}`);
+            }
+        };
+        walk(zh, 'zh');
+        walk(en, 'en');
+        expect(calls.length).toBeGreaterThan(0);
+    });
+
     it('the English dictionary contains no Chinese', () => {
         const strings = JSON.stringify({ ...en, welcome: { ...en.welcome, demoCards: [] } });
         expect(strings).not.toMatch(/[一-鿿]/);
