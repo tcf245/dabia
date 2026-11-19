@@ -1,13 +1,18 @@
-"""The learner's own words: progress per deck, the word list (and, in a later PR, the CSV export).
+"""The learner's own words: progress per deck, the word list and its CSV export.
 
 A card is Mastered at level 5, Learning at levels 1-4, and Not started when the user has no association row for it.
 See .ai/specs/word-review.md section 2.
 """
+import csv
+import io
+import re
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Literal, Optional
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload
 
@@ -23,6 +28,7 @@ from dabia.schemas.words import (
 )
 
 router = APIRouter()
+DEMO_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000000")  # signed-out visitors share it
 
 
 def active_deck_ids(user: models.User) -> list[uuid.UUID]:
@@ -307,3 +313,76 @@ def get_progress(
     aggregate.not_started = max(aggregate.total - aggregate.mastered - aggregate.learning, 0)
 
     return WordsProgressResponse(decks=list(entries.values()), aggregate=aggregate)
+
+
+EXPORT_BATCH = 500
+EXPORT_COLUMNS = [
+    "word", "reading", "meaning", "meaning_language", "status", "level", "deck", "sentence",
+    "sentence_translation", "first_seen_at", "last_reviewed_at", "next_review_at", "review_count",
+    "correct_count", "accuracy", "lapses", "card_id",
+]
+FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def safe_cell(value) -> str:
+    """CSV text for one value; text that a spreadsheet would run as a formula is prefixed with a quote."""
+    if value is None:
+        return ""
+    text = str(value)
+    return f"'{text}" if text.startswith(FORMULA_PREFIXES) else text
+
+
+def export_row(item: WordItem) -> list[str]:
+    timestamps = item.model_dump(mode="json", include={"first_seen_at", "last_reviewed_at", "next_review_at"})
+    values = [
+        item.word, item.reading, item.hint, item.language, item.status, item.proficiency_level, item.deck.name,
+        item.sentence, item.sentence_translation, timestamps["first_seen_at"], timestamps["last_reviewed_at"],
+        timestamps["next_review_at"], item.review_count, item.correct_count, item.accuracy, item.lapses_count,
+        item.card_id,
+    ]
+    return [safe_cell(value) for value in values]
+
+
+def slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "deck"
+
+
+def export_filename(db: Session, user: models.User, filters: WordFilters) -> str:
+    if filters.all_decks:
+        scope = "all-decks"
+    else:
+        deck_ids = list(filters.deck_id) if filters.deck_id else active_deck_ids(user)
+        names = [name for (name,) in db.query(models.Deck.name).filter(models.Deck.id.in_(deck_ids))] if deck_ids else []
+        scope = slug(names[0]) if len(names) == 1 else "selected-decks"
+    parts = ["dabia-words", scope]
+    if filters.status != "all":
+        parts.append(filters.status)
+    parts.append(datetime.now(timezone.utc).strftime("%Y%m%d"))
+    return "-".join(parts) + ".csv"
+
+
+@router.get("/export")
+def export_words(
+    filters: WordFilters = Depends(word_filters),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """The same rows as the list for the same filters, all pages, as a UTF-8 CSV with a BOM for Excel."""
+    if current_user.id == DEMO_USER_ID:
+        raise HTTPException(status_code=401, detail="Sign in to export")
+
+    ids = select_word_ids(db, current_user, filters)
+    buffer = io.StringIO()
+    buffer.write("﻿")
+    writer = csv.writer(buffer)  # RFC 4180 quoting, CRLF line endings
+    writer.writerow(EXPORT_COLUMNS)
+    for start in range(0, len(ids), EXPORT_BATCH):
+        for item in load_words(db, current_user, ids[start:start + EXPORT_BATCH], filters.lang):
+            writer.writerow(export_row(item))
+
+    filename = export_filename(db, current_user, filters)
+    return Response(
+        content=buffer.getvalue().encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{quote(filename)}"},
+    )

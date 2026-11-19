@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import MyWords from './MyWords';
@@ -8,6 +8,7 @@ import { en } from '../i18n/messages/en';
 vi.mock('../services/api', () => ({
   getWordsProgress: vi.fn(),
   getWords: vi.fn(),
+  exportWords: vi.fn(),
 }));
 
 const LocationProbe = () => {
@@ -92,8 +93,10 @@ const multiDeckResponse: api.WordsProgressResponse = {
 describe('MyWords', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem('token');
     vi.mocked(api.getWordsProgress).mockReset();
     vi.mocked(api.getWords).mockReset();
+    vi.mocked(api.exportWords).mockReset();
     vi.mocked(api.getWordsProgress).mockResolvedValue(multiDeckResponse);
     vi.mocked(api.getWords).mockResolvedValue({
       total: 1,
@@ -101,6 +104,11 @@ describe('MyWords', () => {
       offset: 0,
       items: [makeWord('c1', '何')],
     });
+    vi.mocked(api.exportWords).mockResolvedValue({ filename: 'dabia-words.csv' });
+  });
+
+  afterEach(() => {
+    localStorage.removeItem('token');
   });
 
   it('renders a loading skeleton and requests progress with includeStudied once', async () => {
@@ -471,6 +479,57 @@ describe('MyWords', () => {
         expect.objectContaining({ sort: 'level' }),
       ),
     );
+  });
+
+  it('renders ExportButton when signed in with counts and passes the current list query', async () => {
+    localStorage.setItem('token', 'test-token');
+    vi.mocked(api.getWords).mockResolvedValue({
+      total: 42,
+      limit: 50,
+      offset: 0,
+      items: [makeWord('c1', '何')],
+    });
+
+    renderPage('/words?deck=d1&status=learning&level=1,2&q=nani&sort=relevance');
+    await screen.findByText('何');
+
+    const exportTrigger = screen.getByRole('button', { name: en.words.export.button });
+    fireEvent.click(exportTrigger);
+
+    // Current list: 42 (listTotal), current deck: 320 + 292 = 612, all decks: 612 + 50 + 60 = 722.
+    expect(screen.getByText('JLPT N5–N4 · Learning · 42 words')).toBeInTheDocument();
+    expect(screen.getByText('JLPT N5–N4 · 612 words')).toBeInTheDocument();
+    expect(screen.getByText('722 words')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: en.words.export.confirm }));
+
+    await waitFor(() =>
+      expect(api.exportWords).toHaveBeenCalledWith({
+        deckIds: ['d1'],
+        status: 'learning',
+        levels: [1, 2],
+        q: 'nani',
+        sort: 'relevance',
+      }),
+    );
+  });
+
+  it('renders Sign in to export when signed out and dispatches dabia:unauthorized', async () => {
+    const unauthorizedHandler = vi.fn();
+    window.addEventListener('dabia:unauthorized', unauthorizedHandler);
+
+    try {
+      renderPage('/words');
+      await screen.findByText('何');
+
+      const signInBtn = screen.getByRole('button', { name: en.words.export.signIn });
+      fireEvent.click(signInBtn);
+
+      expect(unauthorizedHandler).toHaveBeenCalledTimes(1);
+      expect(api.exportWords).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('dabia:unauthorized', unauthorizedHandler);
+    }
   });
 
   it('removes the level filter when the last chip is turned off', async () => {

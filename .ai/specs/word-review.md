@@ -434,7 +434,8 @@ exactly the rows the list would show.
 - Body starts with a UTF-8 BOM so Excel opens Japanese correctly; CRLF line endings; RFC 4180 quoting via Python's
   `csv` module.
 - **CSV injection guard**: any cell starting with `=`, `+`, `-`, `@`, tab or CR is prefixed with `'`.
-- Built with `StreamingResponse` from a generator that pages through the query 500 rows at a time.
+- Built in memory, loading 500 rows at a time, and returned as one response (Vercel's Python runtime buffers
+  responses anyway, and a generator would outlive the request's database session).
 - Add `Content-Disposition` to `expose_headers` in `main.py` so the frontend can read the filename.
 
 **Columns** (header row in English, stable names for scripts):

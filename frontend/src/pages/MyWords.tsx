@@ -7,6 +7,7 @@ import { useI18n } from '../i18n/LanguageProvider';
 import type { Messages } from '../i18n';
 import { useWordsQuery } from '../hooks/useWordsQuery';
 import DeckProgressBar from '../components/words/DeckProgressBar';
+import ExportButton from '../components/words/ExportButton';
 import ScopeNotice from '../components/words/ScopeNotice';
 import WordGrid from '../components/words/WordGrid';
 
@@ -169,10 +170,25 @@ const MyWords: React.FC = () => {
 
   const learnedCount = currentCounts ? currentCounts.mastered + currentCounts.learning : 0;
 
+  const allDecksLearnedCount = useMemo(
+    () =>
+      data
+        ? data.decks.reduce((sum, deck) => sum + deck.mastered + deck.learning, 0)
+        : 0,
+    [data],
+  );
+
   const selectedDeckObj =
     selectedDeck && selectedDeck !== 'all'
       ? data?.decks.find((deck) => deck.deck_id === selectedDeck) ?? null
       : null;
+
+  const exportDeckLabel =
+    selectedDeck === 'all'
+      ? t.allActiveDecks
+      : selectedDeckObj
+        ? deckTitle(selectedDeckObj.name, messages.decks.grammarSuffix)
+        : '';
 
   const queryDeckIds = useMemo(() => {
     if (!selectedDeck) return [];
@@ -181,6 +197,22 @@ const MyWords: React.FC = () => {
     }
     return [selectedDeck];
   }, [selectedDeck, activeDecks]);
+
+  const currentExportQuery = useMemo<api.WordsExportQuery>(() => {
+    const trimmedQ = q.trim();
+    const query: api.WordsExportQuery = {
+      deckIds: queryDeckIds,
+      status,
+      sort: sort === 'relevance' && !trimmedQ ? undefined : sort,
+    };
+    if (status === 'learning' && levels.length > 0) {
+      query.levels = levels;
+    }
+    if (trimmedQ) {
+      query.q = trimmedQ;
+    }
+    return query;
+  }, [queryDeckIds, status, levels, q, sort]);
 
   const listEnabled =
     !loading &&
@@ -394,6 +426,15 @@ const MyWords: React.FC = () => {
                 />
               </div>
             </div>
+
+            <ExportButton
+              currentQuery={currentExportQuery}
+              deckLabel={exportDeckLabel}
+              status={status}
+              currentListCount={listTotal}
+              currentDeckCount={learnedCount}
+              allDecksCount={allDecksLearnedCount}
+            />
           </div>
 
           <section className="rounded-[20px] border border-[#E6E6E3] bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
