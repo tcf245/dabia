@@ -51,19 +51,19 @@ python backend/scripts/import_data.py <path_to_your_csv> [--db-url <your_databas
 ### Arguments
 
 - `<path_to_your_csv>`: (Required) The absolute path to the `.csv` file you want to import.
-- `--db-url <your_database_url>`: (Optional) The full connection URL for the target database. If omitted, the script will use the `DATABASE_URL` from the `backend/.env` file (typically the local database).
+- `--db-url <your_database_url>`: (Optional) The full connection URL for the target database. If omitted, the script will use the `DATABASE_URL` from `backend/.env.keychain` (the local database; run the script through `keychain-secret run .env.keychain --`).
 
 ### Example 1: Importing to the Local Database
 
-This command uses the default database configured in your `.env` file.
+This command uses the local database from `backend/.env.keychain`.
 
 ```bash
-python backend/scripts/import_data.py /path/to/your/notes.csv
+cd backend && keychain-secret run .env.keychain -- python scripts/import_data.py /path/to/your/notes.csv
 ```
 
 ### Example 2: Importing to a Production Database
 
-This command overrides the `.env` file and connects to a specific production database.
+This command overrides the local default and connects to a specific production database.
 
 **Note**: Replace the placeholder URL with your actual production database credentials.
 

@@ -32,12 +32,12 @@ The core of Dabia is the Spaced Repetition System.
 - **ReviewLog**: Immutable history of every review attempt (timestamp, duration, rating).
 
 ## 5. Environment Variables
-Names only; values live in `.env` files locally and in Vercel project settings for deployments.
-- `backend/.env` (read by `backend/dabia/core/config.py`):
+Names only. Deployments read Vercel project settings. Locally, backend values live in macOS Keychain: `backend/.env.keychain` (committed, no values) maps each name to a Keychain item, and commands run as `cd backend && keychain-secret run .env.keychain -- <command>` (`keychain-secret` is in `tcf245/agent-skills/tools`). No plaintext `backend/.env`.
+- `backend/.env.keychain` (read by `backend/dabia/core/config.py` through the environment):
     - `DATABASE_URL` (required)
     - `SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (dev defaults exist; must be set in deployments)
     - `STORAGE_PROVIDER` (`r2` default, or `gcp`), `R2_PUBLIC_URL`, `R2_MEDIA_PATH`, `GCP_BUCKET_NAME`, `GCP_MEDIA_PATH`
-- `frontend/.env`: `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`
+- `frontend/.env`: `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID` (public values only, so a plain file is fine)
 
 ## 6. API Design
 See `.ai/api-design.md` for every endpoint with its request/response models.
